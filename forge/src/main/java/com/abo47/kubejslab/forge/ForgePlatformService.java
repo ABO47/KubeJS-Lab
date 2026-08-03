@@ -2,6 +2,8 @@ package com.abo47.kubejslab.forge;
 
 import java.nio.file.Path;
 
+import net.minecraft.server.level.ServerPlayer;
+
 import net.minecraftforge.fml.loading.FMLLoader;
 import net.minecraftforge.fml.loading.FMLPaths;
 
@@ -30,5 +32,15 @@ public final class ForgePlatformService implements PlatformService {
         return ModList.get().getModContainerById(modId)
                 .map(container -> container.getModInfo().getVersion().toString())
                 .orElse("unknown");
+    }
+
+    @Override
+    public void registerNetwork() {
+        ForgeNetwork.register();
+    }
+
+    @Override
+    public void sendOpenScreen(ServerPlayer player) {
+        ForgeNetwork.sendToClient(new ForgeNetwork.OpenScreenPacket(), player);
     }
 }

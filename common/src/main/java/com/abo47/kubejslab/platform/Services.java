@@ -4,6 +4,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Objects;
 
+import net.minecraft.server.level.ServerPlayer;
+
 public final class Services {
     private static volatile PlatformService platform = new FallbackPlatformService();
 
@@ -37,6 +39,14 @@ public final class Services {
         @Override
         public String modVersion(String modId) {
             return "unknown";
+        }
+
+        @Override
+        public void registerNetwork() {
+        }
+
+        @Override
+        public void sendOpenScreen(ServerPlayer player) {
         }
     }
 }

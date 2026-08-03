@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "kubejslab:block/lab_table"
+    }
+  }
+}

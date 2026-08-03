@@ -1,1 +1,8 @@
-{}
+{
+  "key.categories.kubejslab": "KubeJS Lab",
+  "key.kubejslab.open_ui": "Open KubeJS Lab",
+  "itemGroup.kubejslab.main": "KubeJS Lab",
+  "block.kubejslab.lab_table": "Lab Table",
+  "item.kubejslab.lab_table": "Lab Table",
+  "item.kubejslab.lab_tablet": "Lab Tablet"
+}

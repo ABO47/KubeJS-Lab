@@ -2,6 +2,8 @@ package com.abo47.kubejslab.platform;
 
 import java.nio.file.Path;
 
+import net.minecraft.server.level.ServerPlayer;
+
 public interface PlatformService {
     Path configDir();
 
@@ -10,4 +12,8 @@ public interface PlatformService {
     String loaderVersion();
 
     String modVersion(String modId);
+
+    void registerNetwork();
+
+    void sendOpenScreen(ServerPlayer player);
 }
