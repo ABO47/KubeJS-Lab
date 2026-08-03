@@ -1,10 +1,10 @@
-package com.example.templatemod.fabric;
+package com.abo47.kubejslab.fabric;
 
 import java.nio.file.Path;
 
 import net.fabricmc.loader.api.FabricLoader;
 
-import com.example.templatemod.platform.PlatformService;
+import com.abo47.kubejslab.platform.PlatformService;
 
 public final class FabricPlatformService implements PlatformService {
     @Override

@@ -1,4 +1,4 @@
-plugins {
+﻿plugins {
     id 'com.github.johnrengelman.shadow' version '7.1.2'
 }
 
@@ -26,13 +26,22 @@ def useDevRecipeViewer = { String id ->
 dependencies {
     modImplementation "net.fabricmc:fabric-loader:${fabric_loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${fabric_api_version}"
-    common(project(path: ':templatemod-common', configuration: 'namedElements')) {
+    common(project(path: ':kubejslab-common', configuration: 'namedElements')) {
         transitive = false
     }
-    shadowCommon(project(path: ':templatemod-common', configuration: 'transformProductionFabric')) {
+    shadowCommon(project(path: ':kubejslab-common', configuration: 'transformProductionFabric')) {
         transitive = false
     }
     modImplementation("com.lowdragmc.ldlib:ldlib-fabric-${minecraft_version}:${ldlib_version}") {
+        transitive = false
+    }
+    modImplementation("dev.latvian.mods:kubejs-fabric:${kubejs_version}") {
+        transitive = false
+    }
+    modImplementation("dev.architectury:architectury-fabric:${architectury_version}") {
+        transitive = false
+    }
+    modImplementation("dev.latvian.mods:rhino-fabric:${rhino_version}") {
         transitive = false
     }
     modCompileOnly("mezz.jei:jei-${minecraft_version}-common-api:${jei_version}") {
@@ -70,6 +79,9 @@ tasks.named('processResources', ProcessResources).configure {
             fabric_loader_version: fabric_loader_version,
             fabric_api_version   : fabric_api_version,
             ldlib_version        : ldlib_version,
+            kubejs_version       : kubejs_version,
+            architectury_version : architectury_version,
+            rhino_version        : rhino_version,
             mod_id               : mod_id,
             mod_name             : mod_name,
             mod_license          : mod_license,
@@ -105,7 +117,7 @@ tasks.named('runClient', JavaExec).configure {
 
 sourcesJar {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    def commonSources = project(':templatemod-common').tasks.named('sourcesJar')
+    def commonSources = project(':kubejslab-common').tasks.named('sourcesJar')
     dependsOn commonSources
     from commonSources.map { zipTree(it.archiveFile.get().asFile) }
 }

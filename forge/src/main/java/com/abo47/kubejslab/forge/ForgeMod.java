@@ -1,24 +1,23 @@
-package com.example.templatemod.forge;
+package com.abo47.kubejslab.forge;
 
-import com.example.templatemod.TemplateMod;
-import com.example.templatemod.platform.Services;
+import com.abo47.kubejslab.KubeJSLab;
+import com.abo47.kubejslab.platform.Services;
 
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 
-@Mod(TemplateMod.MOD_ID)
+@Mod(KubeJSLab.MOD_ID)
 public final class ForgeMod {
     public ForgeMod() {
         Services.setPlatform(new ForgePlatformService());
 
         IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
-        ForgeContent.register(modBus);
         modBus.addListener(this::onCommonSetup);
     }
 
     private void onCommonSetup(FMLCommonSetupEvent event) {
-        event.enqueueWork(TemplateMod::bootstrap);
+        event.enqueueWork(KubeJSLab::bootstrap);
     }
 }

@@ -1,4 +1,4 @@
-package com.example.templatemod.platform;
+package com.abo47.kubejslab.platform;
 
 import java.nio.file.Path;
 

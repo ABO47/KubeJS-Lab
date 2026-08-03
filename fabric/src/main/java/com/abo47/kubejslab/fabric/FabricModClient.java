@@ -1,4 +1,4 @@
-package com.example.templatemod.fabric;
+package com.abo47.kubejslab.fabric;
 
 import net.fabricmc.api.ClientModInitializer;
 

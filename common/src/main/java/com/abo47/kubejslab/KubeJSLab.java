@@ -1,14 +1,14 @@
-package com.example.templatemod;
+package com.abo47.kubejslab;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class TemplateMod {
-    public static final String MOD_ID = "templatemod";
-    public static final String MOD_NAME = "Template Mod";
+public final class KubeJSLab {
+    public static final String MOD_ID = "kubejslab";
+    public static final String MOD_NAME = "KubeJS Lab";
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
-    private TemplateMod() {
+    private KubeJSLab() {
     }
 
     public static void bootstrap() {

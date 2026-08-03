@@ -7,6 +7,9 @@ dependencies {
     modImplementation("com.lowdragmc.ldlib:ldlib-common-${minecraft_version}:${ldlib_version}") {
         transitive = false
     }
+    modCompileOnly("dev.latvian.mods:kubejs-fabric:${kubejs_version}") {
+        transitive = false
+    }
     compileOnly("dev.emi:emi-xplat-mojmap:${emi_version}:api") {
         transitive = false
     }

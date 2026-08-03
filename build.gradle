@@ -1,4 +1,4 @@
-buildscript {
+﻿buildscript {
     repositories {
         mavenCentral()
         maven { url = 'https://maven.fabricmc.net/' }
@@ -53,6 +53,13 @@ allprojects {
             url = 'https://modmaven.dev'
         }
         maven { url = 'https://maven.parchmentmc.org' }
+        maven {
+            name = 'Latvian'
+            url = 'https://maven.latvian.dev/releases'
+            content {
+                includeGroup 'dev.latvian.mods'
+            }
+        }
     }
 
     tasks.withType(JavaCompile).configureEach {
@@ -119,12 +126,12 @@ dependencies {
 
 def commonResources = layout.projectDirectory.dir('common/src/main/resources')
 def uiIconSvgDir = layout.projectDirectory.dir('art/source-icons')
-def uiIconTextureDir = commonResources.dir('assets/templatemod/textures/gui/icons')
+def uiIconTextureDir = commonResources.dir('assets/kubejslab/textures/gui/icons')
 def sanitizedUiIconSvgDir = layout.buildDirectory.dir('generated/sanitized-ui-icon-svgs')
 def uiTextureSvgDir = layout.projectDirectory.dir('art/source-textures')
-def uiTextureDir = commonResources.dir('assets/templatemod/textures/gui')
+def uiTextureDir = commonResources.dir('assets/kubejslab/textures/gui')
 def sanitizedUiTextureSvgDir = layout.buildDirectory.dir('generated/sanitized-ui-texture-svgs')
-def modLogoSvgFile = layout.projectDirectory.file('art/source-logo/templatemod.svg')
+def modLogoSvgFile = layout.projectDirectory.file('art/source-logo/kubejslab.svg')
 def modLogoPngDir = commonResources
 
 tasks.register('generateUiIconPngs') {
@@ -160,7 +167,7 @@ tasks.register('generateUiIconPngs') {
         }
         javaexec {
             classpath = sourceSets.assetTools.runtimeClasspath
-            mainClass = 'com.example.templatemod.tools.SvgIconRasterizer'
+            mainClass = 'com.abo47.kubejslab.tools.SvgIconRasterizer'
             args iconSize, outputDir.absolutePath
             args sanitizedFiles.collect { it.absolutePath }
         }
@@ -200,7 +207,7 @@ tasks.register('generateUiTexturePngs') {
         }
         javaexec {
             classpath = sourceSets.assetTools.runtimeClasspath
-            mainClass = 'com.example.templatemod.tools.SvgIconRasterizer'
+            mainClass = 'com.abo47.kubejslab.tools.SvgIconRasterizer'
             args textureSize, outputDir.absolutePath
             args sanitizedFiles.collect { it.absolutePath }
         }
@@ -214,7 +221,7 @@ tasks.register('generateModLogoPng') {
 
     inputs.file(modLogoSvgFile).withPathSensitivity(PathSensitivity.RELATIVE)
     inputs.property('modLogoSize', providers.gradleProperty('modLogoSize').orElse('512'))
-    outputs.file(modLogoPngDir.file('templatemod.png'))
+    outputs.file(modLogoPngDir.file('kubejslab.png'))
 
     doLast {
         def logoSize = providers.gradleProperty('modLogoSize').orElse('512').get()
@@ -222,13 +229,13 @@ tasks.register('generateModLogoPng') {
         outputDir.mkdirs()
         javaexec {
             classpath = sourceSets.assetTools.runtimeClasspath
-            mainClass = 'com.example.templatemod.tools.SvgIconRasterizer'
+            mainClass = 'com.abo47.kubejslab.tools.SvgIconRasterizer'
             args logoSize, outputDir.absolutePath, modLogoSvgFile.asFile.absolutePath
         }
     }
 }
 
-project(':templatemod-common') {
+project(':kubejslab-common') {
     tasks.named('processResources').configure {
         dependsOn rootProject.tasks.named('generateUiIconPngs')
         dependsOn rootProject.tasks.named('generateUiTexturePngs')

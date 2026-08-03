@@ -1,4 +1,4 @@
-name: Release
+﻿name: Release
 
 on:
   workflow_dispatch:
@@ -87,7 +87,7 @@ jobs:
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
           echo "changelog_path=$changelog" >> "$GITHUB_OUTPUT"
-          echo "release_name=Template Mod ${version}" >> "$GITHUB_OUTPUT"
+          echo "release_name=KubeJS Lab ${version}" >> "$GITHUB_OUTPUT"
 
       - name: Build both loaders
         shell: bash
@@ -96,9 +96,9 @@ jobs:
         run: |
           chmod +x ./gradlew
           ./gradlew --no-daemon \
-            -x :templatemod-common:test \
-            :templatemod-forge:build \
-            :templatemod-fabric:build \
+            -x :kubejslab-common:test \
+            :kubejslab-forge:build \
+            :kubejslab-fabric:build \
             -Pmod_version="$RELEASE_VERSION"
 
       - name: Stage release jars
@@ -109,8 +109,8 @@ jobs:
           set -euo pipefail
 
           mkdir -p release
-          forge_jar="forge/build/libs/templatemod-forge-${RELEASE_VERSION}.jar"
-          fabric_jar="fabric/build/libs/templatemod-fabric-${RELEASE_VERSION}.jar"
+          forge_jar="forge/build/libs/kubejslab-forge-${RELEASE_VERSION}.jar"
+          fabric_jar="fabric/build/libs/kubejslab-fabric-${RELEASE_VERSION}.jar"
 
           for jar in "$forge_jar" "$fabric_jar"; do
             if [ ! -f "$jar" ]; then
@@ -127,7 +127,7 @@ jobs:
       - name: Upload workflow artifact
         uses: actions/upload-artifact@v4
         with:
-          name: templatemod-${{ steps.meta.outputs.version }}-both-loaders
+          name: kubejslab-${{ steps.meta.outputs.version }}-both-loaders
           path: release/*
           if-no-files-found: error
 

@@ -1,4 +1,4 @@
-package com.example.templatemod.forge;
+package com.abo47.kubejslab.forge;
 
 import java.nio.file.Path;
 
@@ -7,7 +7,7 @@ import net.minecraftforge.fml.loading.FMLPaths;
 
 import net.minecraftforge.fml.ModList;
 
-import com.example.templatemod.platform.PlatformService;
+import com.abo47.kubejslab.platform.PlatformService;
 
 public final class ForgePlatformService implements PlatformService {
     @Override

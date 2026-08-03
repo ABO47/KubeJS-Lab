@@ -1,4 +1,4 @@
-package com.example.templatemod.tools;
+package com.abo47.kubejslab.tools;
 
 import org.apache.batik.transcoder.TranscoderInput;
 import org.apache.batik.transcoder.TranscoderOutput;
