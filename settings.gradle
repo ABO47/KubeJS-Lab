@@ -1,0 +1,19 @@
+pluginManagement {
+    repositories {
+        maven { url = 'https://maven.fabricmc.net/' }
+        maven { url = 'https://maven.architectury.dev/' }
+        maven { url = 'https://maven.minecraftforge.net/' }
+        maven { url = 'https://maven.parchmentmc.org' }
+        gradlePluginPortal()
+    }
+}
+
+rootProject.name = 'Multiloader Template'
+
+include 'templatemod-common'
+include 'templatemod-forge'
+include 'templatemod-fabric'
+
+project(':templatemod-common').projectDir = file('common')
+project(':templatemod-forge').projectDir = file('forge')
+project(':templatemod-fabric').projectDir = file('fabric')
