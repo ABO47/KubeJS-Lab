@@ -10,6 +10,12 @@ dependencies {
     modCompileOnly("dev.latvian.mods:kubejs-fabric:${kubejs_version}") {
         transitive = false
     }
+    modCompileOnly("dev.latvian.mods:rhino-fabric:${rhino_version}") {
+        transitive = false
+    }
+    modCompileOnly("dev.architectury:architectury:${architectury_version}") {
+        transitive = false
+    }
     compileOnly("dev.emi:emi-xplat-mojmap:${emi_version}:api") {
         transitive = false
     }
