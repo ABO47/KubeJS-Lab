@@ -33,13 +33,22 @@ def useDevRecipeViewer = { String id ->
 
 dependencies {
     forge "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
-    common(project(path: ':templatemod-common', configuration: 'namedElements')) {
+    common(project(path: ':kubejslab-common', configuration: 'namedElements')) {
         transitive = false
     }
-    shadowCommon(project(path: ':templatemod-common', configuration: 'transformProductionForge')) {
+    shadowCommon(project(path: ':kubejslab-common', configuration: 'transformProductionForge')) {
         transitive = false
     }
     modImplementation("com.lowdragmc.ldlib:ldlib-forge-${minecraft_version}:${ldlib_version}") {
+        transitive = false
+    }
+    modImplementation("dev.latvian.mods:kubejs-forge:${kubejs_version}") {
+        transitive = false
+    }
+    modImplementation("dev.architectury:architectury-forge:${architectury_version}") {
+        transitive = false
+    }
+    modImplementation("dev.latvian.mods:rhino-forge:${rhino_version}") {
         transitive = false
     }
     modCompileOnly("mezz.jei:jei-${minecraft_version}-common-api:${jei_version}") {
@@ -85,6 +94,9 @@ tasks.named('processResources', ProcessResources).configure {
             forge_version_range    : forge_version_range,
             loader_version_range   : loader_version_range,
             ldlib_version          : ldlib_version,
+            kubejs_version         : kubejs_version,
+            architectury_version   : architectury_version,
+            rhino_version          : rhino_version,
             mod_id                 : mod_id,
             mod_name               : mod_name,
             mod_license            : mod_license,
@@ -127,7 +139,7 @@ remapJar {
 
 sourcesJar {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    def commonSources = project(':templatemod-common').tasks.named('sourcesJar')
+    def commonSources = project(':kubejslab-common').tasks.named('sourcesJar')
     dependsOn commonSources
     from commonSources.map { zipTree(it.archiveFile.get().asFile) }
 }

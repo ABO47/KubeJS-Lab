@@ -8,12 +8,12 @@ pluginManagement {
     }
 }
 
-rootProject.name = 'Multiloader Template'
+rootProject.name = 'KubeJS Lab'
 
-include 'templatemod-common'
-include 'templatemod-forge'
-include 'templatemod-fabric'
+include 'kubejslab-common'
+include 'kubejslab-forge'
+include 'kubejslab-fabric'
 
-project(':templatemod-common').projectDir = file('common')
-project(':templatemod-forge').projectDir = file('forge')
-project(':templatemod-fabric').projectDir = file('fabric')
+project(':kubejslab-common').projectDir = file('common')
+project(':kubejslab-forge').projectDir = file('forge')
+project(':kubejslab-fabric').projectDir = file('fabric')
