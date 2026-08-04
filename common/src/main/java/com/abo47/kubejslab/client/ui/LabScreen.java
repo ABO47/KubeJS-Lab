@@ -9,6 +9,8 @@ import net.minecraft.client.player.LocalPlayer;
 import com.lowdragmc.lowdraglib.gui.modular.IUIHolder;
 import com.lowdragmc.lowdraglib.gui.modular.ModularUI;
 import com.lowdragmc.lowdraglib.gui.texture.ColorRectTexture;
+import com.lowdragmc.lowdraglib.gui.texture.IGuiTexture;
+import com.lowdragmc.lowdraglib.gui.widget.TextFieldWidget;
 import com.lowdragmc.lowdraglib.gui.widget.WidgetGroup;
 
 public final class LabScreen {
@@ -34,6 +36,11 @@ public final class LabScreen {
         root.addWidget(leftPanel);
         root.addWidget(rightPanel);
 
+        leftPanel.setRightPanel(rightPanel);
+        leftPanel.setTabChangedListener(leftPanel::updateRecipeView);
+        rightPanel.setTabChangedListener(leftPanel::updateRecipeView);
+        leftPanel.updateRecipeView();
+
         ModularUI ui = new ModularUI(root, IUIHolder.EMPTY, player);
         ui.initWidgets();
         mc.setScreen(new LabGuiContainer(ui, player.containerMenu.containerId));
@@ -56,8 +63,11 @@ public final class LabScreen {
     }
 
     public static final class LabPanelWidget extends WidgetGroup {
-        private final boolean isLeft;
         private final LabTab[] tabs;
+        private LabPanelWidget rightPanel;
+        private Runnable tabChangedListener;
+        private TextFieldWidget searchField;
+        private LabRecipeBrowserWidget recipeBrowser;
 
         LabPanelWidget(boolean isLeft) {
             super(
@@ -65,15 +75,14 @@ public final class LabScreen {
                     LabLayout.BODY_Y,
                     isLeft ? LabLayout.LEFT_PANEL_W : LabLayout.BODY_W - LabLayout.LEFT_PANEL_W - LabLayout.GAP,
                     LabLayout.BODY_H);
-            this.isLeft = isLeft;
 
             int tabInset = LabLayout.TAB_INSET;
             int tabH = LabLayout.TAB_H;
             int tabGap = LabLayout.TAB_GAP;
 
             String[] keys = isLeft
-                    ? new String[]{"kubejslab.gui.lab_tab_built_in", "kubejslab.gui.lab_tab_custom"}
-                    : new String[]{"", "", "", ""};
+                    ? new String[]{LabGuiKeys.TAB_BUILT_IN, LabGuiKeys.TAB_CUSTOM}
+                    : new String[]{LabGuiKeys.TAB_RECIPE, "", "", ""};
             this.tabs = new LabTab[keys.length];
 
             int tabCount = keys.length;
@@ -89,6 +98,34 @@ public final class LabScreen {
                 tabs[i] = new LabTab(tabX, LabLayout.PANEL_INSET, w, tabH, keys[i], i == 0);
                 addWidget(tabs[i]);
                 tabX += w + tabGap;
+            }
+
+            if (isLeft) {
+                int innerW = getSizeWidth() - LabLayout.PANEL_INSET * 2;
+                int innerTop = LabLayout.PANEL_INSET + LabLayout.TAB_H;
+                int searchY = innerTop + LabLayout.SEARCH_GAP;
+
+                searchField = new TextFieldWidget(
+                        LabLayout.PANEL_INSET + LabLayout.LIST_INSET,
+                        searchY,
+                        LabLayout.recipeCardWidth(innerW),
+                        LabLayout.SEARCH_H,
+                        null,
+                        this::onSearchChanged);
+                searchField.setClientSideWidget();
+                searchField.setMaxStringLength(Integer.MAX_VALUE);
+                searchField.setValidator(LabRecipeIndex::normalizeUserSearch);
+                searchField.setBordered(false);
+                searchField.setBackground(borderedTexture(LabColors.SURFACE_BASE, LabColors.BORDER_BASE));
+                searchField.setTextColor(LabColors.TEXT_PRIMARY);
+                searchField.setVisible(false);
+                addWidget(searchField);
+
+                int browserY = searchY + LabLayout.SEARCH_H + LabLayout.SEARCH_LIST_GAP;
+                int browserH = getSizeHeight() - LabLayout.PANEL_INSET - browserY - LabLayout.SEARCH_GAP;
+                recipeBrowser = new LabRecipeBrowserWidget(LabLayout.PANEL_INSET, browserY, innerW, browserH);
+                recipeBrowser.setVisible(false);
+                addWidget(recipeBrowser);
             }
         }
 
@@ -139,6 +176,50 @@ public final class LabScreen {
             if (tabs[index].isTabActive()) return;
             for (LabTab tab : tabs) tab.setTabActive(false);
             tabs[index].setTabActive(true);
+            if (tabChangedListener != null) tabChangedListener.run();
+        }
+
+        public int getSelectedTabIndex() {
+            for (int i = 0; i < tabs.length; i++) {
+                if (tabs[i].isTabActive()) {
+                    return i;
+                }
+            }
+            return 0;
+        }
+
+        void setRightPanel(LabPanelWidget rightPanel) {
+            this.rightPanel = rightPanel;
+        }
+
+        void setTabChangedListener(Runnable tabChangedListener) {
+            this.tabChangedListener = tabChangedListener;
+        }
+
+        private void updateRecipeView() {
+            boolean showRecipeView = rightPanel != null && rightPanel.getSelectedTabIndex() == 0;
+            searchField.setVisible(showRecipeView);
+            recipeBrowser.setVisible(showRecipeView);
+            if (showRecipeView) {
+                recipeBrowser.setKubejsOnly(getSelectedTabIndex() == 1);
+                recipeBrowser.rebuild();
+            }
+        }
+
+        private void onSearchChanged(String value) {
+            recipeBrowser.setQuery(value);
+        }
+
+        private static IGuiTexture borderedTexture(int fillColor, int borderColor) {
+            ColorRectTexture fill = new ColorRectTexture(fillColor);
+            ColorRectTexture border = new ColorRectTexture(borderColor);
+            return (g, mx, my, x, y, w, h) -> {
+                fill.draw(g, mx, my, x, y, w, h);
+                border.draw(g, mx, my, x, y, w, 1);
+                border.draw(g, mx, my, x, y + h - 1, w, 1);
+                border.draw(g, mx, my, x, y, 1, h);
+                border.draw(g, mx, my, x + w - 1, y, 1, h);
+            };
         }
     }
 }

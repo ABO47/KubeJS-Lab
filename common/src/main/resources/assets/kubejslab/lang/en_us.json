@@ -6,5 +6,6 @@
   "item.kubejslab.lab_table": "Lab Table",
   "item.kubejslab.lab_tablet": "Lab Tablet",
   "kubejslab.gui.lab_tab_built_in": "Built In",
-  "kubejslab.gui.lab_tab_custom": "Custom"
+  "kubejslab.gui.lab_tab_custom": "Custom",
+  "kubejslab.gui.lab_tab_recipe": "Recipe"
 }
