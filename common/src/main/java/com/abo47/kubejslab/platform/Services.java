@@ -1,11 +1,12 @@
 package com.abo47.kubejslab.platform;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Objects;
 
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
+
+import com.abo47.kubejslab.network.recipe.C2SRecipeEditPacket;
+import com.abo47.kubejslab.network.recipe.S2CRecipeStatePacket;
 
 public final class Services {
     private static volatile PlatformService platform = new FallbackPlatformService();
@@ -23,26 +24,6 @@ public final class Services {
 
     private static final class FallbackPlatformService implements PlatformService {
         @Override
-        public Path configDir() {
-            return Paths.get("config");
-        }
-
-        @Override
-        public String loaderName() {
-            return "unknown";
-        }
-
-        @Override
-        public String loaderVersion() {
-            return "unknown";
-        }
-
-        @Override
-        public String modVersion(String modId) {
-            return "unknown";
-        }
-
-        @Override
         public void registerNetwork() {
         }
 
@@ -52,6 +33,14 @@ public final class Services {
 
         @Override
         public void sendOpenRequest() {
+        }
+
+        @Override
+        public void sendRecipeEdit(C2SRecipeEditPacket packet) {
+        }
+
+        @Override
+        public void sendRecipeState(ServerPlayer player, S2CRecipeStatePacket packet) {
         }
     }
 }

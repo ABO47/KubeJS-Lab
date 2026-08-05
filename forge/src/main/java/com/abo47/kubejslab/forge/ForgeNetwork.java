@@ -8,6 +8,8 @@ import com.abo47.kubejslab.KubeJSLab;
 
 import com.abo47.kubejslab.client.ui.LabClientUIFactory;
 import com.abo47.kubejslab.client.ui.LabUIFactory;
+import com.abo47.kubejslab.network.recipe.C2SRecipeEditPacket;
+import com.abo47.kubejslab.network.recipe.S2CRecipeStatePacket;
 
 import net.minecraftforge.network.NetworkDirection;
 import net.minecraftforge.network.NetworkRegistry;
@@ -50,6 +52,25 @@ public final class ForgeNetwork {
                             LabUIFactory.open(player.blockPosition(), player);
                         }
                     });
+                    ctx.get().setPacketHandled(true);
+                });
+        CHANNEL.registerMessage(2, C2SRecipeEditPacket.class,
+                C2SRecipeEditPacket::write,
+                C2SRecipeEditPacket::read,
+                (packet, ctx) -> {
+                    ctx.get().enqueueWork(() -> {
+                        ServerPlayer player = ctx.get().getSender();
+                        if (player != null) {
+                            packet.handle(player);
+                        }
+                    });
+                    ctx.get().setPacketHandled(true);
+                });
+        CHANNEL.registerMessage(3, S2CRecipeStatePacket.class,
+                S2CRecipeStatePacket::write,
+                S2CRecipeStatePacket::read,
+                (packet, ctx) -> {
+                    ctx.get().enqueueWork(packet::handleClient);
                     ctx.get().setPacketHandled(true);
                 });
     }

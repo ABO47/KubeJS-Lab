@@ -1,0 +1,46 @@
+package com.abo47.kubejslab.network.recipe;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
+
+import com.abo47.kubejslab.client.ui.recipes.LabRecipeStates;
+import com.abo47.kubejslab.client.ui.LabScreen;
+import com.abo47.kubejslab.recipe.model.LabRecipeStateEntry;
+import com.abo47.kubejslab.recipe.model.LabRecipeStatus;
+
+public record S2CRecipeStatePacket(Map<ResourceLocation, LabRecipeStateEntry> states) {
+
+    public void write(FriendlyByteBuf buf) {
+        buf.writeVarInt(states.size());
+        for (LabRecipeStateEntry entry : states.values()) {
+            buf.writeUtf(entry.id().toString());
+            buf.writeVarInt(entry.status().ordinal());
+            LabPacketCodecs.writeStack(buf, entry.output());
+            buf.writeUtf(entry.name());
+            buf.writeBoolean(entry.wasModified());
+        }
+    }
+
+    public static S2CRecipeStatePacket read(FriendlyByteBuf buf) {
+        int size = buf.readVarInt();
+        Map<ResourceLocation, LabRecipeStateEntry> states = new HashMap<>();
+        for (int i = 0; i < size; i++) {
+            ResourceLocation id = new ResourceLocation(buf.readUtf());
+            LabRecipeStatus status = LabRecipeStatus.values()[buf.readVarInt()];
+            ItemStack output = LabPacketCodecs.readStack(buf);
+            String name = buf.readUtf();
+            boolean wasModified = buf.readBoolean();
+            states.put(id, new LabRecipeStateEntry(id, status, output, name, wasModified));
+        }
+        return new S2CRecipeStatePacket(states);
+    }
+
+    public void handleClient() {
+        LabRecipeStates.apply(states);
+        LabScreen.refreshOpen();
+    }
+}

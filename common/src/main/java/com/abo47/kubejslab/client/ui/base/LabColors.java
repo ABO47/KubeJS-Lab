@@ -1,4 +1,4 @@
-package com.abo47.kubejslab.client.ui;
+package com.abo47.kubejslab.client.ui.base;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -21,6 +21,8 @@ public final class LabColors {
     public static final int TEXT_MUTED = 0xFF88979F;
     public static final int SUCCESS = 0xFF66D38D;
     public static final int INTERACTIVE = 0xFF64C3D2;
+    public static final int WARNING = 0xFFE5B44A;
+    public static final int ERROR = 0xFFE06F73;
 
     public static final int MOUSE_BUTTON_LEFT = 0;
     public static final int MOUSE_BUTTON_RIGHT = 1;

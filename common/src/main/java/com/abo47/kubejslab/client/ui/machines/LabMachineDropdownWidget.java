@@ -1,4 +1,9 @@
-package com.abo47.kubejslab.client.ui;
+package com.abo47.kubejslab.client.ui.machines;
+import com.abo47.kubejslab.client.ui.base.LabColors;
+import com.abo47.kubejslab.client.ui.base.LabGlow;
+import com.abo47.kubejslab.client.ui.base.LabGuiKeys;
+import com.abo47.kubejslab.client.ui.base.LabLayout;
+import com.abo47.kubejslab.client.ui.base.LabScrollMath;
 
 import java.util.ArrayList;
 import java.util.List;

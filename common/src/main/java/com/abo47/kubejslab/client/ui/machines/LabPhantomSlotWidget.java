@@ -1,4 +1,5 @@
-package com.abo47.kubejslab.client.ui;
+package com.abo47.kubejslab.client.ui.machines;
+import com.abo47.kubejslab.client.ui.base.LabColors;
 
 import com.lowdragmc.lowdraglib.gui.widget.PhantomSlotWidget;
 import com.lowdragmc.lowdraglib.side.item.IItemTransfer;

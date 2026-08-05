@@ -1,4 +1,4 @@
-package com.abo47.kubejslab.client.ui;
+package com.abo47.kubejslab.client.ui.base;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 

@@ -1,4 +1,4 @@
-package com.abo47.kubejslab.client.ui;
+package com.abo47.kubejslab.client.ui.base;
 
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;

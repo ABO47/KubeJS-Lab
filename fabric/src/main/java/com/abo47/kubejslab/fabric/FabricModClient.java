@@ -9,6 +9,7 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.network.FriendlyByteBuf;
 
 import com.abo47.kubejslab.client.ui.LabClientUIFactory;
+import com.abo47.kubejslab.network.recipe.S2CRecipeStatePacket;
 
 import io.netty.buffer.Unpooled;
 
@@ -27,6 +28,11 @@ public final class FabricModClient implements ClientModInitializer {
             }
             FriendlyByteBuf holder = new FriendlyByteBuf(Unpooled.wrappedBuffer(payload));
             client.execute(() -> LabClientUIFactory.openFromScreen(holder, windowId));
+        });
+
+        ClientPlayNetworking.registerGlobalReceiver(FabricNetwork.STATE_SYNC, (client, handler, buf, responseSender) -> {
+            S2CRecipeStatePacket packet = S2CRecipeStatePacket.read(buf);
+            client.execute(packet::handleClient);
         });
     }
 }

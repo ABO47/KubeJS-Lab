@@ -1,4 +1,4 @@
-package com.abo47.kubejslab.client.ui;
+package com.abo47.kubejslab.client.ui.machines;
 
 import net.minecraft.world.item.ItemStack;
 

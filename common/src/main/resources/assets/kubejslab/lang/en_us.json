@@ -11,5 +11,12 @@
   "kubejslab.gui.lab_not_supported": "not supported",
   "kubejslab.gui.lab_recipe_shapeless": "Shapeless",
   "kubejslab.gui.lab_recipe_save": "Save",
-  "kubejslab.gui.lab_recipe_clear": "Clear"
+  "kubejslab.gui.lab_recipe_clear": "Clear",
+  "kubejslab.gui.lab_recipe_modify": "Modify",
+  "kubejslab.gui.lab_recipe_disable": "Disable",
+  "kubejslab.gui.lab_recipe_reset": "Reset",
+  "kubejslab.gui.lab_recipe_delete": "Delete",
+  "kubejslab.gui.lab_recipe_enable": "Enable",
+  "kubejslab.gui.lab_mode_new": "mode: new",
+  "kubejslab.gui.lab_mode_modify": "mode: modify"
 }

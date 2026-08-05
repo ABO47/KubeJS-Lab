@@ -1,4 +1,9 @@
-package com.abo47.kubejslab.client.ui;
+package com.abo47.kubejslab.client.ui.recipes;
+import com.abo47.kubejslab.client.ui.base.LabActionButton;
+import com.abo47.kubejslab.client.ui.base.LabColors;
+import com.abo47.kubejslab.client.ui.base.LabGuiKeys;
+import com.abo47.kubejslab.client.ui.base.LabLayout;
+import com.abo47.kubejslab.client.ui.base.LabToggleSwitchWidget;
 
 import javax.annotation.Nonnull;
 
@@ -47,8 +52,8 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
         addWidget(shapelessToggle);
 
         int btnH = LabLayout.SETTINGS_BTN_H;
-        int btnW = (cardW - LabLayout.SETTINGS_BTN_GAP) / 2;
         int bottomY = h - pad - btnH;
+        int btnW = (cardW - LabLayout.SETTINGS_BTN_GAP) / 2;
 
         clearButton = new LabActionButton(cardX, bottomY, btnW, btnH,
                 Component.translatable(LabGuiKeys.LAB_RECIPE_CLEAR).getString(), () -> {

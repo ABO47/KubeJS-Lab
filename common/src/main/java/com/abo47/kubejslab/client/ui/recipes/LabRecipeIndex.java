@@ -1,4 +1,4 @@
-package com.abo47.kubejslab.client.ui;
+package com.abo47.kubejslab.client.ui.recipes;
 
 import java.util.ArrayList;
 import java.util.Comparator;

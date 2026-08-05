@@ -1,6 +1,11 @@
-package com.abo47.kubejslab.client.ui;
+package com.abo47.kubejslab.client.ui.recipes;
+import com.abo47.kubejslab.client.ui.base.LabLayout;
+import com.abo47.kubejslab.client.ui.base.LabScrollBarWidget;
+import com.abo47.kubejslab.client.ui.base.LabScrollMath;
 
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -15,15 +20,18 @@ import net.minecraft.resources.ResourceLocation;
 import com.lowdragmc.lowdraglib.gui.widget.Widget;
 import com.lowdragmc.lowdraglib.gui.widget.WidgetGroup;
 
+import com.abo47.kubejslab.recipe.model.LabRecipeStatus;
+
 public final class LabRecipeBrowserWidget extends WidgetGroup {
     private String query;
     private boolean kubejsOnly;
     private Set<ResourceLocation> machineRecipeIds;
-    private Set<ResourceLocation> newRecipeIds = Set.of();
+    private ResourceLocation selectedRecipeId;
     private int scroll;
     private int scrollMax;
     private boolean dragging;
     private Consumer<LabRecipeIndex.LabRecipeEntry> recipeClickListener;
+    private RecipeRightClick recipeRightClickListener;
     private List<LabRecipeCardWidget> cards = List.of();
 
     public LabRecipeBrowserWidget(int x, int y, int w, int h) {
@@ -33,6 +41,15 @@ public final class LabRecipeBrowserWidget extends WidgetGroup {
 
     public void setRecipeClickListener(Consumer<LabRecipeIndex.LabRecipeEntry> recipeClickListener) {
         this.recipeClickListener = recipeClickListener;
+    }
+
+    public void setRecipeRightClickListener(RecipeRightClick recipeRightClickListener) {
+        this.recipeRightClickListener = recipeRightClickListener;
+    }
+
+    public void setSelectedRecipeId(ResourceLocation selectedRecipeId) {
+        this.selectedRecipeId = selectedRecipeId;
+        rebuild();
     }
 
     public void setQuery(String query) {
@@ -51,14 +68,18 @@ public final class LabRecipeBrowserWidget extends WidgetGroup {
         scroll = 0;
     }
 
-    public void setNewRecipeIds(Set<ResourceLocation> newRecipeIds) {
-        this.newRecipeIds = newRecipeIds;
-    }
-
     public void rebuild() {
         clearAllWidgets();
         cards = new ArrayList<>();
-        List<LabRecipeIndex.LabRecipeEntry> entries = LabRecipeIndex.search(query, kubejsOnly, machineRecipeIds);
+        List<LabRecipeIndex.LabRecipeEntry> entries = new ArrayList<>(LabRecipeIndex.search(query, kubejsOnly, machineRecipeIds));
+        entries.addAll(LabRecipeStates.disabledEntries().stream()
+                .filter(e -> kubejsOnly == e.kubejs())
+                .filter(e -> query.isBlank() || e.matches(query))
+                .toList());
+        Set<ResourceLocation> seen = new HashSet<>();
+        entries.removeIf(e -> !seen.add(e.id()));
+        entries.sort(Comparator.comparing(LabRecipeIndex.LabRecipeEntry::name, String.CASE_INSENSITIVE_ORDER)
+                .thenComparing(LabRecipeIndex.LabRecipeEntry::id));
         int listW = getSizeWidth();
         int listH = getSizeHeight();
         int rowStep = LabLayout.CARD_ROW_STEP;
@@ -76,11 +97,18 @@ public final class LabRecipeBrowserWidget extends WidgetGroup {
         for (int row = 0; row < rows; row++) {
             int y = -scroll + row * rowStep;
             LabRecipeIndex.LabRecipeEntry entry = entries.get(row);
-            LabRecipeCardWidget card = new LabRecipeCardWidget(cardX, y, cardW, cardH, entry, newRecipeIds.contains(entry.id()), () -> {
-                if (recipeClickListener != null) {
-                    recipeClickListener.accept(entry);
-                }
-            });
+            LabRecipeCardWidget card = new LabRecipeCardWidget(cardX, y, cardW, cardH, entry,
+                    () -> {
+                        if (recipeClickListener != null) {
+                            recipeClickListener.accept(entry);
+                        }
+                    }, (mouseX, mouseY) -> {
+                        if (recipeRightClickListener != null) {
+                            recipeRightClickListener.onRightClick(entry, mouseX, mouseY);
+                        }
+                    });
+            card.setStatus(LabRecipeStates.statusOf(entry.id()));
+            card.setSelected(entry.id().equals(selectedRecipeId));
             cards.add(card);
             addWidget(card);
         }
@@ -145,5 +173,10 @@ public final class LabRecipeBrowserWidget extends WidgetGroup {
             repositionCards();
         }
         return true;
+    }
+
+    @FunctionalInterface
+    public interface RecipeRightClick {
+        void onRightClick(LabRecipeIndex.LabRecipeEntry entry, double mouseX, double mouseY);
     }
 }

@@ -1,4 +1,6 @@
-package com.abo47.kubejslab.client.ui;
+package com.abo47.kubejslab.client.ui.machines;
+import com.abo47.kubejslab.client.ui.base.LabColors;
+import com.abo47.kubejslab.client.ui.recipes.LabRecipeIndex;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -62,14 +64,11 @@ public final class LabMachineLayoutWidget extends WidgetGroup {
             }
         }
         for (SlotPair pair : slotPairs) {
-            if (pair.view.getRole() == RecipeIngredientRole.INPUT) {
-                int x = pair.handler.getStackInSlot(0).isEmpty() ? -1 : 0;
-                if (x == 0) {
-                    int gx = pair.gx;
-                    int gy = pair.gy;
-                    if (gx >= 0 && gx < 3 && gy >= 0 && gy < 3) {
-                        grid[gy][gx] = pair.handler.getStackInSlot(0);
-                    }
+            if (pair.view.getRole() == RecipeIngredientRole.INPUT && !pair.handler.getStackInSlot(0).isEmpty()) {
+                int gx = pair.gx;
+                int gy = pair.gy;
+                if (gx >= 0 && gx < 3 && gy >= 0 && gy < 3) {
+                    grid[gy][gx] = pair.handler.getStackInSlot(0);
                 }
             }
         }

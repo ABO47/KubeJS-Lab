@@ -1,4 +1,4 @@
-package com.abo47.kubejslab.client.ui;
+package com.abo47.kubejslab.client.ui.base;
 
 public final class LabLayout {
     private LabLayout() {
@@ -43,6 +43,7 @@ public final class LabLayout {
     public static final int MACHINE_GAP = 2;
     public static final int MACHINE_PAD = 5;
     public static final int MACHINE_W = INV_W;
+    public static final int MODE_LABEL_H = 9;
 
     public static final int SETTINGS_PAD = MACHINE_PAD;
     public static final int SETTINGS_BTN_H = 18;
