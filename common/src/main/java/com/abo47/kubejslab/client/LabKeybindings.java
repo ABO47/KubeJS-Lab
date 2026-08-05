@@ -7,7 +7,7 @@ import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.KeyMapping;
 
 import com.abo47.kubejslab.KubeJSLab;
-import com.abo47.kubejslab.client.ui.LabScreen;
+import com.abo47.kubejslab.network.ModNetwork;
 
 public final class LabKeybindings {
     private static final String CATEGORY = "key.categories." + KubeJSLab.MOD_ID;
@@ -31,7 +31,7 @@ public final class LabKeybindings {
             return;
         }
         if (OPEN_UI.consumeClick()) {
-            LabScreen.open();
+            ModNetwork.requestOpenScreen();
         }
     }
 }

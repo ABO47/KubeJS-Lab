@@ -1,4 +1,4 @@
-package com.abo47.kubejslab.client.ui;
+package com.abo47.kubejslab.client.ui.base;
 
 public final class LabLayout {
     private LabLayout() {
@@ -36,11 +36,33 @@ public final class LabLayout {
     public static final int SCROLLBAR_W = 6;
     public static final int KNOB_MIN_H = 18;
 
+    public static final int INV_H = 86;
+    public static final int INV_W = 172;
+    public static final int INV_EDGE = 4;
+
+    public static final int MACHINE_GAP = 2;
+    public static final int MACHINE_PAD = 5;
+    public static final int MACHINE_W = INV_W;
+    public static final int MODE_LABEL_H = 9;
+
+    public static final int SETTINGS_PAD = MACHINE_PAD;
+    public static final int SETTINGS_BTN_H = 18;
+    public static final int SETTINGS_BTN_GAP = 4;
+
+    public static final int AREA_GAP = 4;
+
+    public static final int DROPDOWN_MAX_ROWS = 5;
+    public static final int DROPDOWN_ROW_H = 17;
+
     public static int recipeTrackX(int listW) {
         return listW - SCROLLBAR_W - 2;
     }
 
     public static int recipeCardWidth(int listW) {
         return Math.max(96, recipeTrackX(listW) - LIST_INSET - 3);
+    }
+
+    public static int inventoryY(int panelHeight) {
+        return panelHeight - PANEL_INSET - INV_EDGE - INV_H;
     }
 }

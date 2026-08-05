@@ -9,7 +9,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 
-import com.abo47.kubejslab.network.ModNetwork;
+import com.abo47.kubejslab.client.ui.LabUIFactory;
 
 public final class LabTabletItem extends Item {
     public LabTabletItem(Properties properties) {
@@ -19,7 +19,7 @@ public final class LabTabletItem extends Item {
     @Override
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         if (!level.isClientSide) {
-            ModNetwork.sendOpenScreen((net.minecraft.server.level.ServerPlayer) player);
+            LabUIFactory.open(player.blockPosition(), (net.minecraft.server.level.ServerPlayer) player);
         }
         return InteractionResultHolder.sidedSuccess(player.getItemInHand(hand), level.isClientSide);
     }
@@ -28,7 +28,7 @@ public final class LabTabletItem extends Item {
     public InteractionResult useOn(UseOnContext context) {
         Player player = context.getPlayer();
         if (player != null && !context.getLevel().isClientSide) {
-            ModNetwork.sendOpenScreen((net.minecraft.server.level.ServerPlayer) player);
+            LabUIFactory.open(player.blockPosition(), (net.minecraft.server.level.ServerPlayer) player);
         }
         return InteractionResult.sidedSuccess(context.getLevel().isClientSide);
     }

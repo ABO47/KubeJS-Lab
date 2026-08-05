@@ -9,7 +9,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 
-import com.abo47.kubejslab.network.ModNetwork;
+import com.abo47.kubejslab.client.ui.LabUIFactory;
 
 public final class LabTable extends Block {
     public LabTable(Properties properties) {
@@ -19,7 +19,7 @@ public final class LabTable extends Block {
     @Override
     public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hitResult) {
         if (!level.isClientSide) {
-            ModNetwork.sendOpenScreen((net.minecraft.server.level.ServerPlayer) player);
+            LabUIFactory.open(pos, (net.minecraft.server.level.ServerPlayer) player);
         }
         return InteractionResult.sidedSuccess(level.isClientSide);
     }

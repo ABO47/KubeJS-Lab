@@ -7,7 +7,7 @@ import net.minecraft.commands.Commands;
 import net.minecraft.server.level.ServerPlayer;
 
 import com.abo47.kubejslab.KubeJSLab;
-import com.abo47.kubejslab.network.ModNetwork;
+import com.abo47.kubejslab.client.ui.LabUIFactory;
 
 public final class LabCommand {
     private LabCommand() {
@@ -22,7 +22,7 @@ public final class LabCommand {
                 .requires(source -> source.hasPermission(0))
                 .executes(context -> {
                     ServerPlayer player = context.getSource().getPlayerOrException();
-                    ModNetwork.sendOpenScreen(player);
+                    LabUIFactory.open(player.blockPosition(), player);
                     return 1;
                 });
     }

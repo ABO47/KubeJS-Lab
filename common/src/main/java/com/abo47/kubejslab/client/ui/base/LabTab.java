@@ -1,4 +1,4 @@
-package com.abo47.kubejslab.client.ui;
+package com.abo47.kubejslab.client.ui.base;
 
 import javax.annotation.Nonnull;
 
@@ -47,6 +47,10 @@ public final class LabTab extends Widget {
         BORDER_TEX.draw(g, mx, my, x, y, w, 1);
         BORDER_TEX.draw(g, mx, my, x, y, 1, h);
         BORDER_TEX.draw(g, mx, my, x + w - 1, y, 1, h);
+
+        if (!active && isMouseOverElement(mx, my)) {
+            LabGlow.drawGlow(g, mx, my, x, y, w, h);
+        }
 
         if (!label.isEmpty()) {
             labelTex.setColor(active ? LabColors.TEXT_PRIMARY : LabColors.TEXT_MUTED);

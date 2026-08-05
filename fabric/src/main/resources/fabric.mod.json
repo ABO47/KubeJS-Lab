@@ -19,6 +19,9 @@
     ],
     "client": [
       "com.abo47.kubejslab.fabric.FabricModClient"
+    ],
+    "jei_mod_plugin": [
+      "com.abo47.kubejslab.client.jei.LabJeiPlugin"
     ]
   },
   "depends": {
@@ -28,6 +31,7 @@
     "ldlib": ">=${ldlib_version}",
     "kubejs": ">=${kubejs_version}",
     "architectury": ">=${architectury_version}",
-    "rhino": ">=${rhino_version}"
+    "rhino": ">=${rhino_version}",
+    "jei": ">=${jei_version_min}"
   }
 }

@@ -52,5 +52,12 @@ versionRange="[${rhino_version},)"
 ordering="AFTER"
 side="BOTH"
 
+[[dependencies.${mod_id}]]
+modId="jei"
+mandatory=true
+versionRange="${jei_version_range}"
+ordering="NONE"
+side="BOTH"
+
 [[mixins]]
 config="kubejslab.forge.mixins.json"

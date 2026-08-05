@@ -1,19 +1,19 @@
 package com.abo47.kubejslab.platform;
 
-import java.nio.file.Path;
-
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 
+import com.abo47.kubejslab.network.recipe.C2SRecipeEditPacket;
+import com.abo47.kubejslab.network.recipe.S2CRecipeStatePacket;
+
 public interface PlatformService {
-    Path configDir();
-
-    String loaderName();
-
-    String loaderVersion();
-
-    String modVersion(String modId);
-
     void registerNetwork();
 
-    void sendOpenScreen(ServerPlayer player);
+    void sendOpenScreen(ServerPlayer player, FriendlyByteBuf serializedHolder, int windowId);
+
+    void sendOpenRequest();
+
+    void sendRecipeEdit(C2SRecipeEditPacket packet);
+
+    void sendRecipeState(ServerPlayer player, S2CRecipeStatePacket packet);
 }

@@ -1,9 +1,10 @@
-package com.abo47.kubejslab.client.ui;
+package com.abo47.kubejslab.client.ui.recipes;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientPacketListener;
@@ -15,17 +16,27 @@ import net.minecraft.world.item.crafting.RecipeManager;
 
 public final class LabRecipeIndex {
     private static RecipeManager cachedManager;
+    private static int cachedCount = -1;
     private static List<LabRecipeEntry> entries = List.of();
+    private static long version;
 
     private LabRecipeIndex() {
     }
 
-    public static List<LabRecipeEntry> search(String query, boolean kubejsOnly) {
+    public static long version() {
+        entries();
+        return version;
+    }
+
+    public static List<LabRecipeEntry> search(String query, boolean kubejsOnly, Set<ResourceLocation> machineRecipeIds) {
         List<LabRecipeEntry> source = entries();
         String normalizedQuery = normalize(query);
         List<LabRecipeEntry> matches = new ArrayList<>();
         for (LabRecipeEntry entry : source) {
             if (entry.kubejs() != kubejsOnly) {
+                continue;
+            }
+            if (machineRecipeIds != null && !machineRecipeIds.contains(entry.id())) {
                 continue;
             }
             if (normalizedQuery.isBlank() || entry.matches(normalizedQuery)) {
@@ -46,17 +57,25 @@ public final class LabRecipeIndex {
         return normalized;
     }
 
+    public static Recipe<?> recipeById(ResourceLocation id) {
+        entries();
+        return cachedManager == null ? null : cachedManager.byKey(id).orElse(null);
+    }
+
     private static List<LabRecipeEntry> entries() {
         ClientPacketListener connection = Minecraft.getInstance().getConnection();
         RecipeManager manager = connection == null ? null : connection.getRecipeManager();
         if (manager == null) {
             cachedManager = null;
+            cachedCount = -1;
             entries = List.of();
             return entries;
         }
-        if (manager != cachedManager) {
+        if (manager != cachedManager || manager.getRecipes().size() != cachedCount) {
             cachedManager = manager;
+            cachedCount = manager.getRecipes().size();
             entries = build(manager, connection.registryAccess());
+            version++;
         }
         return entries;
     }
@@ -103,6 +122,8 @@ public final class LabRecipeIndex {
             String normalizedId,
             String normalizedName
     ) {
+        private static final String KUBEJS_NAMESPACE = "kubejs";
+
         static LabRecipeEntry of(ResourceLocation id, ItemStack output, String name) {
             ItemStack copy = output.copy();
             copy.setCount(1);
@@ -110,7 +131,7 @@ public final class LabRecipeIndex {
                     id,
                     copy,
                     name,
-                    "kubejs".equals(id.getNamespace()),
+                    KUBEJS_NAMESPACE.equals(id.getNamespace()),
                     normalize(id.toString()),
                     normalize(name)
             );

@@ -1,4 +1,5 @@
 package com.abo47.kubejslab.client.ui;
+import com.abo47.kubejslab.client.ui.base.LabScrollMath;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

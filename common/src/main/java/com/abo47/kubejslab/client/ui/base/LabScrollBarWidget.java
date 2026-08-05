@@ -1,4 +1,4 @@
-package com.abo47.kubejslab.client.ui;
+package com.abo47.kubejslab.client.ui.base;
 
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
@@ -13,8 +13,7 @@ import com.lowdragmc.lowdraglib.gui.texture.ColorRectTexture;
 import com.lowdragmc.lowdraglib.gui.widget.Widget;
 
 public final class LabScrollBarWidget extends Widget {
-    public static final int WIDTH = LabLayout.SCROLLBAR_W;
-    public static final int RESERVED_WIDTH = WIDTH;
+    public static final int RESERVED_WIDTH = LabLayout.SCROLLBAR_W;
     private static final int RAIL_WIDTH = 2;
     private static final int MIN_KNOB_HEIGHT = LabLayout.KNOB_MIN_H;
     private static final ColorRectTexture RAIL_TEX = new ColorRectTexture(
