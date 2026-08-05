@@ -1,5 +1,8 @@
 package com.abo47.kubejslab.network.recipe;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import javax.annotation.Nullable;
 
 import net.minecraft.network.FriendlyByteBuf;
@@ -7,7 +10,9 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 
+import com.abo47.kubejslab.network.recipe.LabPacketCodecs;
 import com.abo47.kubejslab.recipe.model.LabRecipeEditAction;
+import com.abo47.kubejslab.recipe.model.LabRecipeFieldValues;
 import com.abo47.kubejslab.recipe.model.LabRecipePayload;
 import com.abo47.kubejslab.recipe.runtime.LabRecipeService;
 
@@ -20,30 +25,41 @@ public record C2SRecipeEditPacket(LabRecipeEditAction action, @Nullable Resource
         if (targetId != null) {
             buf.writeUtf(targetId.toString());
         }
-        buf.writeBoolean(payload.shapeless());
-        buf.writeBoolean(payload.hasGrid());
-        if (payload.hasGrid()) {
-            for (ItemStack stack : payload.grid()) {
-                LabPacketCodecs.writeStack(buf, stack);
-            }
+        buf.writeBoolean(payload.machineUid() != null);
+        if (payload.machineUid() != null) {
+            buf.writeUtf(payload.machineUid().toString());
+        }
+        buf.writeVarInt(payload.inputs().size());
+        for (ItemStack stack : payload.inputs()) {
+            LabPacketCodecs.writeStack(buf, stack);
         }
         LabPacketCodecs.writeStack(buf, payload.output());
         buf.writeUtf(payload.name() == null ? "" : payload.name());
+        LabRecipeFieldValues values = payload.values();
+        buf.writeBoolean(values.shapeless());
+        buf.writeFloat(values.experience());
+        buf.writeVarInt(values.cookingTime());
+        buf.writeVarInt(values.count());
     }
 
     public static C2SRecipeEditPacket read(FriendlyByteBuf buf) {
         LabRecipeEditAction action = LabRecipeEditAction.values()[buf.readVarInt()];
         ResourceLocation targetId = buf.readBoolean() ? new ResourceLocation(buf.readUtf()) : null;
-        boolean shapeless = buf.readBoolean();
-        ItemStack[] grid = buf.readBoolean() ? new ItemStack[9] : null;
-        if (grid != null) {
-            for (int i = 0; i < grid.length; i++) {
-                grid[i] = LabPacketCodecs.readStack(buf);
-            }
+        ResourceLocation machineUid = buf.readBoolean() ? new ResourceLocation(buf.readUtf()) : null;
+        int inputCount = Math.min(buf.readVarInt(), 9);
+        List<ItemStack> inputs = new ArrayList<>(inputCount);
+        for (int i = 0; i < inputCount; i++) {
+            inputs.add(LabPacketCodecs.readStack(buf));
         }
         ItemStack output = LabPacketCodecs.readStack(buf);
         String name = buf.readUtf();
-        return new C2SRecipeEditPacket(action, targetId, new LabRecipePayload(shapeless, grid, output, name));
+        boolean shapeless = buf.readBoolean();
+        float experience = buf.readFloat();
+        int cookingTime = Math.min(buf.readVarInt(), 200000);
+        int count = Math.min(buf.readVarInt(), 64);
+        return new C2SRecipeEditPacket(action, targetId,
+                new LabRecipePayload(machineUid, inputs, output, name,
+                        new LabRecipeFieldValues(shapeless, experience, cookingTime, count)));
     }
 
     public void handle(ServerPlayer player) {

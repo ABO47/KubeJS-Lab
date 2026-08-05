@@ -22,6 +22,10 @@ public record S2CRecipeStatePacket(Map<ResourceLocation, LabRecipeStateEntry> st
             LabPacketCodecs.writeStack(buf, entry.output());
             buf.writeUtf(entry.name());
             buf.writeBoolean(entry.wasModified());
+            buf.writeBoolean(entry.machineUid() != null);
+            if (entry.machineUid() != null) {
+                buf.writeUtf(entry.machineUid().toString());
+            }
         }
     }
 
@@ -34,7 +38,8 @@ public record S2CRecipeStatePacket(Map<ResourceLocation, LabRecipeStateEntry> st
             ItemStack output = LabPacketCodecs.readStack(buf);
             String name = buf.readUtf();
             boolean wasModified = buf.readBoolean();
-            states.put(id, new LabRecipeStateEntry(id, status, output, name, wasModified));
+            ResourceLocation machineUid = buf.readBoolean() ? new ResourceLocation(buf.readUtf()) : null;
+            states.put(id, new LabRecipeStateEntry(id, status, output, name, wasModified, machineUid));
         }
         return new S2CRecipeStatePacket(states);
     }

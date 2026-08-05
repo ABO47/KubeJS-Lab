@@ -15,6 +15,7 @@ import javax.annotation.Nonnull;
 
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.resources.language.I18n;
+import net.minecraft.resources.ResourceLocation;
 
 import com.lowdragmc.lowdraglib.gui.texture.ColorRectTexture;
 import com.lowdragmc.lowdraglib.gui.texture.IGuiTexture;
@@ -81,17 +82,46 @@ public final class LabMachineDropdownWidget extends WidgetGroup {
         }
     }
 
+    public void selectMachineByUid(ResourceLocation uid) {
+        if (uid == null) {
+            return;
+        }
+        ensureMachines();
+        for (LabMachine machine : machines) {
+            if (machine.recipeTypeUid().equals(uid)) {
+                select(machine);
+                return;
+            }
+        }
+    }
+
     private void ensureMachines() {
-        List<LabMachine> current = LabMachineCatalog.machines();
+        List<LabMachine> current = new ArrayList<>();
+        for (LabMachine machine : LabMachineCatalog.machines()) {
+            if (machine.supported()) {
+                current.add(machine);
+            }
+        }
         if (current.isEmpty()) {
             return;
         }
         if (!current.equals(machines)) {
+            ResourceLocation selectedUid = selected == null ? null : selected.recipeTypeUid();
             machines = current;
             scroll = 0;
-        }
-        if (selected == null || !machines.contains(selected)) {
-            selected = machines.get(0);
+            selectedDisplayTex = null;
+            selected = null;
+            if (selectedUid != null) {
+                for (LabMachine machine : machines) {
+                    if (machine.recipeTypeUid().equals(selectedUid)) {
+                        selected = machine;
+                        break;
+                    }
+                }
+            }
+            if (selected == null) {
+                selected = machines.get(0);
+            }
         }
     }
 

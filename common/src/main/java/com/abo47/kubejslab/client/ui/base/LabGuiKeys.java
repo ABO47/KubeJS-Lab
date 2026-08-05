@@ -15,6 +15,11 @@ public final class LabGuiKeys {
     public static final String LAB_RECIPE_ENABLE = "kubejslab.gui.lab_recipe_enable";
     public static final String LAB_MODE_NEW = "kubejslab.gui.lab_mode_new";
     public static final String LAB_MODE_MODIFY = "kubejslab.gui.lab_mode_modify";
+    public static final String LAB_RECIPE_EXPERIENCE = "kubejslab.gui.lab_recipe_experience";
+    public static final String LAB_RECIPE_COOKING_TIME = "kubejslab.gui.lab_recipe_cooking_time";
+    public static final String LAB_RECIPE_COUNT = "kubejslab.gui.lab_recipe_count";
+    public static final String LAB_RECIPE_UNIT_TICKS = "kubejslab.gui.lab_recipe_unit_ticks";
+    public static final String LAB_RECIPE_UNIT_XP = "kubejslab.gui.lab_recipe_unit_xp";
 
     private LabGuiKeys() {
     }

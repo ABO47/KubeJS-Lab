@@ -26,6 +26,7 @@ public final class LabRecipeBrowserWidget extends WidgetGroup {
     private String query;
     private boolean kubejsOnly;
     private Set<ResourceLocation> machineRecipeIds;
+    private ResourceLocation machineUid;
     private ResourceLocation selectedRecipeId;
     private int scroll;
     private int scrollMax;
@@ -68,11 +69,16 @@ public final class LabRecipeBrowserWidget extends WidgetGroup {
         scroll = 0;
     }
 
+    public void setMachineUid(ResourceLocation machineUid) {
+        this.machineUid = machineUid;
+        scroll = 0;
+    }
+
     public void rebuild() {
         clearAllWidgets();
         cards = new ArrayList<>();
         List<LabRecipeIndex.LabRecipeEntry> entries = new ArrayList<>(LabRecipeIndex.search(query, kubejsOnly, machineRecipeIds));
-        entries.addAll(LabRecipeStates.disabledEntries().stream()
+        entries.addAll(LabRecipeStates.disabledEntries(machineUid).stream()
                 .filter(e -> kubejsOnly == e.kubejs())
                 .filter(e -> query.isBlank() || e.matches(query))
                 .toList());

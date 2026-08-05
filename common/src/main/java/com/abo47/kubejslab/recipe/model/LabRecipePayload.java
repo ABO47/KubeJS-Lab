@@ -1,18 +1,18 @@
 package com.abo47.kubejslab.recipe.model;
 
+import java.util.List;
+
 import javax.annotation.Nullable;
 
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 
-public record LabRecipePayload(boolean shapeless, @Nullable ItemStack[] grid, ItemStack output, String name) {
+public record LabRecipePayload(@Nullable ResourceLocation machineUid, List<ItemStack> inputs, ItemStack output,
+        String name, LabRecipeFieldValues values) {
 
     public LabRecipePayload {
-        if (grid != null && grid.length != 9) {
-            throw new IllegalArgumentException("grid must be 9 cells");
+        if (inputs == null) {
+            throw new IllegalArgumentException("inputs must not be null");
         }
-    }
-
-    public boolean hasGrid() {
-        return grid != null;
     }
 }

@@ -1,30 +1,57 @@
 package com.abo47.kubejslab.client.ui.recipes;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+
+import javax.annotation.Nonnull;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
+
 import com.abo47.kubejslab.client.ui.base.LabActionButton;
 import com.abo47.kubejslab.client.ui.base.LabColors;
 import com.abo47.kubejslab.client.ui.base.LabGuiKeys;
 import com.abo47.kubejslab.client.ui.base.LabLayout;
 import com.abo47.kubejslab.client.ui.base.LabToggleSwitchWidget;
-
-import javax.annotation.Nonnull;
-
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.network.chat.Component;
-
+import com.abo47.kubejslab.recipe.model.LabRecipeField;
+import com.abo47.kubejslab.recipe.model.LabRecipeFieldValues;
 import com.lowdragmc.lowdraglib.gui.texture.IGuiTexture;
 import com.lowdragmc.lowdraglib.gui.texture.TextTexture;
+import com.lowdragmc.lowdraglib.gui.widget.TextFieldWidget;
+import com.lowdragmc.lowdraglib.gui.widget.Widget;
 import com.lowdragmc.lowdraglib.gui.widget.WidgetGroup;
+import com.lowdragmc.lowdraglib.utils.Position;
 
 public final class LabRecipeSettingsWidget extends WidgetGroup {
     private static final IGuiTexture CARD_TEXTURE =
             LabColors.bordered(LabColors.SURFACE_PANEL_ALT, LabColors.BORDER_BASE);
+    private static final int ROW_STRIDE = LabLayout.CARD_H + 4;
+    private static final int FIELD_W = 44;
+    private static final int FIELD_H = 15;
 
-    private final TextTexture shapelessLabel;
     private final LabToggleSwitchWidget shapelessToggle;
+    private final TextFieldWidget experienceField;
+    private final TextFieldWidget cookingTimeField;
+    private final TextFieldWidget countField;
+    private final TextTexture shapelessLabel;
+    private final TextTexture experienceLabel;
+    private final TextTexture cookingTimeLabel;
+    private final TextTexture countLabel;
+    private final UnitLabel experienceUnit;
+    private final UnitLabel cookingTimeUnit;
     private final LabActionButton clearButton;
     private final LabActionButton saveButton;
 
     private boolean shapeless;
-    private boolean shapelessSupported = true;
+    private String experienceText = formatFloat(LabRecipeFieldValues.defaults().experience());
+    private String cookingTimeText = Integer.toString(LabRecipeFieldValues.defaults().cookingTime());
+    private String countText = Integer.toString(LabRecipeFieldValues.defaults().count());
+    private List<LabRecipeField> fields = List.of();
+    private List<FieldRow> rows = List.of();
+    private boolean unitsMeasured;
     private Runnable onClear;
     private Runnable onSave;
 
@@ -33,23 +60,35 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
 
         int pad = LabLayout.SETTINGS_PAD;
         int cardX = pad;
-        int cardY = 0;
         int cardW = w - pad * 2;
-        int toggleW = LabToggleSwitchWidget.DEFAULT_WIDTH;
-        int toggleX = cardX + cardW - pad - toggleW;
-        int toggleY = (LabLayout.CARD_H - LabToggleSwitchWidget.DEFAULT_HEIGHT) / 2;
+        int labelW = cardW - pad * 2 - FIELD_W - 4;
 
-        shapelessLabel = new TextTexture(Component.translatable(LabGuiKeys.LAB_RECIPE_SHAPELESS).getString(),
-                LabColors.TEXT_PRIMARY)
-                .setWidth(cardW - pad * 2 - toggleW - 4)
-                .setType(TextTexture.TextType.LEFT_HIDE);
+        shapelessLabel = rowLabel(LabGuiKeys.LAB_RECIPE_SHAPELESS, labelW);
+        experienceLabel = rowLabel(LabGuiKeys.LAB_RECIPE_EXPERIENCE, labelW);
+        cookingTimeLabel = rowLabel(LabGuiKeys.LAB_RECIPE_COOKING_TIME, labelW);
+        countLabel = rowLabel(LabGuiKeys.LAB_RECIPE_COUNT, labelW);
+
+        experienceUnit = new UnitLabel(LabGuiKeys.LAB_RECIPE_UNIT_XP);
+        cookingTimeUnit = new UnitLabel(LabGuiKeys.LAB_RECIPE_UNIT_TICKS);
 
         shapelessToggle = new LabToggleSwitchWidget(
-                toggleX, toggleY,
+                0, 0,
                 () -> shapeless,
                 value -> shapeless = value,
                 null);
         addWidget(shapelessToggle);
+
+        experienceField = numberField(0, 0, FIELD_W, () -> experienceText,
+                value -> experienceText = value, experienceText, 0f, 100f);
+        addWidget(experienceField);
+
+        cookingTimeField = numberField(0, 0, FIELD_W, () -> cookingTimeText,
+                value -> cookingTimeText = value, cookingTimeText, 0, Integer.MAX_VALUE);
+        addWidget(cookingTimeField);
+
+        countField = numberField(0, 0, FIELD_W, () -> countText,
+                value -> countText = value, countText, 1, 64);
+        addWidget(countField);
 
         int btnH = LabLayout.SETTINGS_BTN_H;
         int bottomY = h - pad - btnH;
@@ -72,12 +111,35 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
         return shapeless;
     }
 
-    public void setShapelessSupported(boolean shapelessSupported) {
-        this.shapelessSupported = shapelessSupported;
-        if (!shapelessSupported) {
+    public void setFields(List<LabRecipeField> fields) {
+        this.fields = fields;
+        if (!fields.contains(LabRecipeField.SHAPELESS)) {
             shapeless = false;
         }
-        shapelessToggle.setVisible(shapelessSupported);
+        shapelessToggle.setVisible(fields.contains(LabRecipeField.SHAPELESS));
+        experienceField.setVisible(fields.contains(LabRecipeField.EXPERIENCE));
+        cookingTimeField.setVisible(fields.contains(LabRecipeField.COOKING_TIME));
+        countField.setVisible(fields.contains(LabRecipeField.COUNT));
+        rebuildRows();
+    }
+
+    public LabRecipeFieldValues getValues() {
+        LabRecipeFieldValues defaults = LabRecipeFieldValues.defaults();
+        return new LabRecipeFieldValues(
+                shapeless,
+                parseFloat(experienceText, defaults.experience()),
+                parseInt(cookingTimeText, defaults.cookingTime()),
+                parseInt(countText, defaults.count()));
+    }
+
+    public void applyValues(LabRecipeFieldValues values) {
+        shapeless = values.shapeless();
+        experienceText = formatFloat(values.experience());
+        cookingTimeText = Integer.toString(values.cookingTime());
+        countText = Integer.toString(values.count());
+        experienceField.setCurrentString(experienceText);
+        cookingTimeField.setCurrentString(cookingTimeText);
+        countField.setCurrentString(countText);
     }
 
     public void setOnClear(Runnable onClear) {
@@ -90,17 +152,149 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
 
     @Override
     public void drawInBackground(@Nonnull GuiGraphics g, int mx, int my, float pt) {
+        ensureUnitWidths();
         int x = getPositionX();
         int y = getPositionY();
         int w = getSizeWidth();
         int pad = LabLayout.SETTINGS_PAD;
         int cardX = x + pad;
-        int cardY = y;
         int cardW = w - pad * 2;
-        if (shapelessSupported) {
-            CARD_TEXTURE.draw(g, mx, my, cardX, cardY, cardW, LabLayout.CARD_H);
-            shapelessLabel.draw(g, mx, my, cardX + pad, cardY, cardW - pad * 2 - LabToggleSwitchWidget.DEFAULT_WIDTH - 4, LabLayout.CARD_H);
+        for (int i = 0; i < rows.size(); i++) {
+            FieldRow row = rows.get(i);
+            drawCard(g, mx, my, cardX, y, cardW, i, row.label, row.unit);
         }
         super.drawInBackground(g, mx, my, pt);
+    }
+
+    private void rebuildRows() {
+        List<FieldRow> built = new ArrayList<>(fields.size());
+        for (LabRecipeField field : fields) {
+            switch (field) {
+                case SHAPELESS -> built.add(new FieldRow(shapelessLabel, null, shapelessToggle));
+                case EXPERIENCE -> built.add(new FieldRow(experienceLabel, experienceUnit, experienceField));
+                case COOKING_TIME -> built.add(new FieldRow(cookingTimeLabel, cookingTimeUnit, cookingTimeField));
+                case COUNT -> built.add(new FieldRow(countLabel, null, countField));
+            }
+        }
+        rows = built;
+        relayoutFields();
+    }
+
+    private void relayoutFields() {
+        int pad = LabLayout.SETTINGS_PAD;
+        int cardX = pad;
+        int cardW = getSizeWidth() - pad * 2;
+        for (int i = 0; i < rows.size(); i++) {
+            FieldRow row = rows.get(i);
+            int rowY = rowY(i);
+            row.control.setSelfPosition(new Position(controlX(cardX, cardW, pad, row),
+                    rowY + (LabLayout.CARD_H - row.control.getSizeHeight()) / 2));
+        }
+    }
+
+    private void ensureUnitWidths() {
+        if (unitsMeasured) {
+            return;
+        }
+        unitsMeasured = true;
+        experienceUnit.width = Minecraft.getInstance().font.width(experienceUnit.text);
+        cookingTimeUnit.width = Minecraft.getInstance().font.width(cookingTimeUnit.text);
+        relayoutFields();
+    }
+
+    private int controlX(int cardX, int cardW, int pad, FieldRow row) {
+        return row.control == shapelessToggle
+                ? cardX + cardW - pad - LabToggleSwitchWidget.DEFAULT_WIDTH
+                : fieldXFor(cardX, cardW, pad, row.unit);
+    }
+
+    private int fieldXFor(int cardX, int cardW, int pad, UnitLabel unit) {
+        return cardX + cardW - pad - FIELD_W - 4 - (unit == null ? 0 : unit.width);
+    }
+
+    private void drawCard(GuiGraphics g, int mx, int my, int cardX, int panelY, int cardW,
+            int row, TextTexture label, UnitLabel unit) {
+        int cardY = panelY + rowY(row);
+        CARD_TEXTURE.draw(g, mx, my, cardX, cardY, cardW, LabLayout.CARD_H);
+        int pad = LabLayout.SETTINGS_PAD;
+        int unitW = unit == null ? 0 : unit.width;
+        int labelW = cardW - pad * 2 - FIELD_W - 4 - (unitW > 0 ? unitW + 4 : 0);
+        if (unitW > 0) {
+            unit.tex.setWidth(unitW);
+            unit.tex.draw(g, mx, my, cardX + cardW - pad - unitW, cardY, unitW, LabLayout.CARD_H);
+        }
+        label.draw(g, mx, my, cardX + pad, cardY, labelW, LabLayout.CARD_H);
+    }
+
+    private static int rowY(int row) {
+        return row * ROW_STRIDE;
+    }
+
+    private static TextTexture rowLabel(String key, int width) {
+        return new TextTexture(Component.translatable(key).getString(), LabColors.TEXT_PRIMARY)
+                .setWidth(width)
+                .setType(TextTexture.TextType.LEFT_HIDE);
+    }
+
+    private static TextFieldWidget numberField(int x, int y, int w, Supplier<String> supplier,
+            Consumer<String> responder, String initial, long min, long max) {
+        TextFieldWidget field = new TextFieldWidget(x, y, w, FIELD_H, supplier, responder);
+        field.setNumbersOnly(min, max);
+        configureField(field, initial);
+        return field;
+    }
+
+    private static TextFieldWidget numberField(int x, int y, int w, Supplier<String> supplier,
+            Consumer<String> responder, String initial, float min, float max) {
+        TextFieldWidget field = new TextFieldWidget(x, y, w, FIELD_H, supplier, responder);
+        field.setNumbersOnly(min, max);
+        configureField(field, initial);
+        return field;
+    }
+
+    private static void configureField(TextFieldWidget field, String initial) {
+        field.setClientSideWidget();
+        field.setMaxStringLength(4);
+        field.setBordered(false);
+        field.setBackground(LabColors.bordered(LabColors.SURFACE_BASE, LabColors.BORDER_BASE));
+        field.setTextColor(LabColors.TEXT_PRIMARY);
+        field.setCurrentString(initial);
+    }
+
+    private static float parseFloat(String text, float fallback) {
+        try {
+            return Float.parseFloat(text);
+        } catch (NumberFormatException ignored) {
+            return fallback;
+        }
+    }
+
+    private static int parseInt(String text, int fallback) {
+        try {
+            return Integer.parseInt(text);
+        } catch (NumberFormatException ignored) {
+            return fallback;
+        }
+    }
+
+    private static String formatFloat(float value) {
+        if (value == (int) value) {
+            return Integer.toString((int) value);
+        }
+        return Float.toString(value);
+    }
+
+    private static final class UnitLabel {
+        final TextTexture tex;
+        final String text;
+        int width;
+
+        UnitLabel(String key) {
+            text = Component.translatable(key).getString();
+            tex = new TextTexture(text, LabColors.TEXT_MUTED);
+        }
+    }
+
+    private record FieldRow(TextTexture label, UnitLabel unit, Widget control) {
     }
 }

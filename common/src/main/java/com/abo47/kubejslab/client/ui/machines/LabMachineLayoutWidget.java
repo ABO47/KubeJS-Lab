@@ -24,6 +24,9 @@ import mezz.jei.api.recipe.category.IRecipeCategory;
 import mezz.jei.api.runtime.IJeiRuntime;
 
 import com.abo47.kubejslab.client.jei.LabJeiPlugin;
+import com.abo47.kubejslab.recipe.LabRecipeMachine;
+import com.abo47.kubejslab.recipe.LabRecipeMachines;
+
 import com.lowdragmc.lowdraglib.gui.texture.IGuiTexture;
 import com.lowdragmc.lowdraglib.gui.widget.PhantomSlotWidget;
 import com.lowdragmc.lowdraglib.gui.widget.WidgetGroup;
@@ -56,23 +59,37 @@ public final class LabMachineLayoutWidget extends WidgetGroup {
         rebuild();
     }
 
-    public ItemStack[][] getGrid() {
-        ItemStack[][] grid = new ItemStack[3][3];
-        for (int r = 0; r < 3; r++) {
-            for (int c = 0; c < 3; c++) {
-                grid[r][c] = ItemStack.EMPTY;
-            }
-        }
+    public List<ItemStack> getInputs() {
+        List<SlotPair> inputs = new ArrayList<>();
         for (SlotPair pair : slotPairs) {
             if (pair.view.getRole() == RecipeIngredientRole.INPUT && !pair.handler.getStackInSlot(0).isEmpty()) {
-                int gx = pair.gx;
-                int gy = pair.gy;
-                if (gx >= 0 && gx < 3 && gy >= 0 && gy < 3) {
-                    grid[gy][gx] = pair.handler.getStackInSlot(0);
-                }
+                inputs.add(pair);
             }
         }
-        return grid;
+        LabRecipeMachine support = machine == null ? null : LabRecipeMachines.get(machine.recipeTypeUid());
+        if (support != null && support.gridLayout()) {
+            ItemStack[] cells = new ItemStack[9];
+            for (int i = 0; i < 9; i++) {
+                cells[i] = ItemStack.EMPTY;
+            }
+            for (SlotPair pair : inputs) {
+                int gx = pair.gx();
+                int gy = pair.gy();
+                if (gx >= 0 && gx < 3 && gy >= 0 && gy < 3) {
+                    cells[gy * 3 + gx] = pair.handler.getStackInSlot(0);
+                }
+            }
+            return List.of(cells);
+        }
+        inputs.sort((SlotPair a, SlotPair b) -> {
+            int row = Integer.compare(a.gy(), b.gy());
+            return row != 0 ? row : Integer.compare(a.gx(), b.gx());
+        });
+        List<ItemStack> ordered = new ArrayList<>(inputs.size());
+        for (SlotPair pair : inputs) {
+            ordered.add(pair.handler.getStackInSlot(0));
+        }
+        return ordered;
     }
 
     public ItemStack getOutput() {

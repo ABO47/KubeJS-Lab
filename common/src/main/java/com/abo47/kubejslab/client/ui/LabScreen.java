@@ -5,7 +5,6 @@ import com.abo47.kubejslab.client.ui.recipes.*;
 import com.abo47.kubejslab.client.ui.contextmenu.*;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
@@ -18,10 +17,14 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.Recipe;
 
 import com.abo47.kubejslab.network.ModNetwork;
 import com.abo47.kubejslab.network.recipe.C2SRecipeEditPacket;
+import com.abo47.kubejslab.recipe.LabRecipeMachine;
+import com.abo47.kubejslab.recipe.LabRecipeMachines;
 import com.abo47.kubejslab.recipe.model.LabRecipeEditAction;
+import com.abo47.kubejslab.recipe.model.LabRecipeFieldValues;
 import com.abo47.kubejslab.recipe.model.LabRecipePayload;
 import com.abo47.kubejslab.recipe.model.LabRecipeStatus;
 import com.lowdragmc.lowdraglib.gui.modular.IUIHolder;
@@ -45,13 +48,17 @@ public final class LabScreen {
     private static final ColorRectTexture DIVIDER_FILL_TEX = new ColorRectTexture(LabColors.SURFACE_PANEL);
     private static final ColorRectTexture TAB_ERASE_TEX = new ColorRectTexture(LabColors.SURFACE_BASE);
 
+    private static int lastLeftTab;
+    private static int lastRightTab;
+    private static ResourceLocation lastMachineUid;
+    private static String lastQuery = "";
+
     private LabScreen() {
     }
 
-    private static LabRecipePayload emptyPayload(LabRecipeIndex.LabRecipeEntry entry) {
-        ItemStack[] grid = new ItemStack[9];
-        Arrays.fill(grid, ItemStack.EMPTY);
-        return new LabRecipePayload(false, grid, entry.output(), entry.name());
+    private static LabRecipePayload emptyPayload(LabRecipeIndex.LabRecipeEntry entry, ResourceLocation machineUid) {
+        return new LabRecipePayload(machineUid, List.of(), entry.output(), entry.name(),
+                LabRecipeFieldValues.defaults());
     }
 
     public static ModularUI createUI(BlockPos holder, Player player) {
@@ -86,6 +93,10 @@ public final class LabScreen {
         LabRootWidget root = (LabRootWidget) ui.mainGroup;
         LabPanelWidget leftPanel = root.getLeftPanel();
         LabPanelWidget rightPanel = root.getRightPanel();
+        rightPanel.machineDropdown.selectMachineByUid(lastMachineUid);
+        leftPanel.selectTabIndex(lastLeftTab);
+        rightPanel.selectTabIndex(lastRightTab);
+        leftPanel.restoreSearchQuery(lastQuery);
         leftPanel.updateRecipeView();
         rightPanel.updateRecipeView();
         rightPanel.refreshMachineSelection();
@@ -204,7 +215,7 @@ public final class LabScreen {
         }
 
         private void sendEdit(LabRecipeEditAction action, LabRecipeIndex.LabRecipeEntry entry) {
-            rightPanel.sendRecipeEdit(action, entry.id(), emptyPayload(entry));
+            rightPanel.sendRecipeEdit(action, entry.id(), emptyPayload(entry, rightPanel.getSelectedMachineUid()));
         }
 
         private boolean menuHits(double mouseX, double mouseY) {
@@ -364,7 +375,7 @@ public final class LabScreen {
                 machineLayout.clearPhantoms();
                 if (mode != EditMode.MODIFY || modifyTarget == null) return;
                 LabRecipeIndex.LabRecipeEntry target = modifyTarget;
-                sendRecipeEdit(LabRecipeEditAction.RESET, target.id(), emptyPayload(target));
+                sendRecipeEdit(LabRecipeEditAction.RESET, target.id(), emptyPayload(target, getSelectedMachineUid()));
                 exitModifyMode();
                 showRecipe(target);
             });
@@ -440,7 +451,26 @@ public final class LabScreen {
             if (tabs[index].isTabActive()) return;
             for (LabTab tab : tabs) tab.setTabActive(false);
             tabs[index].setTabActive(true);
+            if (isLeft) {
+                lastLeftTab = index;
+            } else {
+                lastRightTab = index;
+            }
             if (tabChangedListener != null) tabChangedListener.run();
+        }
+
+        void selectTabIndex(int index) {
+            if (index >= 0 && index < tabs.length) {
+                selectTab(index);
+            }
+        }
+
+        void restoreSearchQuery(String query) {
+            if (searchField == null) {
+                return;
+            }
+            searchField.setCurrentString(query == null ? "" : query);
+            onSearchChanged(query == null ? "" : query);
         }
 
         public int getSelectedTabIndex() {
@@ -464,6 +494,9 @@ public final class LabScreen {
             this.machineChangedListener = machineChangedListener;
             machineDropdown.setOnMachineChanged(machine -> {
                 machineLayout.setMachine(machine);
+                if (machine != null) {
+                    lastMachineUid = machine.recipeTypeUid();
+                }
                 if (this.machineChangedListener != null) this.machineChangedListener.run();
             });
         }
@@ -512,6 +545,7 @@ public final class LabScreen {
                 if (showRecipeView) {
                     recipeBrowser.setKubejsOnly(getSelectedTabIndex() == 1);
                     recipeBrowser.setMachineFilter(rightPanel.getMachineRecipeIds());
+                    recipeBrowser.setMachineUid(rightPanel.getSelectedMachineUid());
                     recipeBrowser.rebuild();
                 }
             } else {
@@ -522,7 +556,8 @@ public final class LabScreen {
                 if (recipeTabActive) {
                     LabMachine machine = machineDropdown.getSelectedMachine();
                     machineLayout.setMachine(machine);
-                    settingsWidget.setShapelessSupported(machine != null && machine.supported());
+                    LabRecipeMachine support = machine == null ? null : LabRecipeMachines.get(machine.recipeTypeUid());
+                    settingsWidget.setFields(support == null ? List.of() : support.fields());
                 }
             }
         }
@@ -536,35 +571,55 @@ public final class LabScreen {
             return machine == null ? null : LabMachineCatalog.recipeIds(machine);
         }
 
+        ResourceLocation getSelectedMachineUid() {
+            LabMachine machine = machineDropdown.getSelectedMachine();
+            return machine == null ? null : machine.recipeTypeUid();
+        }
+
         private void showRecipe(LabRecipeIndex.LabRecipeEntry entry) {
             machineLayout.showRecipe(entry);
+            LabMachine machine = machineDropdown.getSelectedMachine();
+            if (machine == null) {
+                return;
+            }
+            LabRecipeMachine support = LabRecipeMachines.get(machine.recipeTypeUid());
+            if (support != null) {
+                Recipe<?> original = LabRecipeIndex.recipeById(entry.id());
+                settingsWidget.applyValues(support.prefill(settingsWidget.getValues(), original));
+            }
         }
 
         private void saveRecipe() {
-            ItemStack output = machineLayout.getOutput();
-            if (output.isEmpty()) return;
-
-            ItemStack[][] grid = machineLayout.getGrid();
+            LabMachine machine = machineDropdown.getSelectedMachine();
+            if (machine == null) {
+                return;
+            }
+            LabRecipeMachine support = LabRecipeMachines.get(machine.recipeTypeUid());
+            if (support == null) {
+                return;
+            }
+            List<ItemStack> inputs = machineLayout.getInputs();
             boolean hasInput = false;
-            for (int r = 0; r < 3 && !hasInput; r++) {
-                for (int c = 0; c < 3 && !hasInput; c++) {
-                    hasInput = !grid[r][c].isEmpty();
+            for (ItemStack input : inputs) {
+                hasInput = !input.isEmpty();
+                if (hasInput) {
+                    break;
                 }
             }
-            if (!hasInput) return;
-
-            ItemStack[] flat = new ItemStack[9];
-            for (int r = 0; r < 3; r++) {
-                for (int c = 0; c < 3; c++) {
-                    flat[r * 3 + c] = grid[r][c];
-                }
+            if (!hasInput) {
+                return;
             }
+            ItemStack output = machineLayout.getOutput();
             boolean overriding = mode == EditMode.MODIFY && modifyTarget != null;
+            Recipe<?> original = overriding ? LabRecipeIndex.recipeById(modifyTarget.id()) : null;
+            if (output.isEmpty() && (original == null || !support.allowsEmptyResult(original))) {
+                return;
+            }
             sendRecipeEdit(
                     overriding ? LabRecipeEditAction.OVERRIDE : LabRecipeEditAction.SAVE_NEW,
                     overriding ? modifyTarget.id() : null,
-                    new LabRecipePayload(settingsWidget.isShapeless(), flat, output,
-                            output.getHoverName().getString()));
+                    new LabRecipePayload(machine.recipeTypeUid(), inputs, output,
+                            output.getHoverName().getString(), settingsWidget.getValues()));
         }
 
         private void sendRecipeEdit(LabRecipeEditAction action, ResourceLocation targetId, LabRecipePayload payload) {
@@ -572,6 +627,7 @@ public final class LabScreen {
         }
 
         private void onSearchChanged(String value) {
+            lastQuery = value == null ? "" : value;
             recipeBrowser.setQuery(value);
         }
     }

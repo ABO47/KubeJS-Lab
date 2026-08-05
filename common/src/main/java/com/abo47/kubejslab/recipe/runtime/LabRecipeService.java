@@ -12,7 +12,6 @@ import java.util.Set;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
@@ -23,9 +22,12 @@ import net.minecraft.nbt.TagParser;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.Recipe;
 
 import com.abo47.kubejslab.network.ModNetwork;
 import com.abo47.kubejslab.network.recipe.S2CRecipeStatePacket;
+import com.abo47.kubejslab.recipe.LabRecipeMachine;
+import com.abo47.kubejslab.recipe.LabRecipeMachines;
 import com.abo47.kubejslab.recipe.model.LabRecipeEditAction;
 import com.abo47.kubejslab.recipe.model.LabRecipePayload;
 import com.abo47.kubejslab.recipe.model.LabRecipeStateEntry;
@@ -47,7 +49,8 @@ public final class LabRecipeService {
         try {
             switch (action) {
                 case SAVE_NEW -> saveNew(payload);
-                case OVERRIDE -> override(targetId, payload);
+                case OVERRIDE -> override(targetId, payload, targetId == null ? null
+                        : player.getServer().getRecipeManager().byKey(targetId).orElse(null));
                 case DISABLE -> disable(targetId, payload);
                 case ENABLE -> enable(targetId);
                 case RESET -> reset(targetId);
@@ -75,20 +78,24 @@ public final class LabRecipeService {
             return;
         }
         ResourceLocation id = generateId(output);
-        Path dir = recipesDir(id);
-        Files.createDirectories(dir);
-        Path file = dir.resolve(id.getPath() + ".json");
+        Path file = recipesDir(id).resolve(id.getPath() + ".json");
         int suffix = 2;
         while (Files.exists(file) || SESSION_CREATED_IDS.contains(id)) {
             id = new ResourceLocation(id.getNamespace(), id.getPath() + "_" + suffix);
-            file = dir.resolve(id.getPath() + ".json");
+            file = recipesDir(id).resolve(id.getPath() + ".json");
             suffix++;
         }
-        Files.writeString(file, GSON.toJson(buildJson(payload)) + "\n");
+        JsonObject json = buildJson(payload, null);
+        if (json == null) {
+            return;
+        }
+        Files.createDirectories(file.getParent());
+        Files.writeString(file, GSON.toJson(json) + "\n");
         SESSION_CREATED_IDS.add(id);
     }
 
-    private static void override(ResourceLocation targetId, LabRecipePayload payload) throws IOException {
+    private static void override(ResourceLocation targetId, LabRecipePayload payload, Recipe<?> original)
+            throws IOException {
         if (targetId == null) {
             return;
         }
@@ -100,9 +107,14 @@ public final class LabRecipeService {
             Files.createDirectories(backup.getParent());
             Files.copy(file, backup, StandardCopyOption.REPLACE_EXISTING);
         }
-        Files.writeString(file, GSON.toJson(buildJson(payload)) + "\n");
+        JsonObject json = buildJson(payload, original);
+        if (json == null) {
+            return;
+        }
+        Files.writeString(file, GSON.toJson(json) + "\n");
         STATE.put(targetId,
-                new LabRecipeStateEntry(targetId, LabRecipeStatus.MODIFIED, payload.output(), payload.name(), true));
+                new LabRecipeStateEntry(targetId, LabRecipeStatus.MODIFIED, payload.output(), payload.name(), true,
+                        payload.machineUid()));
     }
 
     private static void disable(ResourceLocation targetId, LabRecipePayload payload) throws IOException {
@@ -112,7 +124,7 @@ public final class LabRecipeService {
         LabRecipeStateEntry entry = STATE.get(targetId);
         boolean wasModified = entry != null && entry.wasModified();
         STATE.put(targetId, new LabRecipeStateEntry(targetId, LabRecipeStatus.DISABLED, payload.output(), payload.name(),
-                wasModified));
+                wasModified, payload.machineUid()));
     }
 
     private static void enable(ResourceLocation targetId) {
@@ -122,7 +134,7 @@ public final class LabRecipeService {
         LabRecipeStateEntry entry = STATE.get(targetId);
         if (entry != null && entry.wasModified()) {
             STATE.put(targetId, new LabRecipeStateEntry(targetId, LabRecipeStatus.MODIFIED, entry.output(), entry.name(),
-                    true));
+                    true, entry.machineUid()));
         } else {
             STATE.remove(targetId);
         }
@@ -169,65 +181,15 @@ public final class LabRecipeService {
         Files.writeString(dir.resolve("disabled.js"), sb.toString());
     }
 
-    private static JsonObject buildJson(LabRecipePayload payload) {
-        JsonObject json = new JsonObject();
-        if (payload.shapeless()) {
-            json.addProperty("type", KUBEJS_NAMESPACE + ":shapeless");
-            JsonArray ingredients = new JsonArray();
-            for (ItemStack stack : payload.grid()) {
-                if (!stack.isEmpty()) {
-                    ingredients.add(itemJson(stack));
-                }
-            }
-            json.add("ingredients", ingredients);
-        } else {
-            json.addProperty("type", KUBEJS_NAMESPACE + ":shaped");
-            JsonArray pattern = new JsonArray();
-            JsonObject key = new JsonObject();
-            Map<String, Character> charByItem = new LinkedHashMap<>();
-            char nextChar = 'A';
-            for (int row = 0; row < 3; row++) {
-                StringBuilder rowStr = new StringBuilder();
-                for (int col = 0; col < 3; col++) {
-                    ItemStack stack = payload.grid()[row * 3 + col];
-                    if (stack.isEmpty()) {
-                        rowStr.append(' ');
-                        continue;
-                    }
-                    String itemKey = stack.getItem().builtInRegistryHolder().key().location().toString()
-                            + (stack.hasTag() ? "|" + stack.getTag() : "");
-                    Character c = charByItem.get(itemKey);
-                    if (c == null) {
-                        c = nextChar++;
-                        charByItem.put(itemKey, c);
-                    }
-                    rowStr.append((char) c);
-                    key.add(String.valueOf((char) c), itemJson(stack));
-                }
-                pattern.add(rowStr.toString());
-            }
-            json.add("pattern", pattern);
-            json.add("key", key);
+    private static JsonObject buildJson(LabRecipePayload payload, Recipe<?> original) {
+        if (payload.machineUid() == null) {
+            return null;
         }
-        json.add("result", itemWithCount(payload.output()));
-        return json;
-    }
-
-    private static JsonObject itemJson(ItemStack stack) {
-        JsonObject obj = new JsonObject();
-        obj.addProperty("item", stack.getItem().builtInRegistryHolder().key().location().toString());
-        if (stack.hasTag()) {
-            obj.addProperty("nbt", stack.getTag().toString());
+        LabRecipeMachine machine = LabRecipeMachines.get(payload.machineUid());
+        if (machine == null) {
+            return null;
         }
-        return obj;
-    }
-
-    private static JsonObject itemWithCount(ItemStack stack) {
-        JsonObject obj = itemJson(stack);
-        if (stack.getCount() > 1) {
-            obj.addProperty("count", stack.getCount());
-        }
-        return obj;
+        return machine.buildJson(machine.jsonTypeFor(original), payload.inputs(), payload.output(), payload.values());
     }
 
     private static ResourceLocation generateId(ItemStack output) {
@@ -273,7 +235,10 @@ public final class LabRecipeService {
                 ItemStack output = decodeStack(obj);
                 String name = obj.has("name") ? obj.get("name").getAsString() : "";
                 boolean wasModified = obj.has("wasModified") && obj.get("wasModified").getAsBoolean();
-                STATE.put(id, new LabRecipeStateEntry(id, status, output, name, wasModified));
+                ResourceLocation machineUid = obj.has("machineUid")
+                        ? new ResourceLocation(obj.get("machineUid").getAsString())
+                        : null;
+                STATE.put(id, new LabRecipeStateEntry(id, status, output, name, wasModified, machineUid));
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -292,6 +257,9 @@ public final class LabRecipeService {
             }
             obj.addProperty("name", entry.name());
             obj.addProperty("wasModified", entry.wasModified());
+            if (entry.machineUid() != null) {
+                obj.addProperty("machineUid", entry.machineUid().toString());
+            }
             root.add(entry.id().toString(), obj);
         }
         Path file = kubejsDir().resolve("lab").resolve("state.json");

@@ -57,6 +57,11 @@ public final class LabRecipeIndex {
         return normalized;
     }
 
+    public static Recipe<?> recipeById(ResourceLocation id) {
+        entries();
+        return cachedManager == null ? null : cachedManager.byKey(id).orElse(null);
+    }
+
     private static List<LabRecipeEntry> entries() {
         ClientPacketListener connection = Minecraft.getInstance().getConnection();
         RecipeManager manager = connection == null ? null : connection.getRecipeManager();

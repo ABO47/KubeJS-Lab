@@ -14,12 +14,12 @@ import java.util.stream.Stream;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 
-import mezz.jei.api.constants.RecipeTypes;
 import mezz.jei.api.recipe.IRecipeManager;
 import mezz.jei.api.recipe.category.IRecipeCategory;
 import mezz.jei.api.runtime.IJeiRuntime;
 
 import com.abo47.kubejslab.client.jei.LabJeiPlugin;
+import com.abo47.kubejslab.recipe.LabRecipeMachines;
 
 public final class LabMachineCatalog {
     private static IJeiRuntime cachedRuntime;
@@ -61,8 +61,16 @@ public final class LabMachineCatalog {
     private static List<LabMachine> build(IJeiRuntime runtime) {
         IRecipeManager manager = runtime.getRecipeManager();
         List<LabMachine> built = new ArrayList<>();
+        Set<ResourceLocation> seen = new HashSet<>();
         for (IRecipeCategory<?> category : manager.createRecipeCategoryLookup().get().toList()) {
             try {
+                ResourceLocation uid = category.getRecipeType().getUid();
+                if ("minecraft".equals(uid.getNamespace()) && "fuel".equals(uid.getPath())) {
+                    continue;
+                }
+                if (!seen.add(uid)) {
+                    continue;
+                }
                 Optional<ItemStack> first = manager.createRecipeCatalystLookup(category.getRecipeType())
                         .getItemStack()
                         .findFirst();
@@ -74,14 +82,14 @@ public final class LabMachineCatalog {
                 if (name.isBlank()) {
                     name = category.getTitle().getString();
                 }
-                boolean supported = RecipeTypes.CRAFTING.equals(category.getRecipeType());
+                boolean supported = LabRecipeMachines.supports(uid);
                 built.add(new LabMachine(category, icon, name, supported));
             } catch (RuntimeException | LinkageError ignored) {
             }
         }
         built.sort(Comparator.comparing(LabMachine::supported, Comparator.reverseOrder())
                 .thenComparing(LabMachine::name, String.CASE_INSENSITIVE_ORDER)
-                .thenComparing(machine -> machine.category().getRecipeType().getUid().toString()));
+                .thenComparing(machine -> machine.recipeTypeUid().toString()));
         return List.copyOf(built);
     }
 
