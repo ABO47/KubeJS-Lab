@@ -2,6 +2,7 @@ package com.abo47.kubejslab.forge;
 
 import java.nio.file.Path;
 
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 
 import net.minecraftforge.fml.loading.FMLLoader;
@@ -40,7 +41,15 @@ public final class ForgePlatformService implements PlatformService {
     }
 
     @Override
-    public void sendOpenScreen(ServerPlayer player) {
-        ForgeNetwork.sendToClient(new ForgeNetwork.OpenScreenPacket(), player);
+    public void sendOpenScreen(ServerPlayer player, FriendlyByteBuf serializedHolder, int windowId) {
+        int length = serializedHolder.readableBytes();
+        byte[] payload = new byte[length];
+        serializedHolder.readBytes(payload);
+        ForgeNetwork.sendToClient(new ForgeNetwork.OpenScreenPacket(windowId, payload), player);
+    }
+
+    @Override
+    public void sendOpenRequest() {
+        ForgeNetwork.sendToServer(new ForgeNetwork.RequestOpenPacket());
     }
 }

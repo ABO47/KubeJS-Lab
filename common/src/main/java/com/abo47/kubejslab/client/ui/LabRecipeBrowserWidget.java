@@ -1,10 +1,14 @@
 package com.abo47.kubejslab.client.ui;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.function.Consumer;
 
 import javax.annotation.Nonnull;
 
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.resources.ResourceLocation;
 
 import org.joml.Vector4f;
 
@@ -13,13 +17,20 @@ import com.lowdragmc.lowdraglib.gui.widget.WidgetGroup;
 public final class LabRecipeBrowserWidget extends WidgetGroup {
     private String query;
     private boolean kubejsOnly;
+    private Set<ResourceLocation> machineRecipeIds;
     private int scroll;
     private int scrollMax;
     private boolean dragging;
+    private Consumer<LabRecipeIndex.LabRecipeEntry> recipeClickListener;
+    private List<LabRecipeCardWidget> cards = List.of();
 
     public LabRecipeBrowserWidget(int x, int y, int w, int h) {
         super(x, y, w, h);
         this.query = "";
+    }
+
+    public void setRecipeClickListener(Consumer<LabRecipeIndex.LabRecipeEntry> recipeClickListener) {
+        this.recipeClickListener = recipeClickListener;
     }
 
     public void setQuery(String query) {
@@ -33,9 +44,15 @@ public final class LabRecipeBrowserWidget extends WidgetGroup {
         scroll = 0;
     }
 
+    public void setMachineFilter(Set<ResourceLocation> machineRecipeIds) {
+        this.machineRecipeIds = machineRecipeIds;
+        scroll = 0;
+    }
+
     public void rebuild() {
         clearAllWidgets();
-        List<LabRecipeIndex.LabRecipeEntry> entries = LabRecipeIndex.search(query, kubejsOnly);
+        cards = new ArrayList<>();
+        List<LabRecipeIndex.LabRecipeEntry> entries = LabRecipeIndex.search(query, kubejsOnly, machineRecipeIds);
         int listW = getSizeWidth();
         int listH = getSizeHeight();
         int rowStep = LabLayout.CARD_ROW_STEP;
@@ -52,10 +69,14 @@ public final class LabRecipeBrowserWidget extends WidgetGroup {
 
         for (int row = 0; row < rows; row++) {
             int y = -scroll + row * rowStep;
-            if (y >= listH || y + cardH <= 0) {
-                continue;
-            }
-            addWidget(new LabRecipeCardWidget(cardX, y, cardW, cardH, entries.get(row)));
+            LabRecipeIndex.LabRecipeEntry entry = entries.get(row);
+            LabRecipeCardWidget card = new LabRecipeCardWidget(cardX, y, cardW, cardH, entry, () -> {
+                if (recipeClickListener != null) {
+                    recipeClickListener.accept(entry);
+                }
+            });
+            cards.add(card);
+            addWidget(card);
         }
 
         if (showScrollBar) {
@@ -72,8 +93,16 @@ public final class LabRecipeBrowserWidget extends WidgetGroup {
                     value -> scroll = value,
                     () -> dragging,
                     value -> dragging = value,
-                    this::rebuild
+                    this::repositionCards
             ));
+        }
+    }
+
+    private void repositionCards() {
+        int rowStep = LabLayout.CARD_ROW_STEP;
+        for (int i = 0; i < cards.size(); i++) {
+            LabRecipeCardWidget card = cards.get(i);
+            card.setSelfPosition(card.getPositionX(), -scroll + i * rowStep);
         }
     }
 
@@ -102,7 +131,7 @@ public final class LabRecipeBrowserWidget extends WidgetGroup {
         int next = LabScrollMath.wheel(scroll, scrollMax, step, wheelDelta);
         if (next != scroll) {
             scroll = next;
-            rebuild();
+            repositionCards();
         }
         return true;
     }

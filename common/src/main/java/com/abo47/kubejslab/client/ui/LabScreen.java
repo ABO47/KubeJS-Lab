@@ -1,17 +1,22 @@
 package com.abo47.kubejslab.client.ui;
 
+import java.util.Set;
+
 import javax.annotation.Nonnull;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Player;
 
 import com.lowdragmc.lowdraglib.gui.modular.IUIHolder;
 import com.lowdragmc.lowdraglib.gui.modular.ModularUI;
 import com.lowdragmc.lowdraglib.gui.texture.ColorRectTexture;
 import com.lowdragmc.lowdraglib.gui.texture.IGuiTexture;
+import com.lowdragmc.lowdraglib.gui.widget.custom.PlayerInventoryWidget;
 import com.lowdragmc.lowdraglib.gui.widget.TextFieldWidget;
 import com.lowdragmc.lowdraglib.gui.widget.WidgetGroup;
+import com.lowdragmc.lowdraglib.utils.Position;
 
 public final class LabScreen {
     private static final ColorRectTexture ROOT_FILL = new ColorRectTexture(LabColors.SURFACE_BASE);
@@ -22,33 +27,56 @@ public final class LabScreen {
     private LabScreen() {
     }
 
-    public static void open() {
-        Minecraft mc = Minecraft.getInstance();
-        LocalPlayer player = mc.player;
-        if (player == null) return;
-
+    public static ModularUI createUI(BlockPos holder, Player player) {
         LabRootWidget root = new LabRootWidget();
-        root.setClientSideWidget();
-
         LabPanelWidget leftPanel = new LabPanelWidget(true);
         LabPanelWidget rightPanel = new LabPanelWidget(false);
 
+        root.setPanels(leftPanel, rightPanel);
         root.addWidget(leftPanel);
         root.addWidget(rightPanel);
 
         leftPanel.setRightPanel(rightPanel);
-        leftPanel.setTabChangedListener(leftPanel::updateRecipeView);
-        rightPanel.setTabChangedListener(leftPanel::updateRecipeView);
-        leftPanel.updateRecipeView();
+        Runnable updateViews = () -> {
+            leftPanel.updateRecipeView();
+            rightPanel.updateRecipeView();
+        };
+        leftPanel.setTabChangedListener(updateViews);
+        rightPanel.setTabChangedListener(updateViews);
+        leftPanel.getRecipeBrowser().setRecipeClickListener(rightPanel::showRecipe);
+        rightPanel.setMachineChangedListener(updateViews);
 
-        ModularUI ui = new ModularUI(root, IUIHolder.EMPTY, player);
-        ui.initWidgets();
-        mc.setScreen(new LabGuiContainer(ui, player.containerMenu.containerId));
+        return new ModularUI(root, IUIHolder.EMPTY, player);
+    }
+
+    public static void activateClient(ModularUI ui) {
+        LabRootWidget root = (LabRootWidget) ui.mainGroup;
+        LabPanelWidget leftPanel = root.getLeftPanel();
+        LabPanelWidget rightPanel = root.getRightPanel();
+        leftPanel.updateRecipeView();
+        rightPanel.updateRecipeView();
+        rightPanel.refreshMachineSelection();
     }
 
     public static final class LabRootWidget extends WidgetGroup {
+        private LabPanelWidget leftPanel;
+        private LabPanelWidget rightPanel;
+
         LabRootWidget() {
             super(0, 0, LabLayout.ROOT_W, LabLayout.ROOT_H);
+        }
+
+        void setPanels(LabPanelWidget leftPanel, LabPanelWidget rightPanel) {
+            this.leftPanel = leftPanel;
+            this.rightPanel = rightPanel;
+        }
+
+        LabPanelWidget getLeftPanel() {
+            return leftPanel;
+        }
+
+        LabPanelWidget getRightPanel() {
+            return rightPanel;
         }
 
         @Override
@@ -63,11 +91,16 @@ public final class LabScreen {
     }
 
     public static final class LabPanelWidget extends WidgetGroup {
+        private final boolean isLeft;
         private final LabTab[] tabs;
         private LabPanelWidget rightPanel;
         private Runnable tabChangedListener;
+        private Runnable machineChangedListener;
         private TextFieldWidget searchField;
         private LabRecipeBrowserWidget recipeBrowser;
+        private LabMachineDropdownWidget machineDropdown;
+        private LabMachineLayoutWidget machineLayout;
+        private PlayerInventoryWidget inventory;
 
         LabPanelWidget(boolean isLeft) {
             super(
@@ -75,6 +108,7 @@ public final class LabScreen {
                     LabLayout.BODY_Y,
                     isLeft ? LabLayout.LEFT_PANEL_W : LabLayout.BODY_W - LabLayout.LEFT_PANEL_W - LabLayout.GAP,
                     LabLayout.BODY_H);
+            this.isLeft = isLeft;
 
             int tabInset = LabLayout.TAB_INSET;
             int tabH = LabLayout.TAB_H;
@@ -101,32 +135,71 @@ public final class LabScreen {
             }
 
             if (isLeft) {
-                int innerW = getSizeWidth() - LabLayout.PANEL_INSET * 2;
-                int innerTop = LabLayout.PANEL_INSET + LabLayout.TAB_H;
-                int searchY = innerTop + LabLayout.SEARCH_GAP;
-
-                searchField = new TextFieldWidget(
-                        LabLayout.PANEL_INSET + LabLayout.LIST_INSET,
-                        searchY,
-                        LabLayout.recipeCardWidth(innerW),
-                        LabLayout.SEARCH_H,
-                        null,
-                        this::onSearchChanged);
-                searchField.setClientSideWidget();
-                searchField.setMaxStringLength(Integer.MAX_VALUE);
-                searchField.setValidator(LabRecipeIndex::normalizeUserSearch);
-                searchField.setBordered(false);
-                searchField.setBackground(borderedTexture(LabColors.SURFACE_BASE, LabColors.BORDER_BASE));
-                searchField.setTextColor(LabColors.TEXT_PRIMARY);
-                searchField.setVisible(false);
-                addWidget(searchField);
-
-                int browserY = searchY + LabLayout.SEARCH_H + LabLayout.SEARCH_LIST_GAP;
-                int browserH = getSizeHeight() - LabLayout.PANEL_INSET - browserY - LabLayout.SEARCH_GAP;
-                recipeBrowser = new LabRecipeBrowserWidget(LabLayout.PANEL_INSET, browserY, innerW, browserH);
-                recipeBrowser.setVisible(false);
-                addWidget(recipeBrowser);
+                buildLeftContent();
+            } else {
+                buildRightContent();
             }
+        }
+
+        private void buildLeftContent() {
+            int innerW = getSizeWidth() - LabLayout.PANEL_INSET * 2;
+            int innerTop = LabLayout.PANEL_INSET + LabLayout.TAB_H;
+            int searchY = innerTop + LabLayout.SEARCH_GAP;
+
+            searchField = new TextFieldWidget(
+                    LabLayout.PANEL_INSET + LabLayout.LIST_INSET,
+                    searchY,
+                    LabLayout.recipeCardWidth(innerW),
+                    LabLayout.SEARCH_H,
+                    null,
+                    this::onSearchChanged);
+            searchField.setClientSideWidget();
+            searchField.setMaxStringLength(Integer.MAX_VALUE);
+            searchField.setValidator(LabRecipeIndex::normalizeUserSearch);
+            searchField.setBordered(false);
+            searchField.setBackground(borderedTexture(LabColors.SURFACE_BASE, LabColors.BORDER_BASE));
+            searchField.setTextColor(LabColors.TEXT_PRIMARY);
+            searchField.setVisible(false);
+            addWidget(searchField);
+
+            int browserY = searchY + LabLayout.SEARCH_H + LabLayout.SEARCH_LIST_GAP;
+            int browserH = getSizeHeight() - LabLayout.PANEL_INSET - browserY - LabLayout.SEARCH_GAP;
+            recipeBrowser = new LabRecipeBrowserWidget(LabLayout.PANEL_INSET, browserY, innerW, browserH);
+            recipeBrowser.setVisible(false);
+            addWidget(recipeBrowser);
+        }
+
+        private void buildRightContent() {
+            int innerW = getSizeWidth() - LabLayout.PANEL_INSET * 2;
+            int innerTop = LabLayout.PANEL_INSET + LabLayout.TAB_H;
+            int searchY = innerTop + LabLayout.SEARCH_GAP;
+
+            int dropdownW = LabLayout.recipeCardWidth(innerW);
+            int dropdownX = LabLayout.PANEL_INSET + (innerW - dropdownW) / 2;
+            machineDropdown = new LabMachineDropdownWidget(
+                    dropdownX,
+                    searchY,
+                    dropdownW,
+                    LabLayout.SEARCH_H);
+            machineDropdown.setClientSideWidget();
+            addWidget(machineDropdown);
+
+            int layoutY = searchY + LabLayout.SEARCH_H + LabLayout.MACHINE_GAP;
+            int invY = LabLayout.inventoryY(getSizeHeight());
+            int layoutH = invY - layoutY - LabLayout.MACHINE_GAP;
+            int machineX = LabLayout.PANEL_INSET + (innerW - LabLayout.MACHINE_W) / 2 + LabLayout.MACHINE_PAD;
+            machineLayout = new LabMachineLayoutWidget(
+                    machineX,
+                    layoutY + LabLayout.MACHINE_PAD,
+                    LabLayout.MACHINE_W - LabLayout.MACHINE_PAD * 2,
+                    layoutH - LabLayout.MACHINE_PAD * 2);
+            machineLayout.setClientSideWidget();
+            addWidget(machineLayout);
+
+            int invX = LabLayout.PANEL_INSET + (innerW - LabLayout.INV_W) / 2;
+            inventory = new PlayerInventoryWidget();
+            inventory.setSelfPosition(new Position(invX, invY));
+            addWidget(inventory);
         }
 
         @Override
@@ -160,7 +233,7 @@ public final class LabScreen {
 
         @Override
         public boolean mouseClicked(double mouseX, double mouseY, int button) {
-            if (button != 0) return super.mouseClicked(mouseX, mouseY, button);
+            if (button != LabColors.MOUSE_BUTTON_LEFT) return super.mouseClicked(mouseX, mouseY, button);
 
             for (int i = 0; i < tabs.length; i++) {
                 if (tabs[i].isMouseOverElement(mouseX, mouseY)) {
@@ -169,7 +242,10 @@ public final class LabScreen {
                 }
             }
 
-            return super.mouseClicked(mouseX, mouseY, button);
+            if (super.mouseClicked(mouseX, mouseY, button)) {
+                return true;
+            }
+            return false;
         }
 
         private void selectTab(int index) {
@@ -196,14 +272,53 @@ public final class LabScreen {
             this.tabChangedListener = tabChangedListener;
         }
 
+        void setMachineChangedListener(Runnable machineChangedListener) {
+            this.machineChangedListener = machineChangedListener;
+            machineDropdown.setOnMachineChanged(machine -> {
+                machineLayout.setMachine(machine);
+                if (this.machineChangedListener != null) this.machineChangedListener.run();
+            });
+        }
+
+        void refreshMachineSelection() {
+            machineDropdown.refreshSelection();
+        }
+
         private void updateRecipeView() {
-            boolean showRecipeView = rightPanel != null && rightPanel.getSelectedTabIndex() == 0;
-            searchField.setVisible(showRecipeView);
-            recipeBrowser.setVisible(showRecipeView);
-            if (showRecipeView) {
-                recipeBrowser.setKubejsOnly(getSelectedTabIndex() == 1);
-                recipeBrowser.rebuild();
+            if (isLeft) {
+                boolean showRecipeView = rightPanel != null && rightPanel.getSelectedTabIndex() == 0;
+                searchField.setVisible(showRecipeView);
+                recipeBrowser.setVisible(showRecipeView);
+                if (showRecipeView) {
+                    recipeBrowser.setKubejsOnly(getSelectedTabIndex() == 1);
+                    recipeBrowser.setMachineFilter(rightPanel.getMachineRecipeIds());
+                    recipeBrowser.rebuild();
+                }
+            } else {
+                boolean recipeTabActive = getSelectedTabIndex() == 0;
+                machineDropdown.setVisible(recipeTabActive);
+                machineLayout.setVisible(recipeTabActive);
+                if (recipeTabActive) {
+                    machineLayout.setMachine(machineDropdown.getSelectedMachine());
+                }
             }
+        }
+
+        LabRecipeBrowserWidget getRecipeBrowser() {
+            return recipeBrowser;
+        }
+
+        LabMachine getSelectedMachine() {
+            return machineDropdown.getSelectedMachine();
+        }
+
+        Set<ResourceLocation> getMachineRecipeIds() {
+            LabMachine machine = machineDropdown.getSelectedMachine();
+            return machine == null ? null : LabMachineCatalog.recipeIds(machine);
+        }
+
+        private void showRecipe(LabRecipeIndex.LabRecipeEntry entry) {
+            machineLayout.showRecipe(entry);
         }
 
         private void onSearchChanged(String value) {

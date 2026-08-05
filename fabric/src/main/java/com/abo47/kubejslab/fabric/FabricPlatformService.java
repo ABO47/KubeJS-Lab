@@ -2,11 +2,15 @@ package com.abo47.kubejslab.fabric;
 
 import java.nio.file.Path;
 
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 
 import net.fabricmc.loader.api.FabricLoader;
 
 import com.abo47.kubejslab.platform.PlatformService;
+
+import io.netty.buffer.Unpooled;
 
 public final class FabricPlatformService implements PlatformService {
     @Override
@@ -39,7 +43,12 @@ public final class FabricPlatformService implements PlatformService {
     }
 
     @Override
-    public void sendOpenScreen(ServerPlayer player) {
-        FabricNetwork.sendToClient(player);
+    public void sendOpenScreen(ServerPlayer player, FriendlyByteBuf serializedHolder, int windowId) {
+        FabricNetwork.sendToClient(player, serializedHolder, windowId);
+    }
+
+    @Override
+    public void sendOpenRequest() {
+        ClientPlayNetworking.send(FabricNetwork.OPEN_REQUEST, new FriendlyByteBuf(Unpooled.buffer()));
     }
 }

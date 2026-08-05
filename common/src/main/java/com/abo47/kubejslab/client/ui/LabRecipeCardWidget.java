@@ -25,9 +25,11 @@ public final class LabRecipeCardWidget extends Widget {
     private final TextTexture idTex;
     private final int textW;
     private final int textX;
+    private final Runnable onClick;
 
-    public LabRecipeCardWidget(int x, int y, int w, int h, LabRecipeIndex.LabRecipeEntry entry) {
+    public LabRecipeCardWidget(int x, int y, int w, int h, LabRecipeIndex.LabRecipeEntry entry, Runnable onClick) {
         super(x, y, w, h);
+        this.onClick = onClick;
         this.iconTex = new ItemStackTexture(entry.output());
         this.textX = ICON_X + ICON_SIZE + TEXT_GAP;
         this.textW = w - textX;
@@ -55,5 +57,16 @@ public final class LabRecipeCardWidget extends Widget {
         iconTex.draw(g, mx, my, x + ICON_X, y + (h - ICON_SIZE) / 2, ICON_SIZE, ICON_SIZE);
         nameTex.draw(g, mx, my, x + textX, y + TEXT_Y, textW, TEXT_LINE_H);
         idTex.draw(g, mx, my, x + textX, y + ID_Y, textW, ID_LINE_H);
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (button == LabColors.MOUSE_BUTTON_LEFT && isMouseOverElement(mouseX, mouseY)) {
+            if (onClick != null) {
+                onClick.run();
+            }
+            return true;
+        }
+        return super.mouseClicked(mouseX, mouseY, button);
     }
 }

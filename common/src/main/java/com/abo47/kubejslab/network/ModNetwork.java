@@ -1,5 +1,6 @@
 package com.abo47.kubejslab.network;
 
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 
 import com.abo47.kubejslab.platform.Services;
@@ -12,7 +13,11 @@ public final class ModNetwork {
         Services.platform().registerNetwork();
     }
 
-    public static void sendOpenScreen(ServerPlayer player) {
-        Services.platform().sendOpenScreen(player);
+    public static void sendOpenScreen(ServerPlayer player, FriendlyByteBuf serializedHolder, int windowId) {
+        Services.platform().sendOpenScreen(player, serializedHolder, windowId);
+    }
+
+    public static void requestOpenScreen() {
+        Services.platform().sendOpenRequest();
     }
 }

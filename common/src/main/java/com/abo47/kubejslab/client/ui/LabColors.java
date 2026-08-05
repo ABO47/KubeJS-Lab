@@ -11,6 +11,8 @@ public final class LabColors {
     public static final int TEXT_PRIMARY = 0xFFEAF1F4;
     public static final int TEXT_MUTED = 0xFF88979F;
 
+    public static final int MOUSE_BUTTON_LEFT = 0;
+
     public static int withAlpha(int color, int alpha) {
         return (color & 0x00FFFFFF) | ((alpha & 0xFF) << 24);
     }

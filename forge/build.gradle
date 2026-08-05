@@ -51,15 +51,13 @@ dependencies {
     modImplementation("dev.latvian.mods:rhino-forge:${rhino_version}") {
         transitive = false
     }
-    modCompileOnly("mezz.jei:jei-${minecraft_version}-common-api:${jei_version}") {
+    modImplementation("mezz.jei:jei-${minecraft_version}-common-api:${jei_version}") {
         transitive = false
     }
-    modCompileOnly("mezz.jei:jei-${minecraft_version}-forge-api:${jei_version}") {
+    modImplementation("mezz.jei:jei-${minecraft_version}-forge-api:${jei_version}") {
         transitive = false
     }
-    if (useDevRecipeViewer('jei')) {
-        modRuntimeOnly("mezz.jei:jei-${minecraft_version}-forge:${jei_version}")
-    }
+    modRuntimeOnly("mezz.jei:jei-${minecraft_version}-forge:${jei_version}")
     modCompileOnly("me.shedaniel:RoughlyEnoughItems-forge:${rei_version}") {
         transitive = false
     }
@@ -97,6 +95,7 @@ tasks.named('processResources', ProcessResources).configure {
             kubejs_version         : kubejs_version,
             architectury_version   : architectury_version,
             rhino_version          : rhino_version,
+            jei_version_range      : jei_version_range,
             mod_id                 : mod_id,
             mod_name               : mod_name,
             mod_license            : mod_license,

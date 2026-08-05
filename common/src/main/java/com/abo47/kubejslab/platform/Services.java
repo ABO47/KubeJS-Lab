@@ -4,6 +4,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Objects;
 
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 
 public final class Services {
@@ -46,7 +47,11 @@ public final class Services {
         }
 
         @Override
-        public void sendOpenScreen(ServerPlayer player) {
+        public void sendOpenScreen(ServerPlayer player, FriendlyByteBuf serializedHolder, int windowId) {
+        }
+
+        @Override
+        public void sendOpenRequest() {
         }
     }
 }

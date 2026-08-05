@@ -19,6 +19,9 @@ dependencies {
     compileOnly("dev.emi:emi-xplat-mojmap:${emi_version}:api") {
         transitive = false
     }
+    modImplementation("mezz.jei:jei-${minecraft_version}-common-api:${jei_version}") {
+        transitive = false
+    }
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
 }
 
