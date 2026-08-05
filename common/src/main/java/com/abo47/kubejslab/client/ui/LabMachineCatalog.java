@@ -24,6 +24,7 @@ public final class LabMachineCatalog {
     private static IJeiRuntime cachedRuntime;
     private static List<LabMachine> machines = List.of();
     private static final Map<LabMachine, Set<ResourceLocation>> RECIPE_IDS = new HashMap<>();
+    private static long lastIndexVersion = -1;
 
     private LabMachineCatalog() {
     }
@@ -43,6 +44,11 @@ public final class LabMachineCatalog {
 
     public static Set<ResourceLocation> recipeIds(LabMachine machine) {
         machines();
+        long indexVersion = LabRecipeIndex.version();
+        if (indexVersion != lastIndexVersion) {
+            lastIndexVersion = indexVersion;
+            RECIPE_IDS.clear();
+        }
         Set<ResourceLocation> ids = RECIPE_IDS.get(machine);
         if (ids == null) {
             ids = computeRecipeIds(machine);

@@ -1,6 +1,14 @@
 package com.abo47.kubejslab.client.ui;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import com.lowdragmc.lowdraglib.gui.texture.ColorRectTexture;
+import com.lowdragmc.lowdraglib.gui.texture.IGuiTexture;
+
 public final class LabColors {
+    private static final Map<Long, IGuiTexture> BORDERED_CACHE = new HashMap<>();
+
     private LabColors() {
     }
 
@@ -9,11 +17,34 @@ public final class LabColors {
     public static final int SURFACE_PANEL_ALT = 0xFF2C3742;
     public static final int BORDER_BASE = 0xFF546170;
     public static final int TEXT_PRIMARY = 0xFFEAF1F4;
+    public static final int TEXT_SECONDARY = 0xFFB8C7CE;
     public static final int TEXT_MUTED = 0xFF88979F;
+    public static final int SUCCESS = 0xFF66D38D;
+    public static final int INTERACTIVE = 0xFF64C3D2;
 
     public static final int MOUSE_BUTTON_LEFT = 0;
+    public static final int MOUSE_BUTTON_RIGHT = 1;
 
     public static int withAlpha(int color, int alpha) {
         return (color & 0x00FFFFFF) | ((alpha & 0xFF) << 24);
+    }
+
+    public static IGuiTexture bordered(int fill, int border) {
+        long key = ((long) fill << 32) | (border & 0xFFFFFFFFL);
+        return BORDERED_CACHE.computeIfAbsent(key, k -> {
+            ColorRectTexture fillTex = new ColorRectTexture(fill);
+            ColorRectTexture borderTex = new ColorRectTexture(border);
+            return (g, mx, my, x, y, w, h) -> {
+                fillTex.draw(g, mx, my, x, y, w, h);
+                borderTex.draw(g, mx, my, x, y, w, 1);
+                borderTex.draw(g, mx, my, x, y + h - 1, w, 1);
+                borderTex.draw(g, mx, my, x, y, 1, h);
+                borderTex.draw(g, mx, my, x + w - 1, y, 1, h);
+            };
+        });
+    }
+
+    public static int pressedFill(int accent) {
+        return withAlpha(accent, 76);
     }
 }

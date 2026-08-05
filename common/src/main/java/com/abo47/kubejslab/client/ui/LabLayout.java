@@ -44,6 +44,12 @@ public final class LabLayout {
     public static final int MACHINE_PAD = 5;
     public static final int MACHINE_W = INV_W;
 
+    public static final int SETTINGS_PAD = MACHINE_PAD;
+    public static final int SETTINGS_BTN_H = 18;
+    public static final int SETTINGS_BTN_GAP = 4;
+
+    public static final int AREA_GAP = 4;
+
     public static final int DROPDOWN_MAX_ROWS = 5;
     public static final int DROPDOWN_ROW_H = 17;
 

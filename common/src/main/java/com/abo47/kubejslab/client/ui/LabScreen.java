@@ -1,5 +1,6 @@
 package com.abo47.kubejslab.client.ui;
 
+import java.util.HashSet;
 import java.util.Set;
 
 import javax.annotation.Nonnull;
@@ -8,6 +9,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 
 import com.lowdragmc.lowdraglib.gui.modular.IUIHolder;
 import com.lowdragmc.lowdraglib.gui.modular.ModularUI;
@@ -19,10 +21,16 @@ import com.lowdragmc.lowdraglib.gui.widget.WidgetGroup;
 import com.lowdragmc.lowdraglib.utils.Position;
 
 public final class LabScreen {
-    private static final ColorRectTexture ROOT_FILL = new ColorRectTexture(LabColors.SURFACE_BASE);
-    private static final ColorRectTexture PANEL_FILL = new ColorRectTexture(LabColors.SURFACE_PANEL);
-    private static final ColorRectTexture INNER_FILL = new ColorRectTexture(LabColors.SURFACE_BASE);
-    private static final ColorRectTexture BORDER_TEX = new ColorRectTexture(LabColors.BORDER_BASE);
+    static final Set<ResourceLocation> NEW_RECIPE_IDS = new HashSet<>();
+    private static final IGuiTexture ROOT_TEXTURE =
+            LabColors.bordered(LabColors.SURFACE_BASE, LabColors.BORDER_BASE);
+    private static final IGuiTexture PANEL_TEXTURE =
+            LabColors.bordered(LabColors.SURFACE_PANEL, LabColors.BORDER_BASE);
+    private static final IGuiTexture INNER_TEXTURE =
+            LabColors.bordered(LabColors.SURFACE_BASE, LabColors.BORDER_BASE);
+    private static final ColorRectTexture DIVIDER_TEX = new ColorRectTexture(LabColors.BORDER_BASE);
+    private static final ColorRectTexture DIVIDER_FILL_TEX = new ColorRectTexture(LabColors.SURFACE_PANEL);
+    private static final ColorRectTexture TAB_ERASE_TEX = new ColorRectTexture(LabColors.SURFACE_BASE);
 
     private LabScreen() {
     }
@@ -81,11 +89,7 @@ public final class LabScreen {
 
         @Override
         public void drawInBackground(@Nonnull GuiGraphics g, int mx, int my, float pt) {
-            ROOT_FILL.draw(g, mx, my, getPositionX(), getPositionY(), getSizeWidth(), getSizeHeight());
-            BORDER_TEX.draw(g, mx, my, getPositionX(), getPositionY(), getSizeWidth(), 1);
-            BORDER_TEX.draw(g, mx, my, getPositionX(), getPositionY() + getSizeHeight() - 1, getSizeWidth(), 1);
-            BORDER_TEX.draw(g, mx, my, getPositionX(), getPositionY(), 1, getSizeHeight());
-            BORDER_TEX.draw(g, mx, my, getPositionX() + getSizeWidth() - 1, getPositionY(), 1, getSizeHeight());
+            ROOT_TEXTURE.draw(g, mx, my, getPositionX(), getPositionY(), getSizeWidth(), getSizeHeight());
             super.drawInBackground(g, mx, my, pt);
         }
     }
@@ -100,6 +104,7 @@ public final class LabScreen {
         private LabRecipeBrowserWidget recipeBrowser;
         private LabMachineDropdownWidget machineDropdown;
         private LabMachineLayoutWidget machineLayout;
+        private LabRecipeSettingsWidget settingsWidget;
         private PlayerInventoryWidget inventory;
 
         LabPanelWidget(boolean isLeft) {
@@ -157,7 +162,7 @@ public final class LabScreen {
             searchField.setMaxStringLength(Integer.MAX_VALUE);
             searchField.setValidator(LabRecipeIndex::normalizeUserSearch);
             searchField.setBordered(false);
-            searchField.setBackground(borderedTexture(LabColors.SURFACE_BASE, LabColors.BORDER_BASE));
+            searchField.setBackground(LabColors.bordered(LabColors.SURFACE_BASE, LabColors.BORDER_BASE));
             searchField.setTextColor(LabColors.TEXT_PRIMARY);
             searchField.setVisible(false);
             addWidget(searchField);
@@ -170,16 +175,17 @@ public final class LabScreen {
         }
 
         private void buildRightContent() {
-            int innerW = getSizeWidth() - LabLayout.PANEL_INSET * 2;
             int innerTop = LabLayout.PANEL_INSET + LabLayout.TAB_H;
             int searchY = innerTop + LabLayout.SEARCH_GAP;
 
-            int dropdownW = LabLayout.recipeCardWidth(innerW);
-            int dropdownX = LabLayout.PANEL_INSET + (innerW - dropdownW) / 2;
+            int leftAreaW = LabLayout.MACHINE_W;
+            int columnW = LabLayout.MACHINE_W - LabLayout.MACHINE_PAD * 2;
+            int columnX = LabLayout.PANEL_INSET + (leftAreaW - columnW) / 2;
+
             machineDropdown = new LabMachineDropdownWidget(
-                    dropdownX,
+                    columnX,
                     searchY,
-                    dropdownW,
+                    columnW,
                     LabLayout.SEARCH_H);
             machineDropdown.setClientSideWidget();
             addWidget(machineDropdown);
@@ -187,18 +193,28 @@ public final class LabScreen {
             int layoutY = searchY + LabLayout.SEARCH_H + LabLayout.MACHINE_GAP;
             int invY = LabLayout.inventoryY(getSizeHeight());
             int layoutH = invY - layoutY - LabLayout.MACHINE_GAP;
-            int machineX = LabLayout.PANEL_INSET + (innerW - LabLayout.MACHINE_W) / 2 + LabLayout.MACHINE_PAD;
             machineLayout = new LabMachineLayoutWidget(
-                    machineX,
+                    columnX,
                     layoutY + LabLayout.MACHINE_PAD,
-                    LabLayout.MACHINE_W - LabLayout.MACHINE_PAD * 2,
+                    columnW,
                     layoutH - LabLayout.MACHINE_PAD * 2);
             machineLayout.setClientSideWidget();
             addWidget(machineLayout);
 
-            int invX = LabLayout.PANEL_INSET + (innerW - LabLayout.INV_W) / 2;
+            int settingsX = LabLayout.PANEL_INSET + LabLayout.MACHINE_W + LabLayout.AREA_GAP;
+            int settingsH = invY + LabLayout.INV_H - searchY;
+            settingsWidget = new LabRecipeSettingsWidget(
+                    settingsX,
+                    searchY,
+                    LabLayout.MACHINE_W,
+                    settingsH);
+            settingsWidget.setClientSideWidget();
+            settingsWidget.setOnClear(() -> machineLayout.clearPhantoms());
+            settingsWidget.setOnSave(this::saveRecipe);
+            addWidget(settingsWidget);
+
             inventory = new PlayerInventoryWidget();
-            inventory.setSelfPosition(new Position(invX, invY));
+            inventory.setSelfPosition(new Position(LabLayout.PANEL_INSET + (leftAreaW - LabLayout.INV_W) / 2, invY));
             addWidget(inventory);
         }
 
@@ -213,20 +229,29 @@ public final class LabScreen {
             int innerTopY = py + panelInset + tabH;
             int innerH = ph - panelInset - tabH - panelInset;
 
-            PANEL_FILL.draw(g, mx, my, px, py, pw, ph);
+            PANEL_TEXTURE.draw(g, mx, my, px, py, pw, ph);
 
             int innerX = px + panelInset;
             int innerW = pw - panelInset * 2;
-            INNER_FILL.draw(g, mx, my, innerX, innerTopY, innerW, innerH);
-            BORDER_TEX.draw(g, mx, my, innerX, innerTopY, innerW, 1);
-            BORDER_TEX.draw(g, mx, my, innerX, innerTopY + innerH - 1, innerW, 1);
-            BORDER_TEX.draw(g, mx, my, innerX, innerTopY, 1, innerH);
-            BORDER_TEX.draw(g, mx, my, innerX + innerW - 1, innerTopY, 1, innerH);
+            INNER_TEXTURE.draw(g, mx, my, innerX, innerTopY, innerW, innerH);
 
-            BORDER_TEX.draw(g, mx, my, px, py, pw, 1);
-            BORDER_TEX.draw(g, mx, my, px, py + ph - 1, pw, 1);
-            BORDER_TEX.draw(g, mx, my, px, py, 1, ph);
-            BORDER_TEX.draw(g, mx, my, px + pw - 1, py, 1, ph);
+            if (!isLeft) {
+                int dividerX = innerX + LabLayout.MACHINE_W + LabLayout.AREA_GAP / 2 - 3;
+                DIVIDER_TEX.draw(g, mx, my, dividerX, innerTopY, 1, innerH);
+                DIVIDER_FILL_TEX.draw(g, mx, my, dividerX + 1, innerTopY, 4, innerH);
+                DIVIDER_TEX.draw(g, mx, my, dividerX + 5, innerTopY, 1, innerH);
+            }
+
+            for (LabTab tab : tabs) {
+                if (!tab.isTabActive()) {
+                    continue;
+                }
+                int eraseX = tab.getPositionX() + 1;
+                int eraseW = tab.getSizeWidth() - 2;
+                if (eraseW > 0) {
+                    TAB_ERASE_TEX.draw(g, mx, my, eraseX, innerTopY, eraseW, 1);
+                }
+            }
 
             super.drawInBackground(g, mx, my, pt);
         }
@@ -292,14 +317,18 @@ public final class LabScreen {
                 if (showRecipeView) {
                     recipeBrowser.setKubejsOnly(getSelectedTabIndex() == 1);
                     recipeBrowser.setMachineFilter(rightPanel.getMachineRecipeIds());
+                    recipeBrowser.setNewRecipeIds(NEW_RECIPE_IDS);
                     recipeBrowser.rebuild();
                 }
             } else {
                 boolean recipeTabActive = getSelectedTabIndex() == 0;
                 machineDropdown.setVisible(recipeTabActive);
                 machineLayout.setVisible(recipeTabActive);
+                settingsWidget.setVisible(recipeTabActive);
                 if (recipeTabActive) {
-                    machineLayout.setMachine(machineDropdown.getSelectedMachine());
+                    LabMachine machine = machineDropdown.getSelectedMachine();
+                    machineLayout.setMachine(machine);
+                    settingsWidget.setShapelessSupported(machine != null && machine.supported());
                 }
             }
         }
@@ -321,20 +350,40 @@ public final class LabScreen {
             machineLayout.showRecipe(entry);
         }
 
-        private void onSearchChanged(String value) {
-            recipeBrowser.setQuery(value);
+        private void saveRecipe() {
+            ItemStack output = machineLayout.getOutput();
+            if (output.isEmpty()) return;
+
+            ItemStack[][] grid = machineLayout.getGrid();
+            boolean hasInput = false;
+            for (int r = 0; r < 3 && !hasInput; r++) {
+                for (int c = 0; c < 3 && !hasInput; c++) {
+                    hasInput = !grid[r][c].isEmpty();
+                }
+            }
+            if (!hasInput) return;
+
+            ResourceLocation id;
+            if (settingsWidget.isShapeless()) {
+                java.util.List<ItemStack> inputs = new java.util.ArrayList<>();
+                for (int r = 0; r < 3; r++) {
+                    for (int c = 0; c < 3; c++) {
+                        if (!grid[r][c].isEmpty()) inputs.add(grid[r][c]);
+                    }
+                }
+                id = LabRecipeSaver.saveShapeless(inputs.toArray(new ItemStack[0]), output);
+            } else {
+                id = LabRecipeSaver.saveShaped(grid, output);
+            }
+
+            if (id != null) {
+                NEW_RECIPE_IDS.add(id);
+                LabRecipeSaver.triggerReload();
+            }
         }
 
-        private static IGuiTexture borderedTexture(int fillColor, int borderColor) {
-            ColorRectTexture fill = new ColorRectTexture(fillColor);
-            ColorRectTexture border = new ColorRectTexture(borderColor);
-            return (g, mx, my, x, y, w, h) -> {
-                fill.draw(g, mx, my, x, y, w, h);
-                border.draw(g, mx, my, x, y, w, 1);
-                border.draw(g, mx, my, x, y + h - 1, w, 1);
-                border.draw(g, mx, my, x, y, 1, h);
-                border.draw(g, mx, my, x + w - 1, y, 1, h);
-            };
+        private void onSearchChanged(String value) {
+            recipeBrowser.setQuery(value);
         }
     }
 }

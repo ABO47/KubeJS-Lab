@@ -8,5 +8,8 @@
   "kubejslab.gui.lab_tab_built_in": "Built In",
   "kubejslab.gui.lab_tab_custom": "Custom",
   "kubejslab.gui.lab_tab_recipe": "Recipe",
-  "kubejslab.gui.lab_not_supported": "not supported"
+  "kubejslab.gui.lab_not_supported": "not supported",
+  "kubejslab.gui.lab_recipe_shapeless": "Shapeless",
+  "kubejslab.gui.lab_recipe_save": "Save",
+  "kubejslab.gui.lab_recipe_clear": "Clear"
 }

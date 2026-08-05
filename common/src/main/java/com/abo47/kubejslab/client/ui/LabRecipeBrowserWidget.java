@@ -7,17 +7,19 @@ import java.util.function.Consumer;
 
 import javax.annotation.Nonnull;
 
+import com.mojang.blaze3d.systems.RenderSystem;
+
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
 
-import org.joml.Vector4f;
-
+import com.lowdragmc.lowdraglib.gui.widget.Widget;
 import com.lowdragmc.lowdraglib.gui.widget.WidgetGroup;
 
 public final class LabRecipeBrowserWidget extends WidgetGroup {
     private String query;
     private boolean kubejsOnly;
     private Set<ResourceLocation> machineRecipeIds;
+    private Set<ResourceLocation> newRecipeIds = Set.of();
     private int scroll;
     private int scrollMax;
     private boolean dragging;
@@ -49,6 +51,10 @@ public final class LabRecipeBrowserWidget extends WidgetGroup {
         scroll = 0;
     }
 
+    public void setNewRecipeIds(Set<ResourceLocation> newRecipeIds) {
+        this.newRecipeIds = newRecipeIds;
+    }
+
     public void rebuild() {
         clearAllWidgets();
         cards = new ArrayList<>();
@@ -70,7 +76,7 @@ public final class LabRecipeBrowserWidget extends WidgetGroup {
         for (int row = 0; row < rows; row++) {
             int y = -scroll + row * rowStep;
             LabRecipeIndex.LabRecipeEntry entry = entries.get(row);
-            LabRecipeCardWidget card = new LabRecipeCardWidget(cardX, y, cardW, cardH, entry, () -> {
+            LabRecipeCardWidget card = new LabRecipeCardWidget(cardX, y, cardW, cardH, entry, newRecipeIds.contains(entry.id()), () -> {
                 if (recipeClickListener != null) {
                     recipeClickListener.accept(entry);
                 }
@@ -102,7 +108,7 @@ public final class LabRecipeBrowserWidget extends WidgetGroup {
         int rowStep = LabLayout.CARD_ROW_STEP;
         for (int i = 0; i < cards.size(); i++) {
             LabRecipeCardWidget card = cards.get(i);
-            card.setSelfPosition(card.getPositionX(), -scroll + i * rowStep);
+            card.setSelfPosition(LabLayout.LIST_INSET, -scroll + i * rowStep);
         }
     }
 
@@ -112,12 +118,17 @@ public final class LabRecipeBrowserWidget extends WidgetGroup {
         int y = getPositionY();
         int w = getSizeWidth();
         int h = getSizeHeight();
-        var pose = g.pose().last().pose();
-        var topLeft = pose.transform(new Vector4f(x, y, 0, 1));
-        var bottomRight = pose.transform(new Vector4f(x + w, y + h, 0, 1));
         g.flush();
-        g.enableScissor((int) topLeft.x, (int) topLeft.y, (int) bottomRight.x, (int) bottomRight.y);
-        drawWidgetsBackground(g, mx, my, pt);
+        g.enableScissor(x, y, x + w, y + h);
+        for (Widget child : widgets) {
+            int cy = child.getPositionY();
+            if (cy + child.getSizeHeight() < y || cy > y + h) {
+                continue;
+            }
+            RenderSystem.enableBlend();
+            RenderSystem.setShaderColor(1, 1, 1, 1);
+            child.drawInBackground(g, mx, my, pt);
+        }
         g.flush();
         g.disableScissor();
     }

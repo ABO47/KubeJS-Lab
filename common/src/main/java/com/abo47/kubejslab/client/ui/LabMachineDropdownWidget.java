@@ -20,10 +20,9 @@ import com.lowdragmc.lowdraglib.gui.widget.Widget;
 import com.lowdragmc.lowdraglib.gui.widget.WidgetGroup;
 
 public final class LabMachineDropdownWidget extends WidgetGroup {
-    private static final ColorRectTexture HOVER_FILL = new ColorRectTexture(LabColors.SURFACE_PANEL_ALT);
     private static final ColorRectTexture SELECTED_FILL = new ColorRectTexture(LabColors.SURFACE_BASE);
     private static final ColorRectTexture POPUP_FILL = new ColorRectTexture(0xFF0D1114);
-    private static final ColorRectTexture BORDER = new ColorRectTexture(LabColors.BORDER_BASE);
+    private static final ColorRectTexture POPUP_BORDER = new ColorRectTexture(LabColors.BORDER_BASE);
 
     private final TextFieldWidget searchField;
     private List<LabMachine> machines = List.of();
@@ -33,12 +32,14 @@ public final class LabMachineDropdownWidget extends WidgetGroup {
     private int scroll;
     private Consumer<LabMachine> onMachineChanged;
     private TextTexture selectedDisplayTex;
+    private String cachedFilterText = "";
+    private List<LabMachine> cachedFiltered = List.of();
     private List<LabMachine> cachedVisible = List.of();
     private List<RowTextures> cachedRowTextures = List.of();
 
     public LabMachineDropdownWidget(int x, int y, int w, int h) {
         super(x, y, w, h);
-        setBackground(borderedTexture(LabColors.SURFACE_BASE, LabColors.BORDER_BASE));
+        setBackground(LabColors.bordered(LabColors.SURFACE_BASE, LabColors.BORDER_BASE));
         searchField = new TextFieldWidget(0, 0, w, h, (Supplier<String>) null, this::onFilterChanged) {
             @Override
             public boolean mouseClicked(double mouseX, double mouseY, int button) {
@@ -93,12 +94,17 @@ public final class LabMachineDropdownWidget extends WidgetGroup {
         if (filterText.isBlank()) {
             return machines;
         }
-        List<LabMachine> result = new java.util.ArrayList<>();
+        if (filterText.equals(cachedFilterText)) {
+            return cachedFiltered;
+        }
+        cachedFilterText = filterText;
+        List<LabMachine> result = new ArrayList<>();
         for (LabMachine machine : machines) {
             if (machine.name().toLowerCase(Locale.ROOT).contains(filterText)) {
                 result.add(machine);
             }
         }
+        cachedFiltered = result;
         return result;
     }
 
@@ -129,7 +135,7 @@ public final class LabMachineDropdownWidget extends WidgetGroup {
     }
 
     private void ensureRowTextures(List<LabMachine> visible) {
-        if (visible == cachedVisible) {
+        if (visible.equals(cachedVisible)) {
             return;
         }
         cachedVisible = visible;
@@ -178,10 +184,6 @@ public final class LabMachineDropdownWidget extends WidgetGroup {
         pose.translate(0, 0, 200);
 
         POPUP_FILL.draw(g, mx, my, x, popupY, w, popupH);
-        BORDER.draw(g, mx, my, x, popupY, w, 1);
-        BORDER.draw(g, mx, my, x, popupY + popupH - 1, w, 1);
-        BORDER.draw(g, mx, my, x, popupY, 1, popupH);
-        BORDER.draw(g, mx, my, x + w - 1, popupY, 1, popupH);
 
         ensureRowTextures(visible);
         for (int row = 0; row < visibleRows; row++) {
@@ -195,29 +197,19 @@ public final class LabMachineDropdownWidget extends WidgetGroup {
             if (machine == selected) {
                 SELECTED_FILL.draw(g, mx, my, x + 1, ry, w - 2, rowH - 1);
             } else if (Widget.isMouseOver(x + 1, ry, w - 2, rowH - 1, mx, my)) {
-                HOVER_FILL.draw(g, mx, my, x + 1, ry, w - 2, rowH - 1);
+                LabGlow.drawGlow(g, mx, my, x + 1, ry, w - 2, rowH - 1);
             }
             tex.icon.draw(g, mx, my, x + 3, ry + 1, 15, 15);
             (machine == selected ? tex.nameSelected : tex.nameNormal)
                     .draw(g, mx, my, x + 19, ry + 1, w - 22, rowH - 1);
         }
 
-        if (visible.size() > LabLayout.DROPDOWN_MAX_ROWS) {
-            drawScrollbar(g, mx, my, x, popupY, popupH, visible.size());
-        }
+        POPUP_BORDER.draw(g, mx, my, x, popupY, w, 1);
+        POPUP_BORDER.draw(g, mx, my, x, popupY + popupH - 1, w, 1);
+        POPUP_BORDER.draw(g, mx, my, x, popupY, 1, popupH);
+        POPUP_BORDER.draw(g, mx, my, x + w - 1, popupY, 1, popupH);
 
         pose.popPose();
-    }
-
-    private void drawScrollbar(GuiGraphics g, int mx, int my, int x, int popupY, int popupH, int count) {
-        int trackX = x + getSizeWidth() - LabLayout.SCROLLBAR_W - 1;
-        BORDER.draw(g, mx, my, trackX, popupY + 1, 1, popupH - 2);
-        int scrollMax = count - LabLayout.DROPDOWN_MAX_ROWS;
-        int knobH = Math.max(LabLayout.KNOB_MIN_H,
-                (int) ((float) popupH * ((float) popupH / ((float) count * LabLayout.DROPDOWN_ROW_H))));
-        int knobMax = popupH - knobH;
-        int knobY = popupY + (int) ((float) scroll / (float) scrollMax * (float) knobMax);
-        HOVER_FILL.draw(g, mx, my, trackX - 3, knobY, LabLayout.SCROLLBAR_W, knobH);
     }
 
     @Override
@@ -269,18 +261,6 @@ public final class LabMachineDropdownWidget extends WidgetGroup {
             return machine.name();
         }
         return machine.name() + " (" + I18n.get(LabGuiKeys.NOT_SUPPORTED) + ")";
-    }
-
-    private static IGuiTexture borderedTexture(int fillColor, int borderColor) {
-        ColorRectTexture fill = new ColorRectTexture(fillColor);
-        ColorRectTexture border = new ColorRectTexture(borderColor);
-        return (g, mx, my, x, y, w, h) -> {
-            fill.draw(g, mx, my, x, y, w, h);
-            border.draw(g, mx, my, x, y, w, 1);
-            border.draw(g, mx, my, x, y + h - 1, w, 1);
-            border.draw(g, mx, my, x, y, 1, h);
-            border.draw(g, mx, my, x + w - 1, y, 1, h);
-        };
     }
 
     private record RowTextures(ItemStackTexture icon, TextTexture nameSelected, TextTexture nameNormal) {

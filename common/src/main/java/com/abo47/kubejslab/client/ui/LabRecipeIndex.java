@@ -16,9 +16,16 @@ import net.minecraft.world.item.crafting.RecipeManager;
 
 public final class LabRecipeIndex {
     private static RecipeManager cachedManager;
+    private static int cachedCount = -1;
     private static List<LabRecipeEntry> entries = List.of();
+    private static long version;
 
     private LabRecipeIndex() {
+    }
+
+    public static long version() {
+        entries();
+        return version;
     }
 
     public static List<LabRecipeEntry> search(String query, boolean kubejsOnly, Set<ResourceLocation> machineRecipeIds) {
@@ -55,12 +62,15 @@ public final class LabRecipeIndex {
         RecipeManager manager = connection == null ? null : connection.getRecipeManager();
         if (manager == null) {
             cachedManager = null;
+            cachedCount = -1;
             entries = List.of();
             return entries;
         }
-        if (manager != cachedManager) {
+        if (manager != cachedManager || manager.getRecipes().size() != cachedCount) {
             cachedManager = manager;
+            cachedCount = manager.getRecipes().size();
             entries = build(manager, connection.registryAccess());
+            version++;
         }
         return entries;
     }

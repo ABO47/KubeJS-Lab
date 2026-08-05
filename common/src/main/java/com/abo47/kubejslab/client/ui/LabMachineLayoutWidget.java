@@ -1,6 +1,10 @@
 package com.abo47.kubejslab.client.ui;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import net.minecraft.client.renderer.Rect2i;
@@ -13,6 +17,7 @@ import mezz.jei.api.gui.ingredient.IRecipeSlotDrawable;
 import mezz.jei.api.gui.ingredient.IRecipeSlotView;
 import mezz.jei.api.recipe.IFocusGroup;
 import mezz.jei.api.recipe.IRecipeManager;
+import mezz.jei.api.recipe.RecipeIngredientRole;
 import mezz.jei.api.recipe.category.IRecipeCategory;
 import mezz.jei.api.runtime.IJeiRuntime;
 
@@ -27,6 +32,9 @@ public final class LabMachineLayoutWidget extends WidgetGroup {
     private LabRecipeIndex.LabRecipeEntry entry;
     private IRecipeLayoutDrawable<?> jeiLayout;
     private IRecipeLayoutDrawable<?> sampleLayout;
+    private final List<SlotPair> slotPairs = new ArrayList<>();
+    private int paintButton = -1;
+    private final Set<PhantomHandler> paintedSlots = new HashSet<>();
 
     public LabMachineLayoutWidget(int x, int y, int w, int h) {
         super(x, y, w, h);
@@ -46,8 +54,46 @@ public final class LabMachineLayoutWidget extends WidgetGroup {
         rebuild();
     }
 
+    public ItemStack[][] getGrid() {
+        ItemStack[][] grid = new ItemStack[3][3];
+        for (int r = 0; r < 3; r++) {
+            for (int c = 0; c < 3; c++) {
+                grid[r][c] = ItemStack.EMPTY;
+            }
+        }
+        for (SlotPair pair : slotPairs) {
+            if (pair.view.getRole() == RecipeIngredientRole.INPUT) {
+                int x = pair.handler.getStackInSlot(0).isEmpty() ? -1 : 0;
+                if (x == 0) {
+                    int gx = pair.gx;
+                    int gy = pair.gy;
+                    if (gx >= 0 && gx < 3 && gy >= 0 && gy < 3) {
+                        grid[gy][gx] = pair.handler.getStackInSlot(0);
+                    }
+                }
+            }
+        }
+        return grid;
+    }
+
+    public ItemStack getOutput() {
+        for (SlotPair pair : slotPairs) {
+            if (pair.view.getRole() == RecipeIngredientRole.OUTPUT) {
+                return pair.handler.getStackInSlot(0);
+            }
+        }
+        return ItemStack.EMPTY;
+    }
+
+    public void clearPhantoms() {
+        for (SlotPair pair : slotPairs) {
+            pair.handler.setStackInSlot(0, ItemStack.EMPTY);
+        }
+    }
+
     private void rebuild() {
         clearAllWidgets();
+        slotPairs.clear();
 
         IRecipeLayoutDrawable<?> source = jeiLayout != null ? jeiLayout : sampleLayout;
         int layoutW;
@@ -88,11 +134,17 @@ public final class LabMachineLayoutWidget extends WidgetGroup {
                     break;
                 }
             }
-            PhantomSlotWidget slot = new PhantomSlotWidget(new PhantomHandler(stack), 0,
+            PhantomHandler handler = new PhantomHandler(stack);
+            LabPhantomSlotWidget slot = new LabPhantomSlotWidget(handler, 0,
                     ox + rect.getX(), oy + rect.getY());
             slot.setClearSlotOnRightClick(true);
             slot.setClientSideWidget();
+            slot.setDragOwner(this);
             addWidget(slot);
+
+            int gx = (rect.getX() - 1) / 18;
+            int gy = (rect.getY() - 1) / 18;
+            slotPairs.add(new SlotPair(handler, view, gx, gy));
         }
     }
 
@@ -140,7 +192,58 @@ public final class LabMachineLayoutWidget extends WidgetGroup {
         return runtime.getJeiHelpers().getFocusFactory().createFocusGroup(Collections.emptyList());
     }
 
-    private static final class PhantomHandler implements IItemTransfer {
+    private record SlotPair(PhantomHandler handler, IRecipeSlotView view, int gx, int gy) {
+    }
+
+    void beginPaint(int button) {
+        paintButton = button;
+        paintedSlots.clear();
+    }
+
+    boolean isPainting(int button) {
+        return paintButton == button;
+    }
+
+    void endPaint() {
+        paintButton = -1;
+        paintedSlots.clear();
+    }
+
+    void paintSlot(int button, PhantomHandler handler) {
+        if (gui == null) {
+            return;
+        }
+        if (!paintedSlots.add(handler)) {
+            return;
+        }
+        ItemStack carried = gui.getModularUIContainer().getCarried();
+        if (button == LabColors.MOUSE_BUTTON_RIGHT && carried.isEmpty()) {
+            handler.setStackInSlot(0, ItemStack.EMPTY);
+            return;
+        }
+        if (carried.isEmpty()) {
+            return;
+        }
+        ItemStack current = handler.getStackInSlot(0);
+        if (current.isEmpty() || !ItemStack.isSameItem(current, carried)) {
+            handler.setStackInSlot(0, carried.copyWithCount(1));
+        } else {
+            handler.setStackInSlot(0, current.copyWithCount(
+                    Math.min(current.getCount() + 1, current.getMaxStackSize())));
+        }
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        boolean handled = super.mouseReleased(mouseX, mouseY, button);
+        if (paintButton == button) {
+            endPaint();
+            handled = true;
+        }
+        return handled;
+    }
+
+    static final class PhantomHandler implements IItemTransfer {
         private ItemStack stack;
 
         PhantomHandler(ItemStack stack) {
