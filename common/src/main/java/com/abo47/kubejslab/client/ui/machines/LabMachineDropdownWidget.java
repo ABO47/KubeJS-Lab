@@ -154,6 +154,13 @@ public final class LabMachineDropdownWidget extends WidgetGroup {
     private void openPopup() {
         ensureMachines();
         scroll = 0;
+        if (selected != null) {
+            int index = filtered().indexOf(selected);
+            if (index >= 0) {
+                int scrollMax = Math.max(0, filtered().size() - LabLayout.DROPDOWN_MAX_ROWS);
+                scroll = Math.min(index, scrollMax);
+            }
+        }
         open = !machines.isEmpty();
     }
 
