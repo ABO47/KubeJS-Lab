@@ -50,6 +50,7 @@ public record C2SRecipeEditPacket(LabRecipeEditAction action, @Nullable Resource
         buf.writeBoolean(values.acceptMirrored());
         buf.writeVarInt(values.gridWidth());
         buf.writeVarInt(values.gridHeight());
+        buf.writeVarInt(values.outputCount());
     }
 
     public static C2SRecipeEditPacket read(FriendlyByteBuf buf) {
@@ -77,10 +78,11 @@ public record C2SRecipeEditPacket(LabRecipeEditAction action, @Nullable Resource
         boolean acceptMirrored = buf.readBoolean();
         int gridWidth = Math.max(1, Math.min(9, buf.readVarInt()));
         int gridHeight = Math.max(1, Math.min(9, buf.readVarInt()));
+        int recipeOutputCount = Math.max(1, Math.min(6, buf.readVarInt()));
         return new C2SRecipeEditPacket(action, targetId,
                 new LabRecipePayload(machineUid, inputs, outputs, name,
                         new LabRecipeFieldValues(shapeless, experience, cookingTime, count, processingTime,
-                                heatRequirement, keepHeldItem, acceptMirrored, gridWidth, gridHeight)));
+                                heatRequirement, keepHeldItem, acceptMirrored, gridWidth, gridHeight, recipeOutputCount)));
     }
 
     public void handle(ServerPlayer player) {

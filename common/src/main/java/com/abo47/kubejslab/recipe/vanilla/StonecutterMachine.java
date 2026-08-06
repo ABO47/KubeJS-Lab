@@ -56,7 +56,7 @@ public final class StonecutterMachine implements LabRecipeMachine {
             return new LabRecipeFieldValues(current.shapeless(), current.experience(), current.cookingTime(),
                     recipe.getResultItem(RegistryAccess.EMPTY).getCount(), current.processingTime(),
                     current.heatRequirement(), current.keepHeldItem(), current.acceptMirrored(),
-                    current.gridWidth(), current.gridHeight());
+                    current.gridWidth(), current.gridHeight(), current.outputCount());
         }
         return current;
     }

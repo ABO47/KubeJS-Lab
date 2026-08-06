@@ -9,7 +9,6 @@ import javax.annotation.Nonnull;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
@@ -51,6 +50,7 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
     private final LabToggleSwitchWidget acceptMirroredToggle;
     private final TextFieldWidget gridWidthField;
     private final TextFieldWidget gridHeightField;
+    private final TextFieldWidget outputCountField;
     private final TextTexture shapelessLabel;
     private final TextTexture experienceLabel;
     private final TextTexture cookingTimeLabel;
@@ -61,11 +61,8 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
     private final TextTexture acceptMirroredLabel;
     private final TextTexture gridWidthLabel;
     private final TextTexture gridHeightLabel;
+    private final TextTexture outputCountLabel;
     private final TextTexture chanceLabel;
-    private final UnitLabel experienceUnit;
-    private final UnitLabel cookingTimeUnit;
-    private final UnitLabel processingTimeUnit;
-    private final UnitLabel percentUnit;
     private final LabActionButton clearButton;
     private final LabActionButton saveButton;
     private final LabScrollBarWidget scrollBar;
@@ -80,11 +77,13 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
     private boolean acceptMirrored = true;
     private String gridWidthText = Integer.toString(LabRecipeFieldValues.defaults().gridWidth());
     private String gridHeightText = Integer.toString(LabRecipeFieldValues.defaults().gridHeight());
+    private String outputCountText = Integer.toString(LabRecipeFieldValues.defaults().outputCount());
+    private boolean outputCountEnabled;
+    private Runnable outputCountListener;
     private List<LabRecipeField> fields = List.of();
     private List<FieldRow> rows = List.of();
     private List<OutputRow> outputRows = List.of();
     private final List<TextFieldWidget> outputChanceFields = new ArrayList<>();
-    private boolean unitsMeasured;
     private int scrollOffset;
     private int scrollMax;
     private boolean dragging;
@@ -110,12 +109,8 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
         acceptMirroredLabel = rowLabel(LabGuiKeys.LAB_RECIPE_ACCEPT_MIRRORED, labelW);
         gridWidthLabel = rowLabel(LabGuiKeys.LAB_RECIPE_GRID_WIDTH, labelW);
         gridHeightLabel = rowLabel(LabGuiKeys.LAB_RECIPE_GRID_HEIGHT, labelW);
+        outputCountLabel = rowLabel(LabGuiKeys.LAB_RECIPE_OUTPUT_COUNT, labelW);
         chanceLabel = rowLabel(LabGuiKeys.LAB_RECIPE_CHANCE, labelW);
-
-        experienceUnit = new UnitLabel(LabGuiKeys.LAB_RECIPE_UNIT_XP);
-        cookingTimeUnit = new UnitLabel(LabGuiKeys.LAB_RECIPE_UNIT_TICKS);
-        processingTimeUnit = new UnitLabel(LabGuiKeys.LAB_RECIPE_UNIT_TICKS);
-        percentUnit = new UnitLabel(LabGuiKeys.LAB_RECIPE_UNIT_PERCENT);
 
         shapelessToggle = new LabToggleSwitchWidget(
                 0, 0,
@@ -126,18 +121,21 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
 
         experienceField = numberField(0, 0, FIELD_W, () -> experienceText,
                 value -> experienceText = value, experienceText);
+        experienceField.setHoverTooltips(Component.translatable(LabGuiKeys.LAB_RECIPE_UNIT_XP));
         addWidget(experienceField);
 
         cookingTimeField = numberField(0, 0, FIELD_W, () -> cookingTimeText,
-                value -> cookingTimeText = value, cookingTimeText, 0, Integer.MAX_VALUE);
+                value -> cookingTimeText = value, cookingTimeText);
+        cookingTimeField.setHoverTooltips(Component.translatable(LabGuiKeys.LAB_RECIPE_UNIT_TICKS));
         addWidget(cookingTimeField);
 
         countField = numberField(0, 0, FIELD_W, () -> countText,
-                value -> countText = value, countText, 1, 64);
+                value -> countText = value, countText);
         addWidget(countField);
 
         processingTimeField = numberField(0, 0, FIELD_W, () -> processingTimeText,
-                value -> processingTimeText = value, processingTimeText, 0, Integer.MAX_VALUE);
+                value -> processingTimeText = value, processingTimeText);
+        processingTimeField.setHoverTooltips(Component.translatable(LabGuiKeys.LAB_RECIPE_UNIT_TICKS));
         addWidget(processingTimeField);
 
         heatCycleButton = new LabActionButton(0, 0, CYCLE_W, FIELD_H, heatLabelText(heatRequirement), this::cycleHeat);
@@ -163,7 +161,7 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
                     gridWidthText = value;
                     notifyGridSize();
                 },
-                gridWidthText, 1, 9);
+                gridWidthText);
         addWidget(gridWidthField);
 
         gridHeightField = numberField(0, 0, FIELD_W,
@@ -172,8 +170,17 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
                     gridHeightText = value;
                     notifyGridSize();
                 },
-                gridHeightText, 1, 9);
+                gridHeightText);
         addWidget(gridHeightField);
+
+        outputCountField = numberField(0, 0, FIELD_W,
+                () -> outputCountText,
+                value -> {
+                    outputCountText = value;
+                    notifyOutputCount();
+                },
+                outputCountText);
+        addWidget(outputCountField);
 
         int btnH = LabLayout.SETTINGS_BTN_H;
         int bottomY = h - pad - btnH;
@@ -236,6 +243,7 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
         acceptMirroredToggle.setVisible(fields.contains(LabRecipeField.ACCEPT_MIRRORED));
         gridWidthField.setVisible(fields.contains(LabRecipeField.GRID_WIDTH));
         gridHeightField.setVisible(fields.contains(LabRecipeField.GRID_HEIGHT));
+        outputCountField.setVisible(fields.contains(LabRecipeField.OUTPUT_COUNT) && outputCountEnabled);
         scrollOffset = 0;
         rebuildRows();
     }
@@ -248,7 +256,7 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
         this.outputRows = List.copyOf(outputRows);
         for (OutputRow row : outputRows) {
             String initial = formatFloat(row.chanceSupplier().get() * 100f);
-            TextFieldWidget field = numberField(0, 0, FIELD_W,
+            TextFieldWidget             field = numberField(0, 0, FIELD_W,
                     () -> formatFloat(row.chanceSupplier().get() * 100f),
                     value -> {
                         if (value != null && !value.isBlank()) {
@@ -256,6 +264,7 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
                         }
                     },
                     initial);
+            field.setHoverTooltips(Component.translatable(LabGuiKeys.LAB_RECIPE_UNIT_PERCENT));
             addWidget(field);
             outputChanceFields.add(field);
         }
@@ -273,8 +282,9 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
                 heatRequirement,
                 keepHeldItem,
                 fields.contains(LabRecipeField.ACCEPT_MIRRORED) ? acceptMirrored : defaults.acceptMirrored(),
-                parseInt(gridWidthText, defaults.gridWidth()),
-                parseInt(gridHeightText, defaults.gridHeight()));
+                Math.max(1, Math.min(9, parseInt(gridWidthText, defaults.gridWidth()))),
+                Math.max(1, Math.min(9, parseInt(gridHeightText, defaults.gridHeight()))),
+                Math.max(1, Math.min(6, parseInt(outputCountText, defaults.outputCount()))));
     }
 
     public void applyValues(LabRecipeFieldValues values) {
@@ -288,12 +298,14 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
         acceptMirrored = values.acceptMirrored();
         gridWidthText = Integer.toString(Math.max(1, Math.min(9, values.gridWidth())));
         gridHeightText = Integer.toString(Math.max(1, Math.min(9, values.gridHeight())));
+        outputCountText = Integer.toString(Math.max(1, Math.min(6, values.outputCount())));
         experienceField.setCurrentString(experienceText);
         cookingTimeField.setCurrentString(cookingTimeText);
         countField.setCurrentString(countText);
         processingTimeField.setCurrentString(processingTimeText);
         gridWidthField.setCurrentString(gridWidthText);
         gridHeightField.setCurrentString(gridHeightText);
+        outputCountField.setCurrentString(outputCountText);
         heatCycleButton.setLabel(heatLabelText(heatRequirement));
     }
 
@@ -323,9 +335,28 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
         }
     }
 
+    public void setOutputCountEnabled(boolean enabled) {
+        outputCountEnabled = enabled;
+        outputCountField.setVisible(fields.contains(LabRecipeField.OUTPUT_COUNT) && enabled);
+        rebuildRows();
+    }
+
+    public void setOutputCountListener(Runnable listener) {
+        outputCountListener = listener;
+    }
+
+    public int outputCountValue() {
+        return Math.max(1, Math.min(6, parseInt(outputCountText, LabRecipeFieldValues.defaults().outputCount())));
+    }
+
+    private void notifyOutputCount() {
+        if (outputCountListener != null) {
+            outputCountListener.run();
+        }
+    }
+
     @Override
     public void drawInBackground(@Nonnull GuiGraphics g, int mx, int my, float pt) {
-        ensureUnitWidths();
         int x = getPositionX();
         int y = getPositionY();
         int w = getSizeWidth();
@@ -345,7 +376,7 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
             if (cardY + LabLayout.CARD_H < y || cardY > contentBottom) {
                 continue;
             }
-            drawCard(g, mx, my, cardX, y, cardW, rowY, row.label, row.unit,
+            drawCard(g, mx, my, cardX, y, cardW, rowY, row.label,
                     controlWidth(row.control), row.icon);
             if (row.control != null) {
                 g.flush();
@@ -381,27 +412,29 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
         List<FieldRow> built = new ArrayList<>(fields.size() + outputRows.size());
         for (LabRecipeField field : fields) {
             switch (field) {
-                case SHAPELESS -> built.add(new FieldRow(shapelessLabel, null, shapelessToggle, null));
-                case EXPERIENCE -> built.add(new FieldRow(experienceLabel, experienceUnit, experienceField, null));
-                case COOKING_TIME ->
-                        built.add(new FieldRow(cookingTimeLabel, cookingTimeUnit, cookingTimeField, null));
-                case COUNT -> built.add(new FieldRow(countLabel, null, countField, null));
-                case PROCESSING_TIME ->
-                        built.add(new FieldRow(processingTimeLabel, processingTimeUnit, processingTimeField, null));
+                case SHAPELESS -> built.add(new FieldRow(shapelessLabel, shapelessToggle, null));
+                case EXPERIENCE -> built.add(new FieldRow(experienceLabel, experienceField, null));
+                case COOKING_TIME -> built.add(new FieldRow(cookingTimeLabel, cookingTimeField, null));
+                case COUNT -> built.add(new FieldRow(countLabel, countField, null));
+                case PROCESSING_TIME -> built.add(new FieldRow(processingTimeLabel, processingTimeField, null));
                 case HEAT_REQUIREMENT ->
-                        built.add(new FieldRow(heatRequirementLabel, null, heatCycleButton, null));
+                        built.add(new FieldRow(heatRequirementLabel, heatCycleButton, null));
                 case KEEP_HELD_ITEM ->
-                        built.add(new FieldRow(keepHeldItemLabel, null, keepHeldItemToggle, null));
+                        built.add(new FieldRow(keepHeldItemLabel, keepHeldItemToggle, null));
                 case ACCEPT_MIRRORED ->
-                        built.add(new FieldRow(acceptMirroredLabel, null, acceptMirroredToggle, null));
-                case GRID_WIDTH -> built.add(new FieldRow(gridWidthLabel, null, gridWidthField, null));
-                case GRID_HEIGHT -> built.add(new FieldRow(gridHeightLabel, null, gridHeightField, null));
+                        built.add(new FieldRow(acceptMirroredLabel, acceptMirroredToggle, null));
+                case GRID_WIDTH -> built.add(new FieldRow(gridWidthLabel, gridWidthField, null));
+                case GRID_HEIGHT -> built.add(new FieldRow(gridHeightLabel, gridHeightField, null));
+                case OUTPUT_COUNT -> {
+                    if (outputCountEnabled) {
+                        built.add(new FieldRow(outputCountLabel, outputCountField, null));
+                    }
+                }
             }
         }
         for (int i = 0; i < outputRows.size(); i++) {
             OutputRow row = outputRows.get(i);
-            built.add(new FieldRow(chanceLabel, percentUnit, outputChanceFields.get(i),
-                    new ItemStackTexture(row.icon())));
+            built.add(new FieldRow(chanceLabel, outputChanceFields.get(i), new ItemStackTexture(row.icon())));
         }
         rows = built;
         recomputeScrollMax();
@@ -438,18 +471,6 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
         }
     }
 
-    private void ensureUnitWidths() {
-        if (unitsMeasured) {
-            return;
-        }
-        unitsMeasured = true;
-        experienceUnit.width = Minecraft.getInstance().font.width(experienceUnit.text);
-        cookingTimeUnit.width = Minecraft.getInstance().font.width(cookingTimeUnit.text);
-        processingTimeUnit.width = Minecraft.getInstance().font.width(processingTimeUnit.text);
-        percentUnit.width = Minecraft.getInstance().font.width(percentUnit.text);
-        relayoutFields();
-    }
-
     private int controlWidth(Widget control) {
         if (control == shapelessToggle || control == keepHeldItemToggle || control == acceptMirroredToggle) {
             return LabToggleSwitchWidget.DEFAULT_WIDTH;
@@ -464,27 +485,18 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
         return row.control == shapelessToggle || row.control == heatCycleButton
                 || row.control == keepHeldItemToggle || row.control == acceptMirroredToggle
                 ? cardX + cardW - pad - controlWidth(row.control)
-                : fieldXFor(cardX, cardW, pad, row.unit);
-    }
-
-    private int fieldXFor(int cardX, int cardW, int pad, UnitLabel unit) {
-        return cardX + cardW - pad - FIELD_W - 4 - (unit == null ? 0 : unit.width);
+                : cardX + cardW - pad - FIELD_W - 4;
     }
 
     private void drawCard(GuiGraphics g, int mx, int my, int cardX, int panelY, int cardW,
-            int rowY, TextTexture label, UnitLabel unit, int controlW, ItemStackTexture icon) {
+            int rowY, TextTexture label, int controlW, ItemStackTexture icon) {
         int cardY = panelY + rowY;
         CARD_TEXTURE.draw(g, mx, my, cardX, cardY, cardW, LabLayout.CARD_H);
         int pad = LabLayout.SETTINGS_PAD;
-        int unitW = unit == null ? 0 : unit.width;
         int iconW = icon == null ? 0 : 16 + 4;
-        int labelW = cardW - pad * 2 - controlW - 4 - (unitW > 0 ? unitW + 4 : 0) - iconW;
+        int labelW = cardW - pad * 2 - controlW - 4 - iconW;
         if (icon != null) {
             icon.draw(g, mx, my, cardX + pad, cardY + (LabLayout.CARD_H - 16) / 2, 16, 16);
-        }
-        if (unitW > 0) {
-            unit.tex.setWidth(unitW);
-            unit.tex.draw(g, mx, my, cardX + cardW - pad - unitW, cardY, unitW, LabLayout.CARD_H);
         }
         label.draw(g, mx, my, cardX + pad + iconW, cardY, labelW, LabLayout.CARD_H);
     }
@@ -510,14 +522,6 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
             case HEATED -> LabGuiKeys.LAB_RECIPE_HEAT_HEATED;
             case SUPERHEATED -> LabGuiKeys.LAB_RECIPE_HEAT_SUPERHEATED;
         }).getString();
-    }
-
-    private static TextFieldWidget numberField(int x, int y, int w, Supplier<String> supplier,
-            Consumer<String> responder, String initial, long min, long max) {
-        TextFieldWidget field = new TextFieldWidget(x, y, w, FIELD_H, supplier, responder);
-        field.setNumbersOnly(min, max);
-        configureField(field, initial);
-        return field;
     }
 
     private static TextFieldWidget numberField(int x, int y, int w, Supplier<String> supplier,
@@ -563,20 +567,9 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
         return Float.toString(value);
     }
 
-    private static final class UnitLabel {
-        final TextTexture tex;
-        final String text;
-        int width;
-
-        UnitLabel(String key) {
-            text = Component.translatable(key).getString();
-            tex = new TextTexture(text, LabColors.TEXT_MUTED);
-        }
-    }
-
     public record OutputRow(ItemStack icon, Supplier<Float> chanceSupplier, Consumer<Float> chanceSetter) {
     }
 
-    private record FieldRow(TextTexture label, UnitLabel unit, Widget control, ItemStackTexture icon) {
+    private record FieldRow(TextTexture label, Widget control, ItemStackTexture icon) {
     }
 }

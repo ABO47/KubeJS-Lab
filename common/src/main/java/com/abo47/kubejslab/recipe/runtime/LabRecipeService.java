@@ -19,6 +19,7 @@ import dev.architectury.platform.Platform;
 
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.TagParser;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -67,6 +68,9 @@ public final class LabRecipeService {
             ModNetwork.sendRecipeState(player, statePacket());
         } catch (IOException e) {
             e.printStackTrace();
+        } catch (RuntimeException e) {
+            e.printStackTrace();
+            player.sendSystemMessage(Component.literal("Failed to save recipe: " + e.getMessage()));
         }
     }
 

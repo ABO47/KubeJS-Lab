@@ -31,6 +31,8 @@ public final class LabGuiKeys {
     public static final String LAB_RECIPE_ACCEPT_MIRRORED = "kubejslab.gui.lab_recipe_accept_mirrored";
     public static final String LAB_RECIPE_GRID_WIDTH = "kubejslab.gui.lab_recipe_grid_width";
     public static final String LAB_RECIPE_GRID_HEIGHT = "kubejslab.gui.lab_recipe_grid_height";
+
+    public static final String LAB_RECIPE_OUTPUT_COUNT = "kubejslab.gui.lab_recipe_output_count";
     public static final String LAB_PICKER_MINIMIZE = "kubejslab.gui.lab_picker_minimize";
     public static final String LAB_PICKER_EXPAND = "kubejslab.gui.lab_picker_expand";
     public static final String LAB_PICKER_MODE_ITEMS = "kubejslab.gui.lab_picker_mode_items";

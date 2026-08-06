@@ -52,11 +52,17 @@ public final class ProcessingRecipeMachine implements LabRecipeMachine {
         if (supportsKeepHeldItem) {
             this.fields.add(LabRecipeField.KEEP_HELD_ITEM);
         }
+        this.fields.add(LabRecipeField.OUTPUT_COUNT);
     }
 
     @Override
     public boolean supportsChance() {
         return supportsChance;
+    }
+
+    @Override
+    public boolean supportsOutputCount() {
+        return true;
     }
 
     @Override
@@ -115,13 +121,13 @@ public final class ProcessingRecipeMachine implements LabRecipeMachine {
             };
             return new LabRecipeFieldValues(current.shapeless(), current.experience(), current.cookingTime(),
                     current.count(), processing.getProcessingDuration(), heat, current.keepHeldItem(),
-                    current.acceptMirrored(), current.gridWidth(), current.gridHeight());
+                    current.acceptMirrored(), current.gridWidth(), current.gridHeight(), current.outputCount());
         }
         if (original instanceof ItemApplicationRecipe application) {
             return new LabRecipeFieldValues(current.shapeless(), current.experience(), current.cookingTime(),
                     current.count(), current.processingTime(), current.heatRequirement(),
                     application.shouldKeepHeldItem(), current.acceptMirrored(), current.gridWidth(),
-                    current.gridHeight());
+                    current.gridHeight(), current.outputCount());
         }
         return current;
     }

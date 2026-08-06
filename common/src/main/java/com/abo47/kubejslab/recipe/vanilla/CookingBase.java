@@ -40,7 +40,7 @@ public abstract class CookingBase implements LabRecipeMachine {
         if (original instanceof AbstractCookingRecipe cooking) {
             return new LabRecipeFieldValues(current.shapeless(), cooking.getExperience(),
                     cooking.getCookingTime(), current.count(), current.processingTime(), current.heatRequirement(),
-                    current.keepHeldItem(), current.acceptMirrored(), current.gridWidth(), current.gridHeight());
+                    current.keepHeldItem(), current.acceptMirrored(), current.gridWidth(), current.gridHeight(), current.outputCount());
         }
         return current;
     }

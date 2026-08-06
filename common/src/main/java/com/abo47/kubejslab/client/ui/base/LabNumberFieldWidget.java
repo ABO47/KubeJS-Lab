@@ -45,4 +45,10 @@ public class LabNumberFieldWidget extends TextFieldWidget {
         }
         return false;
     }
+
+    @Override
+    protected void onTextChanged(String newTextString) {
+        super.onTextChanged(newTextString);
+        setTextColor(LabColors.TEXT_PRIMARY);
+    }
 }

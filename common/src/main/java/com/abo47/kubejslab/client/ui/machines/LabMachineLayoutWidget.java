@@ -27,6 +27,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.Recipe;
+import net.minecraft.world.item.crafting.ShapedRecipe;
 
 import mezz.jei.api.constants.VanillaTypes;
 import mezz.jei.api.gui.IRecipeLayoutDrawable;
@@ -69,6 +70,7 @@ public final class LabMachineLayoutWidget extends WidgetGroup {
     private Runnable outputsChangedListener;
     private int gridWidth = 3;
     private int gridHeight = 3;
+    private int outputCount = 1;
 
     public LabMachineLayoutWidget(int x, int y, int w, int h) {
         super(x, y, w, h);
@@ -85,10 +87,22 @@ public final class LabMachineLayoutWidget extends WidgetGroup {
         rebuild();
     }
 
+    public void setOutputCount(int count) {
+        int clamped = Math.max(1, Math.min(6, count));
+        if (outputCount == clamped) {
+            return;
+        }
+        outputCount = clamped;
+        rebuild();
+    }
+
     public void setMachine(LabMachine machine) {
         if (this.machine != machine) {
             this.gridWidth = 3;
             this.gridHeight = 3;
+            this.outputCount = 1;
+            this.slotPairs.clear();
+            this.pendingPick = null;
         }
         this.machine = machine;
         this.entry = null;
@@ -273,6 +287,25 @@ public final class LabMachineLayoutWidget extends WidgetGroup {
             int gy = (rect.getY() - 1) / 18;
             slotPairs.add(new SlotPair(data, view, view.getRole(), gx, gy));
         }
+        if (entry == null && support != null && support.supportsOutputCount()) {
+            int existing = 0;
+            for (SlotPair pair : slotPairs) {
+                if (pair.role == RecipeIngredientRole.OUTPUT) {
+                    existing++;
+                }
+            }
+            while (existing < outputCount) {
+                SlotData data = new SlotData();
+                LabPhantomSlotWidget slot = new LabPhantomSlotWidget(new PhantomHandler(data), 0,
+                        ox + 2 + existing * 18, oy + layoutH + 4);
+                slot.setClearSlotOnRightClick(true);
+                slot.setClientSideWidget();
+                slot.setDragOwner(this);
+                addWidget(slot);
+                slotPairs.add(new SlotPair(data, null, RecipeIngredientRole.OUTPUT, existing, layoutH / 18));
+                existing++;
+            }
+        }
         notifyOutputsChanged();
     }
 
@@ -363,9 +396,10 @@ public final class LabMachineLayoutWidget extends WidgetGroup {
         if (!(original instanceof MechanicalCraftingRecipe crafting)) {
             return Ingredient.EMPTY;
         }
-        int width = Math.max(1, Math.min(9, crafting.getWidth()));
+        ShapedRecipe shaped = crafting;
+        int width = Math.max(1, Math.min(9, shaped.getWidth()));
         int index = row * width + col;
-        List<Ingredient> ingredients = crafting.getIngredients();
+        List<Ingredient> ingredients = shaped.getIngredients();
         return index >= 0 && index < ingredients.size() ? ingredients.get(index) : Ingredient.EMPTY;
     }
 

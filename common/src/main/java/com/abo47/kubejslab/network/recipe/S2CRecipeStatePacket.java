@@ -7,6 +7,7 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 
+import com.abo47.kubejslab.KubeJSLab;
 import com.abo47.kubejslab.client.ui.recipes.LabRecipeStates;
 import com.abo47.kubejslab.client.ui.LabScreen;
 import com.abo47.kubejslab.recipe.model.LabRecipeStateEntry;
@@ -26,6 +27,10 @@ public record S2CRecipeStatePacket(Map<ResourceLocation, LabRecipeStateEntry> st
             if (entry.machineUid() != null) {
                 buf.writeUtf(entry.machineUid().toString());
             }
+        }
+        if (buf.readableBytes() > 2048) {
+            KubeJSLab.LOGGER.warn("S2CRecipeStatePacket is large ({} bytes, {} entries); may exceed the channel's per-string limit",
+                    buf.readableBytes(), states.size());
         }
     }
 

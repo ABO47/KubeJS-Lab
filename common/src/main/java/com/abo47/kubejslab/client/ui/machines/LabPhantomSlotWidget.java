@@ -1,14 +1,19 @@
 package com.abo47.kubejslab.client.ui.machines;
+
 import com.abo47.kubejslab.client.ui.base.LabColors;
 
 import com.lowdragmc.lowdraglib.gui.widget.PhantomSlotWidget;
 import com.lowdragmc.lowdraglib.side.item.IItemTransfer;
 
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 
 public final class LabPhantomSlotWidget extends PhantomSlotWidget {
     private final LabMachineLayoutWidget.PhantomHandler handler;
     private LabMachineLayoutWidget dragOwner;
+    private boolean tagTooltipSet;
 
     public LabPhantomSlotWidget(IItemTransfer itemHandler, int slotIndex, int xPosition, int yPosition) {
         super(itemHandler, slotIndex, xPosition, yPosition);
@@ -17,6 +22,28 @@ public final class LabPhantomSlotWidget extends PhantomSlotWidget {
 
     void setDragOwner(LabMachineLayoutWidget dragOwner) {
         this.dragOwner = dragOwner;
+    }
+
+    @Override
+    public void updateScreen() {
+        boolean isTag = handler.data().kind == LabMachineLayoutWidget.SlotKind.TAG
+                && handler.data().tag != null;
+        if (isTag && !tagTooltipSet) {
+            setHoverTooltips(Component.literal("#" + handler.data().tag));
+            tagTooltipSet = true;
+        } else if (!isTag && tagTooltipSet) {
+            setHoverTooltips(java.util.List.of());
+            tagTooltipSet = false;
+        }
+    }
+
+    @Override
+    public void drawInBackground(GuiGraphics g, int mx, int my, float pt) {
+        super.drawInBackground(g, mx, my, pt);
+        if (handler.data().kind == LabMachineLayoutWidget.SlotKind.TAG) {
+            g.drawString(Minecraft.getInstance().font, "#", getPositionX() + getSizeWidth() - 8,
+                    getPositionY() + getSizeHeight() - 9, 0xffd9b84c);
+        }
     }
 
     @Override

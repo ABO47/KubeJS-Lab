@@ -2,7 +2,7 @@ package com.abo47.kubejslab.recipe.model;
 
 public record LabRecipeFieldValues(boolean shapeless, float experience, int cookingTime, int count,
         int processingTime, HeatRequirement heatRequirement, boolean keepHeldItem, boolean acceptMirrored,
-        int gridWidth, int gridHeight) {
+        int gridWidth, int gridHeight, int outputCount) {
 
     public LabRecipeFieldValues {
         experience = Math.max(0f, experience);
@@ -12,9 +12,10 @@ public record LabRecipeFieldValues(boolean shapeless, float experience, int cook
         heatRequirement = heatRequirement == null ? HeatRequirement.NONE : heatRequirement;
         gridWidth = Math.max(1, Math.min(9, gridWidth));
         gridHeight = Math.max(1, Math.min(9, gridHeight));
+        outputCount = Math.max(1, Math.min(6, outputCount));
     }
 
     public static LabRecipeFieldValues defaults() {
-        return new LabRecipeFieldValues(false, 0f, 200, 1, 100, HeatRequirement.NONE, false, true, 3, 3);
+        return new LabRecipeFieldValues(false, 0f, 200, 1, 100, HeatRequirement.NONE, false, true, 3, 3, 1);
     }
 }

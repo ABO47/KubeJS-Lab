@@ -29,6 +29,10 @@ public interface LabRecipeMachine {
         return false;
     }
 
+    default boolean supportsOutputCount() {
+        return false;
+    }
+
     default boolean allowsEmptyResult(Recipe<?> original) {
         return false;
     }

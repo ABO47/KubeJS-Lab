@@ -10,5 +10,6 @@ public enum LabRecipeField {
     KEEP_HELD_ITEM,
     ACCEPT_MIRRORED,
     GRID_WIDTH,
-    GRID_HEIGHT
+    GRID_HEIGHT,
+    OUTPUT_COUNT
 }

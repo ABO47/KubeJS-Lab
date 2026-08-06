@@ -396,6 +396,8 @@ public final class LabScreen {
             settingsWidget.setOnSave(this::saveRecipe);
             settingsWidget.setGridSizeListener(() -> machineLayout
                     .setGridSize(settingsWidget.gridWidthValue(), settingsWidget.gridHeightValue()));
+            settingsWidget.setOutputCountListener(() -> machineLayout
+                    .setOutputCount(settingsWidget.outputCountValue()));
             addWidget(settingsWidget);
 
             inventory = new PlayerInventoryWidget();
@@ -581,6 +583,8 @@ public final class LabScreen {
                     machineLayout.setMachine(machine);
                     LabRecipeMachine support = machine == null ? null : LabRecipeMachines.get(machine.recipeTypeUid());
                     settingsWidget.setFields(support == null ? List.of() : support.fields());
+                    settingsWidget.setOutputCountEnabled(
+                            support != null && support.supportsOutputCount() && mode == EditMode.NEW);
                 }
             }
         }
@@ -610,6 +614,7 @@ public final class LabScreen {
                 Recipe<?> original = LabRecipeIndex.recipeById(entry.id());
                 settingsWidget.applyValues(support.prefill(settingsWidget.getValues(), original));
                 machineLayout.setGridSize(settingsWidget.gridWidthValue(), settingsWidget.gridHeightValue());
+                settingsWidget.setOutputCountEnabled(false);
             }
         }
 
