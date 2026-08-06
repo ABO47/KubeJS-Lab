@@ -28,6 +28,7 @@ public record S2CRecipeStatePacket(Map<ResourceLocation, LabRecipeStateEntry> st
                 buf.writeUtf(entry.machineUid().toString());
             }
         }
+        KubeJSLab.LOGGER.info("[Net] S2CRecipeStatePacket write: {} bytes, {} entries", buf.readableBytes(), states.size());
         if (buf.readableBytes() > 2048) {
             KubeJSLab.LOGGER.warn("S2CRecipeStatePacket is large ({} bytes, {} entries); may exceed the channel's per-string limit",
                     buf.readableBytes(), states.size());

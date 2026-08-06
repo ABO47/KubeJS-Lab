@@ -13,6 +13,7 @@ import net.minecraft.world.item.crafting.ShapedRecipe;
 
 import com.simibubi.create.content.kinetics.crafter.MechanicalCraftingRecipe;
 
+import com.abo47.kubejslab.KubeJSLab;
 import com.abo47.kubejslab.recipe.LabRecipeMachine;
 import com.abo47.kubejslab.recipe.model.LabIngredient;
 import com.abo47.kubejslab.recipe.model.LabRecipeField;
@@ -48,6 +49,8 @@ public final class MechanicalCraftingMachine implements LabRecipeMachine {
         json.addProperty("type", jsonType);
         int width = Math.max(1, values.gridWidth());
         int height = Math.max(1, values.gridHeight());
+        KubeJSLab.LOGGER.info("[MechCrafting] buildJson: {}x{} grid, {} inputs, {} outputs, acceptMirrored={}, jsonType={}",
+                width, height, inputs.size(), outputs.size(), values.acceptMirrored(), jsonType);
         JsonArray pattern = new JsonArray();
         JsonObject key = new JsonObject();
         Map<String, Character> charByKey = new LinkedHashMap<>();
@@ -78,6 +81,7 @@ public final class MechanicalCraftingMachine implements LabRecipeMachine {
             }
             pattern.add(rowStr.toString());
         }
+        KubeJSLab.LOGGER.info("[MechCrafting] pattern={}, key={}", pattern, key);
         if (!anyFilled) {
             throw new IllegalArgumentException("Mechanical crafting recipe needs at least one filled cell");
         }
@@ -87,6 +91,7 @@ public final class MechanicalCraftingMachine implements LabRecipeMachine {
         if (!values.acceptMirrored()) {
             json.addProperty("acceptMirrored", false);
         }
+        KubeJSLab.LOGGER.info("[MechCrafting] final json: {}", json);
         return json;
     }
 
@@ -107,10 +112,14 @@ public final class MechanicalCraftingMachine implements LabRecipeMachine {
             ShapedRecipe shaped = crafting;
             int height = Math.max(1, Math.min(9, shaped.getHeight()));
             int width = Math.max(1, Math.min(9, shaped.getWidth()));
+            KubeJSLab.LOGGER.info("[MechCrafting] prefill: original id={}, pattern {}x{}, acceptMirrored={}",
+                    original.getId(), width, height, crafting.acceptsMirrored());
             return new LabRecipeFieldValues(current.shapeless(), current.experience(), current.cookingTime(),
                     current.count(), current.processingTime(), current.heatRequirement(), current.keepHeldItem(),
                     crafting.acceptsMirrored(), width, height, current.outputCount());
         }
+        KubeJSLab.LOGGER.warn("[MechCrafting] prefill: original {} is not a MechanicalCraftingRecipe ({}), keeping defaults",
+                original == null ? "null" : original.getId(), original == null ? "null" : original.getClass().getName());
         return current;
     }
 }

@@ -20,7 +20,7 @@ public final class LabPacketCodecs {
         if (stack.isEmpty()) {
             return;
         }
-        buf.writeUtf(stack.getItem().builtInRegistryHolder().key().location().toString());
+        buf.writeUtf(stack.getItem().builtInRegistryHolder().key().location().toString(), 32767);
         buf.writeVarInt(stack.getCount());
         buf.writeNbt(stack.getTag());
     }
@@ -41,7 +41,7 @@ public final class LabPacketCodecs {
         if (fluid.isEmpty()) {
             return;
         }
-        buf.writeUtf(fluid.getFluid().builtInRegistryHolder().key().location().toString());
+        buf.writeUtf(fluid.getFluid().builtInRegistryHolder().key().location().toString(), 32767);
         buf.writeVarLong(fluid.getAmount());
         buf.writeNbt(fluid.getTag());
     }
@@ -62,7 +62,7 @@ public final class LabPacketCodecs {
     public static void writeIngredient(FriendlyByteBuf buf, LabIngredient ingredient) {
         if (ingredient instanceof LabIngredient.Tag tag) {
             buf.writeVarInt(0);
-            buf.writeUtf(tag.tag().toString());
+            buf.writeUtf(tag.tag().toString(), 32767);
         } else if (ingredient instanceof LabIngredient.Fluid fluid) {
             buf.writeVarInt(1);
             writeFluid(buf, fluid.fluid());

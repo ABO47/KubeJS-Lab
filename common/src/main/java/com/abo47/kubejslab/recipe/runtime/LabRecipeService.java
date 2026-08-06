@@ -26,6 +26,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Recipe;
 
+import com.abo47.kubejslab.KubeJSLab;
 import com.abo47.kubejslab.network.ModNetwork;
 import com.abo47.kubejslab.network.recipe.S2CRecipeStatePacket;
 import com.abo47.kubejslab.recipe.LabRecipeMachine;
@@ -48,6 +49,9 @@ public final class LabRecipeService {
 
     public static void handle(ServerPlayer player, LabRecipeEditAction action, ResourceLocation targetId,
             LabRecipePayload payload) {
+        KubeJSLab.LOGGER.info("[LabRecipeService] handle: action={}, targetId={}, machineUid={}, inputs={}, outputs={}, name={}, values={}",
+                action, targetId, payload.machineUid(), payload.inputs().size(), payload.outputs().size(),
+                payload.name(), payload.values());
         loadStateIfNeeded();
         try {
             switch (action) {
@@ -65,6 +69,7 @@ public final class LabRecipeService {
             }
             player.getServer().getCommands()
                     .performPrefixedCommand(player.getServer().createCommandSourceStack(), "reload");
+            KubeJSLab.LOGGER.info("[LabRecipeService] sent /reload after {}", action);
             ModNetwork.sendRecipeState(player, statePacket());
         } catch (IOException e) {
             e.printStackTrace();
@@ -97,6 +102,7 @@ public final class LabRecipeService {
         }
         Files.createDirectories(file.getParent());
         Files.writeString(file, GSON.toJson(json) + "\n");
+        KubeJSLab.LOGGER.info("[LabRecipeService] SAVE_NEW wrote {} with json={}", file, json);
         SESSION_CREATED_IDS.add(id);
     }
 
@@ -125,6 +131,7 @@ public final class LabRecipeService {
             return;
         }
         Files.writeString(file, GSON.toJson(json) + "\n");
+        KubeJSLab.LOGGER.info("[LabRecipeService] OVERRIDE wrote {} with json={}", file, json);
         ItemStack display = LabRecipeOutput.displayStack(payload.outputs());
         STATE.put(targetId,
                 new LabRecipeStateEntry(targetId, LabRecipeStatus.MODIFIED, display, payload.name(), true,

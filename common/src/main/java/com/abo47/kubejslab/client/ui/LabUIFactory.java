@@ -37,6 +37,8 @@ public final class LabUIFactory {
 
         FriendlyByteBuf serializedHolder = new FriendlyByteBuf(Unpooled.buffer());
         serializedHolder.writeBlockPos(holder);
+        KubeJSLab.LOGGER.info("[LabUI] open for {}: OpenScreen payload is {} bytes (blockPos only)", player.getName().getString(),
+                serializedHolder.readableBytes());
         if (serializedHolder.readableBytes() > 512) {
             KubeJSLab.LOGGER.warn("OpenScreen payload is large: {} bytes", serializedHolder.readableBytes());
         }

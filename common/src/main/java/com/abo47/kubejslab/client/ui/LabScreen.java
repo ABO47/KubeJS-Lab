@@ -20,6 +20,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Recipe;
 
+import com.abo47.kubejslab.KubeJSLab;
 import com.abo47.kubejslab.network.ModNetwork;
 import com.abo47.kubejslab.network.recipe.C2SRecipeEditPacket;
 import com.abo47.kubejslab.recipe.LabRecipeMachine;
@@ -619,6 +620,7 @@ public final class LabScreen {
         }
 
         private void saveRecipe() {
+            KubeJSLab.LOGGER.info("[LabScreen] saveRecipe: mode={}, modifyTarget={}", mode, modifyTarget == null ? null : modifyTarget.id());
             boolean overriding = mode == EditMode.MODIFY && modifyTarget != null;
             if (!overriding) {
                 saveNewRecipe();
@@ -635,13 +637,17 @@ public final class LabScreen {
             }
             List<LabIngredient> inputs = machineLayout.getInputs();
             if (!hasInput(inputs)) {
+                KubeJSLab.LOGGER.info("[LabScreen] saveRecipe: no inputs, aborting");
                 return;
             }
             List<LabRecipeOutput> outputs = machineLayout.getOutputs();
             Recipe<?> original = LabRecipeIndex.recipeById(modifyTarget.id());
             if (outputs.isEmpty() && (original == null || !support.allowsEmptyResult(original))) {
+                KubeJSLab.LOGGER.info("[LabScreen] saveRecipe: no outputs, aborting");
                 return;
             }
+            KubeJSLab.LOGGER.info("[LabScreen] OVERRIDE {}: inputs={}, outputs={}, values={}", uid, inputs.size(),
+                    outputs.size(), settingsWidget.getValues());
             sendRecipeEdit(LabRecipeEditAction.OVERRIDE, modifyTarget.id(),
                     new LabRecipePayload(uid, inputs, outputs, outputName(outputs), settingsWidget.getValues()));
         }
@@ -657,12 +663,16 @@ public final class LabScreen {
             }
             List<LabIngredient> inputs = machineLayout.getInputs();
             if (!hasInput(inputs)) {
+                KubeJSLab.LOGGER.info("[LabScreen] saveNewRecipe: no inputs, aborting");
                 return;
             }
             List<LabRecipeOutput> outputs = machineLayout.getOutputs();
             if (outputs.isEmpty()) {
+                KubeJSLab.LOGGER.info("[LabScreen] saveNewRecipe: no outputs, aborting");
                 return;
             }
+            KubeJSLab.LOGGER.info("[LabScreen] SAVE_NEW {}: inputs={}, outputs={}, values={}",
+                    machine.recipeTypeUid(), inputs.size(), outputs.size(), settingsWidget.getValues());
             sendRecipeEdit(LabRecipeEditAction.SAVE_NEW, null,
                     new LabRecipePayload(machine.recipeTypeUid(), inputs, outputs,
                             outputName(outputs), settingsWidget.getValues()));
@@ -677,6 +687,7 @@ public final class LabScreen {
             if (outputs.isEmpty()) {
                 return;
             }
+            KubeJSLab.LOGGER.info("[LabScreen] saveGenericOverride: inputs={}, outputs={}", inputs.size(), outputs.size());
             sendRecipeEdit(LabRecipeEditAction.OVERRIDE, modifyTarget.id(),
                     new LabRecipePayload(null, inputs, outputs,
                             outputName(outputs), LabRecipeFieldValues.defaults()));

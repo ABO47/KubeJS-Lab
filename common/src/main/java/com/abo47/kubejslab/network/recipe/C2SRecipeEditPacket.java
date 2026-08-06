@@ -9,6 +9,7 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 
+import com.abo47.kubejslab.KubeJSLab;
 import com.abo47.kubejslab.recipe.model.LabRecipeEditAction;
 import com.abo47.kubejslab.recipe.model.LabRecipeFieldValues;
 import com.abo47.kubejslab.recipe.model.HeatRequirement;
@@ -21,43 +22,53 @@ public record C2SRecipeEditPacket(LabRecipeEditAction action, @Nullable Resource
         LabRecipePayload payload) {
 
     public void write(FriendlyByteBuf buf) {
+        int start = buf.writerIndex();
         buf.writeVarInt(action.ordinal());
         buf.writeBoolean(targetId != null);
         if (targetId != null) {
-            buf.writeUtf(targetId.toString());
+            buf.writeUtf(targetId.toString(), 32767);
         }
         buf.writeBoolean(payload.machineUid() != null);
         if (payload.machineUid() != null) {
-            buf.writeUtf(payload.machineUid().toString());
+            buf.writeUtf(payload.machineUid().toString(), 32767);
         }
+        int afterIds = buf.writerIndex() - start;
         buf.writeVarInt(payload.inputs().size());
         for (LabIngredient ingredient : payload.inputs()) {
             LabPacketCodecs.writeIngredient(buf, ingredient);
         }
+        int afterInputs = buf.writerIndex() - start;
         buf.writeVarInt(payload.outputs().size());
         for (LabRecipeOutput output : payload.outputs()) {
             LabPacketCodecs.writeOutput(buf, output);
         }
-        buf.writeUtf(payload.name() == null ? "" : payload.name());
+        int afterOutputs = buf.writerIndex() - start;
+        buf.writeUtf(payload.name() == null ? "" : payload.name(), 32767);
         LabRecipeFieldValues values = payload.values();
         buf.writeBoolean(values.shapeless());
         buf.writeFloat(values.experience());
         buf.writeVarInt(values.cookingTime());
         buf.writeVarInt(values.count());
         buf.writeVarInt(values.processingTime());
-        buf.writeUtf(values.heatRequirement().name());
+        buf.writeUtf(values.heatRequirement().name(), 32767);
         buf.writeBoolean(values.keepHeldItem());
         buf.writeBoolean(values.acceptMirrored());
         buf.writeVarInt(values.gridWidth());
         buf.writeVarInt(values.gridHeight());
         buf.writeVarInt(values.outputCount());
+        int total = buf.writerIndex() - start;
+        KubeJSLab.LOGGER.info(
+                "[Net] C2SRecipeEditPacket encoded: ids={}b, inputs={}b, outputs={}b, name+values={}b, total={}b ({} inputs, {} outputs, grid={}x{}, outputCount={})",
+                afterIds, afterInputs - afterIds, afterOutputs - afterInputs, total - afterOutputs, total,
+                payload.inputs().size(), payload.outputs().size(), values.gridWidth(), values.gridHeight(),
+                values.outputCount());
     }
 
     public static C2SRecipeEditPacket read(FriendlyByteBuf buf) {
         LabRecipeEditAction action = LabRecipeEditAction.values()[buf.readVarInt()];
         ResourceLocation targetId = buf.readBoolean() ? new ResourceLocation(buf.readUtf()) : null;
         ResourceLocation machineUid = buf.readBoolean() ? new ResourceLocation(buf.readUtf()) : null;
-        int inputCount = Math.min(buf.readVarInt(), 9);
+        int inputCount = Math.min(buf.readVarInt(), 81);
         List<LabIngredient> inputs = new ArrayList<>(inputCount);
         for (int i = 0; i < inputCount; i++) {
             inputs.add(LabPacketCodecs.readIngredient(buf));
@@ -86,7 +97,12 @@ public record C2SRecipeEditPacket(LabRecipeEditAction action, @Nullable Resource
     }
 
     public void handle(ServerPlayer player) {
+        KubeJSLab.LOGGER.info("[Net] C2SRecipeEditPacket received from {}: action={}, targetId={}, machineUid={}, inputs={}, outputs={}, name={}, grid={}x{}, outputCount={}",
+                player.getName().getString(), action, targetId, payload.machineUid(), payload.inputs().size(),
+                payload.outputs().size(), payload.name(), payload.values().gridWidth(), payload.values().gridHeight(),
+                payload.values().outputCount());
         if (!player.hasPermissions(2)) {
+            KubeJSLab.LOGGER.warn("[Net] C2SRecipeEditPacket rejected: {} lacks permission level 2", player.getName().getString());
             return;
         }
         LabRecipeService.handle(player, action, targetId, payload);

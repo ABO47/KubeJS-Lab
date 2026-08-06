@@ -1,5 +1,6 @@
 package com.abo47.kubejslab.client.ui.machines;
 
+import com.abo47.kubejslab.KubeJSLab;
 import com.abo47.kubejslab.client.ui.base.LabColors;
 import com.abo47.kubejslab.client.ui.base.LabLayout;
 import com.abo47.kubejslab.client.ui.picker.LabPick;
@@ -114,6 +115,7 @@ public final class LabMachineLayoutWidget extends WidgetGroup {
     public void showRecipe(LabRecipeIndex.LabRecipeEntry entry) {
         this.entry = entry;
         this.jeiLayout = entry == null ? null : findJeiLayout(entry);
+        this.slotPairs.clear();
         rebuild();
     }
 
@@ -316,6 +318,8 @@ public final class LabMachineLayoutWidget extends WidgetGroup {
         int oy = Math.max(LabLayout.MACHINE_PAD, (getSizeHeight() - h * 18) / 2);
 
         Recipe<?> original = entry == null ? null : LabRecipeIndex.recipeById(entry.id());
+        KubeJSLab.LOGGER.info("[MechCrafting] rebuildGrid: grid {}x{}, snapshot cells={}, original={}", w, h,
+                snapshot.size(), original == null ? "null" : original.getId());
 
         for (int gy = 0; gy < h; gy++) {
             for (int gx = 0; gx < w; gx++) {
@@ -334,6 +338,7 @@ public final class LabMachineLayoutWidget extends WidgetGroup {
                                 data.setTagValue(new ResourceLocation(object.get("tag").getAsString()));
                             }
                         }
+                        KubeJSLab.LOGGER.info("[MechCrafting] cell ({},{}) loaded from original: {}", gy, gx, json);
                     }
                 }
                 PhantomHandler handler = new PhantomHandler(data);
@@ -394,13 +399,20 @@ public final class LabMachineLayoutWidget extends WidgetGroup {
 
     private static Ingredient gridIngredientAt(Recipe<?> original, int row, int col) {
         if (!(original instanceof MechanicalCraftingRecipe crafting)) {
+            KubeJSLab.LOGGER.warn("[MechCrafting] gridIngredientAt: original {} is not a MechanicalCraftingRecipe ({})",
+                    original.getId(), original.getClass().getName());
             return Ingredient.EMPTY;
         }
         ShapedRecipe shaped = crafting;
         int width = Math.max(1, Math.min(9, shaped.getWidth()));
         int index = row * width + col;
         List<Ingredient> ingredients = shaped.getIngredients();
-        return index >= 0 && index < ingredients.size() ? ingredients.get(index) : Ingredient.EMPTY;
+        Ingredient result = index >= 0 && index < ingredients.size() ? ingredients.get(index) : Ingredient.EMPTY;
+        if (!result.isEmpty()) {
+            KubeJSLab.LOGGER.debug("[MechCrafting] gridIngredientAt({},{}): width={}, index={} -> {}", row, col, width,
+                    index, result.toJson());
+        }
+        return result;
     }
 
     private static ItemStack firstIngredientStack(Ingredient ingredient) {

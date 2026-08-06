@@ -80,7 +80,12 @@ public final class ForgeNetwork {
     }
 
     public static void sendToServer(Object packet) {
-        CHANNEL.sendToServer(packet);
+        try {
+            CHANNEL.sendToServer(packet);
+        } catch (Throwable t) {
+            KubeJSLab.LOGGER.error("[Net] Failed to send packet {} to server", packet.getClass().getSimpleName(), t);
+            throw t;
+        }
     }
 
     public record OpenScreenPacket(int windowId, byte[] payload) {
