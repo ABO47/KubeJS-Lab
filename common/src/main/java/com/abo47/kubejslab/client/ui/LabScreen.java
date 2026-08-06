@@ -516,7 +516,14 @@ public final class LabScreen {
             mode = EditMode.MODIFY;
             modifyTarget = entry;
             refreshModeLabel();
+            ResourceLocation uid = resolveModifyUid(entry);
+            if (uid != null) {
+                machineDropdown.selectMachineByUid(uid);
+            }
             showRecipe(entry);
+            if (uid == null) {
+                settingsWidget.setFields(List.of());
+            }
         }
 
         void exitModifyMode() {
@@ -590,6 +597,35 @@ public final class LabScreen {
         }
 
         private void saveRecipe() {
+            boolean overriding = mode == EditMode.MODIFY && modifyTarget != null;
+            if (!overriding) {
+                saveNewRecipe();
+                return;
+            }
+            ResourceLocation uid = resolveModifyUid(modifyTarget);
+            if (uid == null) {
+                saveGenericOverride();
+                return;
+            }
+            LabRecipeMachine support = LabRecipeMachines.get(uid);
+            if (support == null) {
+                return;
+            }
+            List<ItemStack> inputs = machineLayout.getInputs();
+            if (!hasInput(inputs)) {
+                return;
+            }
+            ItemStack output = machineLayout.getOutput();
+            Recipe<?> original = LabRecipeIndex.recipeById(modifyTarget.id());
+            if (output.isEmpty() && (original == null || !support.allowsEmptyResult(original))) {
+                return;
+            }
+            sendRecipeEdit(LabRecipeEditAction.OVERRIDE, modifyTarget.id(),
+                    new LabRecipePayload(uid, inputs, output,
+                            output.getHoverName().getString(), settingsWidget.getValues()));
+        }
+
+        private void saveNewRecipe() {
             LabMachine machine = machineDropdown.getSelectedMachine();
             if (machine == null) {
                 return;
@@ -599,27 +635,51 @@ public final class LabScreen {
                 return;
             }
             List<ItemStack> inputs = machineLayout.getInputs();
-            boolean hasInput = false;
-            for (ItemStack input : inputs) {
-                hasInput = !input.isEmpty();
-                if (hasInput) {
-                    break;
-                }
-            }
-            if (!hasInput) {
+            if (!hasInput(inputs)) {
                 return;
             }
             ItemStack output = machineLayout.getOutput();
-            boolean overriding = mode == EditMode.MODIFY && modifyTarget != null;
-            Recipe<?> original = overriding ? LabRecipeIndex.recipeById(modifyTarget.id()) : null;
-            if (output.isEmpty() && (original == null || !support.allowsEmptyResult(original))) {
+            if (output.isEmpty()) {
                 return;
             }
-            sendRecipeEdit(
-                    overriding ? LabRecipeEditAction.OVERRIDE : LabRecipeEditAction.SAVE_NEW,
-                    overriding ? modifyTarget.id() : null,
+            sendRecipeEdit(LabRecipeEditAction.SAVE_NEW, null,
                     new LabRecipePayload(machine.recipeTypeUid(), inputs, output,
                             output.getHoverName().getString(), settingsWidget.getValues()));
+        }
+
+        private void saveGenericOverride() {
+            List<ItemStack> inputs = machineLayout.getInputs();
+            if (!hasInput(inputs)) {
+                return;
+            }
+            ItemStack output = machineLayout.getOutput();
+            if (output.isEmpty()) {
+                return;
+            }
+            sendRecipeEdit(LabRecipeEditAction.OVERRIDE, modifyTarget.id(),
+                    new LabRecipePayload(null, inputs, output,
+                            output.getHoverName().getString(), LabRecipeFieldValues.defaults()));
+        }
+
+        private static boolean hasInput(List<ItemStack> inputs) {
+            for (ItemStack input : inputs) {
+                if (!input.isEmpty()) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private ResourceLocation resolveModifyUid(LabRecipeIndex.LabRecipeEntry entry) {
+            ResourceLocation uid = LabRecipeStates.machineUidOf(entry.id());
+            if (uid != null && LabRecipeMachines.supports(uid)) {
+                return uid;
+            }
+            LabMachine machine = LabMachineCatalog.machineFor(entry.id());
+            if (machine != null && machine.supported()) {
+                return machine.recipeTypeUid();
+            }
+            return null;
         }
 
         private void sendRecipeEdit(LabRecipeEditAction action, ResourceLocation targetId, LabRecipePayload payload) {

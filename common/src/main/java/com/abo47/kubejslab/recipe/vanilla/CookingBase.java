@@ -37,7 +37,8 @@ public abstract class CookingBase implements LabRecipeMachine {
     public LabRecipeFieldValues prefill(LabRecipeFieldValues current, Recipe<?> original) {
         if (original instanceof AbstractCookingRecipe cooking) {
             return new LabRecipeFieldValues(current.shapeless(), cooking.getExperience(),
-                    cooking.getCookingTime(), current.count());
+                    cooking.getCookingTime(), current.count(), current.processingTime(), current.heatRequirement(),
+                    current.keepHeldItem());
         }
         return current;
     }

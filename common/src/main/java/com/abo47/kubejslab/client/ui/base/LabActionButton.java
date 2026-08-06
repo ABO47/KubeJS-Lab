@@ -19,6 +19,10 @@ public final class LabActionButton extends ButtonWidget {
         this.label = new TextTexture(label, LabColors.TEXT_PRIMARY).setWidth(w).setType(TextTexture.TextType.NORMAL);
     }
 
+    public void setLabel(String label) {
+        this.label.updateText(label);
+    }
+
     @Override
     public void drawInBackground(@Nonnull GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
         super.drawInBackground(graphics, mouseX, mouseY, partialTicks);

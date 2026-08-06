@@ -52,7 +52,8 @@ public final class StonecutterMachine implements LabRecipeMachine {
     public LabRecipeFieldValues prefill(LabRecipeFieldValues current, Recipe<?> original) {
         if (original instanceof StonecutterRecipe recipe) {
             return new LabRecipeFieldValues(current.shapeless(), current.experience(), current.cookingTime(),
-                    recipe.getResultItem(RegistryAccess.EMPTY).getCount());
+                    recipe.getResultItem(RegistryAccess.EMPTY).getCount(), current.processingTime(),
+                    current.heatRequirement(), current.keepHeldItem());
         }
         return current;
     }

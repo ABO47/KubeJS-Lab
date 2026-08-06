@@ -20,6 +20,7 @@ import dev.architectury.platform.Platform;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.TagParser;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Recipe;
@@ -50,7 +51,7 @@ public final class LabRecipeService {
             switch (action) {
                 case SAVE_NEW -> saveNew(payload);
                 case OVERRIDE -> override(targetId, payload, targetId == null ? null
-                        : player.getServer().getRecipeManager().byKey(targetId).orElse(null));
+                        : player.getServer().getRecipeManager().byKey(targetId).orElse(null), player.getServer());
                 case DISABLE -> disable(targetId, payload);
                 case ENABLE -> enable(targetId);
                 case RESET -> reset(targetId);
@@ -94,7 +95,8 @@ public final class LabRecipeService {
         SESSION_CREATED_IDS.add(id);
     }
 
-    private static void override(ResourceLocation targetId, LabRecipePayload payload, Recipe<?> original)
+    private static void override(ResourceLocation targetId, LabRecipePayload payload, Recipe<?> original,
+            MinecraftServer server)
             throws IOException {
         if (targetId == null) {
             return;
@@ -107,7 +109,13 @@ public final class LabRecipeService {
             Files.createDirectories(backup.getParent());
             Files.copy(file, backup, StandardCopyOption.REPLACE_EXISTING);
         }
-        JsonObject json = buildJson(payload, original);
+        JsonObject json;
+        if (payload.machineUid() == null || !LabRecipeMachines.supports(payload.machineUid())) {
+            JsonObject originalJson = GenericRecipeModifier.originalFor(server, targetId);
+            json = originalJson == null ? null : GenericRecipeModifier.modify(originalJson, payload);
+        } else {
+            json = buildJson(payload, original);
+        }
         if (json == null) {
             return;
         }

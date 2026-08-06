@@ -20,6 +20,12 @@ public final class LabGuiKeys {
     public static final String LAB_RECIPE_COUNT = "kubejslab.gui.lab_recipe_count";
     public static final String LAB_RECIPE_UNIT_TICKS = "kubejslab.gui.lab_recipe_unit_ticks";
     public static final String LAB_RECIPE_UNIT_XP = "kubejslab.gui.lab_recipe_unit_xp";
+    public static final String LAB_RECIPE_PROCESSING_TIME = "kubejslab.gui.lab_recipe_processing_time";
+    public static final String LAB_RECIPE_HEAT_REQUIREMENT = "kubejslab.gui.lab_recipe_heat_requirement";
+    public static final String LAB_RECIPE_KEEP_HELD_ITEM = "kubejslab.gui.lab_recipe_keep_held_item";
+    public static final String LAB_RECIPE_HEAT_NONE = "kubejslab.gui.lab_recipe_heat_none";
+    public static final String LAB_RECIPE_HEAT_HEATED = "kubejslab.gui.lab_recipe_heat_heated";
+    public static final String LAB_RECIPE_HEAT_SUPERHEATED = "kubejslab.gui.lab_recipe_heat_superheated";
 
     private LabGuiKeys() {
     }

@@ -4,5 +4,8 @@ public enum LabRecipeField {
     SHAPELESS,
     EXPERIENCE,
     COOKING_TIME,
-    COUNT
+    COUNT,
+    PROCESSING_TIME,
+    HEAT_REQUIREMENT,
+    KEEP_HELD_ITEM
 }

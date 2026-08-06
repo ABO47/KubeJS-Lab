@@ -59,5 +59,12 @@ versionRange="${jei_version_range}"
 ordering="NONE"
 side="BOTH"
 
+[[dependencies.${mod_id}]]
+modId="create"
+mandatory=false
+versionRange="[6.0.8,)"
+ordering="NONE"
+side="BOTH"
+
 [[mixins]]
 config="kubejslab.forge.mixins.json"

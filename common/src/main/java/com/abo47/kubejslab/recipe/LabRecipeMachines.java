@@ -7,6 +7,7 @@ import javax.annotation.Nullable;
 
 import net.minecraft.resources.ResourceLocation;
 
+import com.abo47.kubejslab.recipe.create.CreateMachines;
 import com.abo47.kubejslab.recipe.vanilla.VanillaRecipeMachines;
 
 public final class LabRecipeMachines {
@@ -34,6 +35,7 @@ public final class LabRecipeMachines {
         if (!initialized) {
             initialized = true;
             VanillaRecipeMachines.register();
+            CreateMachines.register();
         }
     }
 }

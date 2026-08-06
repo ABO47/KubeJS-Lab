@@ -58,6 +58,15 @@ public final class LabMachineCatalog {
         return ids;
     }
 
+    public static LabMachine machineFor(ResourceLocation recipeId) {
+        for (LabMachine machine : machines()) {
+            if (recipeIds(machine).contains(recipeId)) {
+                return machine;
+            }
+        }
+        return null;
+    }
+
     private static List<LabMachine> build(IJeiRuntime runtime) {
         IRecipeManager manager = runtime.getRecipeManager();
         List<LabMachine> built = new ArrayList<>();

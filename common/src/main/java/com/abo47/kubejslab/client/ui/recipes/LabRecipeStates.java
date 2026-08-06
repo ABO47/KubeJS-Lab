@@ -26,6 +26,11 @@ public final class LabRecipeStates {
         return entry == null ? LabRecipeStatus.NORMAL : entry.status();
     }
 
+    public static ResourceLocation machineUidOf(ResourceLocation id) {
+        LabRecipeStateEntry entry = STATES.get(id);
+        return entry == null ? null : entry.machineUid();
+    }
+
     public static List<LabRecipeIndex.LabRecipeEntry> disabledEntries(ResourceLocation machineUid) {
         List<LabRecipeIndex.LabRecipeEntry> result = new ArrayList<>();
         for (LabRecipeStateEntry entry : STATES.values()) {

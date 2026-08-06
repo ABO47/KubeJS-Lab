@@ -23,5 +23,11 @@
   "kubejslab.gui.lab_recipe_cooking_time": "cooking time",
   "kubejslab.gui.lab_recipe_count": "count",
   "kubejslab.gui.lab_recipe_unit_ticks": "ticks",
-  "kubejslab.gui.lab_recipe_unit_xp": "xp"
+  "kubejslab.gui.lab_recipe_unit_xp": "xp",
+  "kubejslab.gui.lab_recipe_processing_time": "processing time",
+  "kubejslab.gui.lab_recipe_heat_requirement": "heat",
+  "kubejslab.gui.lab_recipe_keep_held_item": "keep held item",
+  "kubejslab.gui.lab_recipe_heat_none": "none",
+  "kubejslab.gui.lab_recipe_heat_heated": "heated",
+  "kubejslab.gui.lab_recipe_heat_superheated": "superheated"
 }

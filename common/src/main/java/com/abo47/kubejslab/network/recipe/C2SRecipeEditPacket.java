@@ -13,6 +13,7 @@ import net.minecraft.world.item.ItemStack;
 import com.abo47.kubejslab.network.recipe.LabPacketCodecs;
 import com.abo47.kubejslab.recipe.model.LabRecipeEditAction;
 import com.abo47.kubejslab.recipe.model.LabRecipeFieldValues;
+import com.abo47.kubejslab.recipe.model.HeatRequirement;
 import com.abo47.kubejslab.recipe.model.LabRecipePayload;
 import com.abo47.kubejslab.recipe.runtime.LabRecipeService;
 
@@ -40,6 +41,9 @@ public record C2SRecipeEditPacket(LabRecipeEditAction action, @Nullable Resource
         buf.writeFloat(values.experience());
         buf.writeVarInt(values.cookingTime());
         buf.writeVarInt(values.count());
+        buf.writeVarInt(values.processingTime());
+        buf.writeUtf(values.heatRequirement().name());
+        buf.writeBoolean(values.keepHeldItem());
     }
 
     public static C2SRecipeEditPacket read(FriendlyByteBuf buf) {
@@ -57,9 +61,13 @@ public record C2SRecipeEditPacket(LabRecipeEditAction action, @Nullable Resource
         float experience = buf.readFloat();
         int cookingTime = Math.min(buf.readVarInt(), 200000);
         int count = Math.min(buf.readVarInt(), 64);
+        int processingTime = Math.min(buf.readVarInt(), 200000);
+        HeatRequirement heatRequirement = HeatRequirement.byName(buf.readUtf());
+        boolean keepHeldItem = buf.readBoolean();
         return new C2SRecipeEditPacket(action, targetId,
                 new LabRecipePayload(machineUid, inputs, output, name,
-                        new LabRecipeFieldValues(shapeless, experience, cookingTime, count)));
+                        new LabRecipeFieldValues(shapeless, experience, cookingTime, count, processingTime,
+                                heatRequirement, keepHeldItem)));
     }
 
     public void handle(ServerPlayer player) {
