@@ -258,6 +258,7 @@ public final class LabMachineLayoutWidget extends WidgetGroup {
                 LabPhantomFluidSlotWidget slot = new LabPhantomFluidSlotWidget(data, ox + rect.getX(), oy + rect.getY());
                 slot.setClientSideWidget();
                 slot.setDragOwner(this);
+                slot.setRole(view.getRole());
                 addWidget(slot);
             } else {
                 ItemStack stack = ItemStack.EMPTY;
@@ -278,6 +279,7 @@ public final class LabMachineLayoutWidget extends WidgetGroup {
                 slot.setClearSlotOnRightClick(true);
                 slot.setClientSideWidget();
                 slot.setDragOwner(this);
+                slot.setRole(view.getRole());
                 addWidget(slot);
             }
             if (view.getRole() == RecipeIngredientRole.OUTPUT && !fluidSlot) {
@@ -303,6 +305,7 @@ public final class LabMachineLayoutWidget extends WidgetGroup {
                 slot.setClearSlotOnRightClick(true);
                 slot.setClientSideWidget();
                 slot.setDragOwner(this);
+                slot.setRole(RecipeIngredientRole.OUTPUT);
                 addWidget(slot);
                 slotPairs.add(new SlotPair(data, null, RecipeIngredientRole.OUTPUT, existing, layoutH / 18));
                 existing++;
@@ -346,6 +349,7 @@ public final class LabMachineLayoutWidget extends WidgetGroup {
                 slot.setClearSlotOnRightClick(true);
                 slot.setClientSideWidget();
                 slot.setDragOwner(this);
+                slot.setRole(RecipeIngredientRole.INPUT);
                 addWidget(slot);
                 slotPairs.add(new SlotPair(data, null, RecipeIngredientRole.INPUT, gx, gy));
             }
@@ -369,6 +373,7 @@ public final class LabMachineLayoutWidget extends WidgetGroup {
                     LabPhantomFluidSlotWidget slot = new LabPhantomFluidSlotWidget(data, ox + rect.getX(), oy + rect.getY());
                     slot.setClientSideWidget();
                     slot.setDragOwner(this);
+                    slot.setRole(RecipeIngredientRole.OUTPUT);
                     addWidget(slot);
                 } else {
                     ItemStack stack = ItemStack.EMPTY;
@@ -384,6 +389,7 @@ public final class LabMachineLayoutWidget extends WidgetGroup {
                     slot.setClearSlotOnRightClick(true);
                     slot.setClientSideWidget();
                     slot.setDragOwner(this);
+                    slot.setRole(RecipeIngredientRole.OUTPUT);
                     addWidget(slot);
                 }
                 slotPairs.add(new SlotPair(data, view, RecipeIngredientRole.OUTPUT, (rect.getX() - 1) / 18,

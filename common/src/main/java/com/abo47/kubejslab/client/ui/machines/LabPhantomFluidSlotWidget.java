@@ -6,6 +6,8 @@ import com.lowdragmc.lowdraglib.gui.util.DrawerHelper;
 import com.lowdragmc.lowdraglib.gui.widget.SlotWidget;
 import com.lowdragmc.lowdraglib.gui.widget.Widget;
 
+import mezz.jei.api.recipe.RecipeIngredientRole;
+
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.world.item.BucketItem;
 import net.minecraft.world.item.ItemStack;
@@ -13,6 +15,7 @@ import net.minecraft.world.item.ItemStack;
 public final class LabPhantomFluidSlotWidget extends Widget {
     private final LabMachineLayoutWidget.SlotData data;
     private LabMachineLayoutWidget dragOwner;
+    private RecipeIngredientRole role;
 
     public LabPhantomFluidSlotWidget(LabMachineLayoutWidget.SlotData data, int x, int y) {
         super(x, y, 18, 18);
@@ -21,6 +24,10 @@ public final class LabPhantomFluidSlotWidget extends Widget {
 
     void setDragOwner(LabMachineLayoutWidget dragOwner) {
         this.dragOwner = dragOwner;
+    }
+
+    void setRole(RecipeIngredientRole role) {
+        this.role = role;
     }
 
     @Override
@@ -62,9 +69,13 @@ public final class LabPhantomFluidSlotWidget extends Widget {
 
     @Override
     public void drawInBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
-        super.drawInBackground(graphics, mouseX, mouseY, partialTicks);
         int x = getPositionX();
         int y = getPositionY();
+        if (role != null) {
+            int color = role == RecipeIngredientRole.INPUT ? 0x402E7CF6 : 0x40FF8C42;
+            graphics.fill(x, y, x + 18, y + 18, color);
+        }
+        super.drawInBackground(graphics, mouseX, mouseY, partialTicks);
         SlotWidget.ITEM_SLOT_TEXTURE.draw(graphics, mouseX, mouseY, x, y, 18, 18);
         if (!data.fluid.isEmpty()) {
             long capacity = Math.max(data.fluid.getAmount(), 1000);

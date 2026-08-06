@@ -5,6 +5,8 @@ import com.abo47.kubejslab.client.ui.base.LabColors;
 import com.lowdragmc.lowdraglib.gui.widget.PhantomSlotWidget;
 import com.lowdragmc.lowdraglib.side.item.IItemTransfer;
 
+import mezz.jei.api.recipe.RecipeIngredientRole;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
@@ -14,6 +16,7 @@ public final class LabPhantomSlotWidget extends PhantomSlotWidget {
     private final LabMachineLayoutWidget.PhantomHandler handler;
     private LabMachineLayoutWidget dragOwner;
     private boolean tagTooltipSet;
+    private RecipeIngredientRole role;
 
     public LabPhantomSlotWidget(IItemTransfer itemHandler, int slotIndex, int xPosition, int yPosition) {
         super(itemHandler, slotIndex, xPosition, yPosition);
@@ -22,6 +25,10 @@ public final class LabPhantomSlotWidget extends PhantomSlotWidget {
 
     void setDragOwner(LabMachineLayoutWidget dragOwner) {
         this.dragOwner = dragOwner;
+    }
+
+    void setRole(RecipeIngredientRole role) {
+        this.role = role;
     }
 
     @Override
@@ -39,6 +46,12 @@ public final class LabPhantomSlotWidget extends PhantomSlotWidget {
 
     @Override
     public void drawInBackground(GuiGraphics g, int mx, int my, float pt) {
+        if (role != null) {
+            int x = getPositionX();
+            int y = getPositionY();
+            int color = role == RecipeIngredientRole.INPUT ? 0x402E7CF6 : 0x40FF8C42;
+            g.fill(x, y, x + getSizeWidth(), y + getSizeHeight(), color);
+        }
         super.drawInBackground(g, mx, my, pt);
         if (handler.data().kind == LabMachineLayoutWidget.SlotKind.TAG) {
             g.drawString(Minecraft.getInstance().font, "#", getPositionX() + getSizeWidth() - 8,

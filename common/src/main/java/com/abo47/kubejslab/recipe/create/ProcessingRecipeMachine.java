@@ -113,6 +113,12 @@ public final class ProcessingRecipeMachine implements LabRecipeMachine {
 
     @Override
     public LabRecipeFieldValues prefill(LabRecipeFieldValues current, Recipe<?> original) {
+        if (original instanceof ItemApplicationRecipe application) {
+            return new LabRecipeFieldValues(current.shapeless(), current.experience(), current.cookingTime(),
+                    current.count(), current.processingTime(), current.heatRequirement(),
+                    application.shouldKeepHeldItem(), current.acceptMirrored(), current.gridWidth(),
+                    current.gridHeight(), current.outputCount());
+        }
         if (original instanceof ProcessingRecipe<?> processing) {
             HeatRequirement heat = switch (processing.getRequiredHeat()) {
                 case HEATED -> HeatRequirement.HEATED;
@@ -122,12 +128,6 @@ public final class ProcessingRecipeMachine implements LabRecipeMachine {
             return new LabRecipeFieldValues(current.shapeless(), current.experience(), current.cookingTime(),
                     current.count(), processing.getProcessingDuration(), heat, current.keepHeldItem(),
                     current.acceptMirrored(), current.gridWidth(), current.gridHeight(), current.outputCount());
-        }
-        if (original instanceof ItemApplicationRecipe application) {
-            return new LabRecipeFieldValues(current.shapeless(), current.experience(), current.cookingTime(),
-                    current.count(), current.processingTime(), current.heatRequirement(),
-                    application.shouldKeepHeldItem(), current.acceptMirrored(), current.gridWidth(),
-                    current.gridHeight(), current.outputCount());
         }
         return current;
     }
