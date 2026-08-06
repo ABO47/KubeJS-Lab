@@ -12,7 +12,6 @@ import javax.annotation.Nonnull;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
@@ -238,10 +237,12 @@ public final class LabPickerWindowWidget extends WidgetGroup {
         if (dragging && button == 0) {
             int screenW = gui == null ? WINDOW_W : gui.getModularUIGui().width;
             int screenH = gui == null ? HEADER_H + BODY_H : gui.getModularUIGui().height;
+            int rootX = gui == null ? 0 : gui.mainGroup.getPositionX();
+            int rootY = gui == null ? 0 : gui.mainGroup.getPositionY();
             int nx = lastPositionX + (int) (mouseX - lastMouseX);
             int ny = lastPositionY + (int) (mouseY - lastMouseY);
-            nx = Math.max(0, Math.min(nx, screenW - getSizeWidth()));
-            ny = Math.max(0, Math.min(ny, screenH - getSizeHeight()));
+            nx = Math.max(-rootX, Math.min(nx, screenW - rootX - getSizeWidth()));
+            ny = Math.max(-rootY, Math.min(ny, screenH - rootY - getSizeHeight()));
             setSelfPosition(nx, ny);
             return true;
         }
@@ -376,7 +377,7 @@ public final class LabPickerWindowWidget extends WidgetGroup {
             } catch (IOException | RuntimeException ignored) {
             }
         }
-        return new State(Minecraft.getInstance().getWindow().getGuiScaledWidth() - WINDOW_W - 24, 12, false);
+        return new State(Math.max(4, LabLayout.ROOT_W - WINDOW_W - 24), 12, false);
     }
 
     private void saveState() {

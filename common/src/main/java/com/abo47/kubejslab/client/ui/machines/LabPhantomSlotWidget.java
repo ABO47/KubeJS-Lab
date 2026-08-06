@@ -2,6 +2,7 @@ package com.abo47.kubejslab.client.ui.machines;
 
 import com.abo47.kubejslab.client.ui.base.LabColors;
 
+import com.lowdragmc.lowdraglib.gui.util.DrawerHelper;
 import com.lowdragmc.lowdraglib.gui.widget.PhantomSlotWidget;
 import com.lowdragmc.lowdraglib.side.item.IItemTransfer;
 
@@ -46,13 +47,17 @@ public final class LabPhantomSlotWidget extends PhantomSlotWidget {
 
     @Override
     public void drawInBackground(GuiGraphics g, int mx, int my, float pt) {
+        super.drawInBackground(g, mx, my, pt);
         if (role != null) {
             int x = getPositionX();
             int y = getPositionY();
             int color = role == RecipeIngredientRole.INPUT ? 0x402E7CF6 : 0x40FF8C42;
             g.fill(x, y, x + getSizeWidth(), y + getSizeHeight(), color);
+            ItemStack stack = handler.data().stack;
+            if (!stack.isEmpty()) {
+                DrawerHelper.drawItemStack(g, stack, x + 1, y + 1, -1, null);
+            }
         }
-        super.drawInBackground(g, mx, my, pt);
         if (handler.data().kind == LabMachineLayoutWidget.SlotKind.TAG) {
             g.drawString(Minecraft.getInstance().font, "#", getPositionX() + getSizeWidth() - 8,
                     getPositionY() + getSizeHeight() - 9, 0xffd9b84c);

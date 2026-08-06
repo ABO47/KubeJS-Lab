@@ -69,14 +69,14 @@ public final class LabPhantomFluidSlotWidget extends Widget {
 
     @Override
     public void drawInBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
+        super.drawInBackground(graphics, mouseX, mouseY, partialTicks);
         int x = getPositionX();
         int y = getPositionY();
+        SlotWidget.ITEM_SLOT_TEXTURE.draw(graphics, mouseX, mouseY, x, y, 18, 18);
         if (role != null) {
             int color = role == RecipeIngredientRole.INPUT ? 0x402E7CF6 : 0x40FF8C42;
             graphics.fill(x, y, x + 18, y + 18, color);
         }
-        super.drawInBackground(graphics, mouseX, mouseY, partialTicks);
-        SlotWidget.ITEM_SLOT_TEXTURE.draw(graphics, mouseX, mouseY, x, y, 18, 18);
         if (!data.fluid.isEmpty()) {
             long capacity = Math.max(data.fluid.getAmount(), 1000);
             DrawerHelper.drawFluidForGui(graphics, data.fluid, capacity, x + 1, y + 1, 16, 16);

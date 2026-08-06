@@ -243,7 +243,8 @@ public final class LabMachineLayoutWidget extends WidgetGroup {
         int itemInputIndex = 0;
         int itemOutputIndex = 0;
         for (IRecipeSlotView view : source.getRecipeSlotsView().getSlotViews()) {
-            if (!(view instanceof IRecipeSlotDrawable drawable)) {
+            if (!(view instanceof IRecipeSlotDrawable drawable)
+                    || view.getRole() == RecipeIngredientRole.RENDER_ONLY) {
                 continue;
             }
             Rect2i rect;

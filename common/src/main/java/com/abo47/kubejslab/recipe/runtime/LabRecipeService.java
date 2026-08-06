@@ -80,6 +80,7 @@ public final class LabRecipeService {
     }
 
     public static S2CRecipeStatePacket statePacket() {
+        loadStateIfNeeded();
         return new S2CRecipeStatePacket(new HashMap<>(STATE));
     }
 
