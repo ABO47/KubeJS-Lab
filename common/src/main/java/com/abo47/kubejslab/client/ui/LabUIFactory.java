@@ -36,7 +36,6 @@ public final class LabUIFactory {
 
         FriendlyByteBuf serializedHolder = new FriendlyByteBuf(Unpooled.buffer());
         serializedHolder.writeBlockPos(holder);
-        ui.mainGroup.writeInitialData(serializedHolder);
 
         ModularUIContainer container = new ModularUIContainer(ui, windowId);
         ModNetwork.sendOpenScreen(player, serializedHolder, windowId);

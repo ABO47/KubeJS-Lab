@@ -18,7 +18,7 @@ import net.minecraftforge.network.simple.SimpleChannel;
 import io.netty.buffer.Unpooled;
 
 public final class ForgeNetwork {
-    private static final String PROTOCOL = "2";
+    private static final String PROTOCOL = "3";
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(KubeJSLab.MOD_ID, "main"),
             () -> PROTOCOL,

@@ -3,6 +3,7 @@ import com.abo47.kubejslab.client.ui.base.*;
 import com.abo47.kubejslab.client.ui.machines.*;
 import com.abo47.kubejslab.client.ui.recipes.*;
 import com.abo47.kubejslab.client.ui.contextmenu.*;
+import com.abo47.kubejslab.client.ui.picker.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,8 +24,10 @@ import com.abo47.kubejslab.network.ModNetwork;
 import com.abo47.kubejslab.network.recipe.C2SRecipeEditPacket;
 import com.abo47.kubejslab.recipe.LabRecipeMachine;
 import com.abo47.kubejslab.recipe.LabRecipeMachines;
+import com.abo47.kubejslab.recipe.model.LabIngredient;
 import com.abo47.kubejslab.recipe.model.LabRecipeEditAction;
 import com.abo47.kubejslab.recipe.model.LabRecipeFieldValues;
+import com.abo47.kubejslab.recipe.model.LabRecipeOutput;
 import com.abo47.kubejslab.recipe.model.LabRecipePayload;
 import com.abo47.kubejslab.recipe.model.LabRecipeStatus;
 import com.lowdragmc.lowdraglib.gui.modular.IUIHolder;
@@ -57,7 +60,8 @@ public final class LabScreen {
     }
 
     private static LabRecipePayload emptyPayload(LabRecipeIndex.LabRecipeEntry entry, ResourceLocation machineUid) {
-        return new LabRecipePayload(machineUid, List.of(), entry.output(), entry.name(),
+        return new LabRecipePayload(machineUid, List.of(),
+                List.of(new LabRecipeOutput.Item(entry.output(), 1f)), entry.name(),
                 LabRecipeFieldValues.defaults());
     }
 
@@ -70,6 +74,9 @@ public final class LabScreen {
         root.addWidget(leftPanel);
         root.addWidget(rightPanel);
         root.attachMenuLayer();
+        LabPickerWindowWidget picker = LabPickerWindowWidget.create();
+        picker.setPickListener(pick -> rightPanel.machineLayout.setPendingPick(pick));
+        root.addWidget(picker);
 
         leftPanel.setRightPanel(rightPanel);
         Runnable updateViews = () -> {
@@ -157,7 +164,12 @@ public final class LabScreen {
             if (menuOpen && !menuHits(mouseX, mouseY)) {
                 closeMenu();
             }
-            return super.mouseClicked(mouseX, mouseY, button);
+            boolean handled = super.mouseClicked(mouseX, mouseY, button);
+            if (!handled && gui != null) {
+                gui.getModularUIContainer().setCarried(ItemStack.EMPTY);
+                return true;
+            }
+            return handled;
         }
 
         void openContextMenu(LabRecipeIndex.LabRecipeEntry entry, double mx, double my) {
@@ -361,6 +373,8 @@ public final class LabScreen {
                     columnW,
                     layoutH - LabLayout.MACHINE_PAD * 2);
             machineLayout.setClientSideWidget();
+            machineLayout.setOutputsChangedListener(
+                    () -> settingsWidget.setOutputRows(machineLayout.getOutputRows()));
             addWidget(machineLayout);
 
             int settingsX = LabLayout.PANEL_INSET + LabLayout.MACHINE_W + LabLayout.AREA_GAP;
@@ -380,6 +394,8 @@ public final class LabScreen {
                 showRecipe(target);
             });
             settingsWidget.setOnSave(this::saveRecipe);
+            settingsWidget.setGridSizeListener(() -> machineLayout
+                    .setGridSize(settingsWidget.gridWidthValue(), settingsWidget.gridHeightValue()));
             addWidget(settingsWidget);
 
             inventory = new PlayerInventoryWidget();
@@ -593,6 +609,7 @@ public final class LabScreen {
             if (support != null) {
                 Recipe<?> original = LabRecipeIndex.recipeById(entry.id());
                 settingsWidget.applyValues(support.prefill(settingsWidget.getValues(), original));
+                machineLayout.setGridSize(settingsWidget.gridWidthValue(), settingsWidget.gridHeightValue());
             }
         }
 
@@ -611,18 +628,17 @@ public final class LabScreen {
             if (support == null) {
                 return;
             }
-            List<ItemStack> inputs = machineLayout.getInputs();
+            List<LabIngredient> inputs = machineLayout.getInputs();
             if (!hasInput(inputs)) {
                 return;
             }
-            ItemStack output = machineLayout.getOutput();
+            List<LabRecipeOutput> outputs = machineLayout.getOutputs();
             Recipe<?> original = LabRecipeIndex.recipeById(modifyTarget.id());
-            if (output.isEmpty() && (original == null || !support.allowsEmptyResult(original))) {
+            if (outputs.isEmpty() && (original == null || !support.allowsEmptyResult(original))) {
                 return;
             }
             sendRecipeEdit(LabRecipeEditAction.OVERRIDE, modifyTarget.id(),
-                    new LabRecipePayload(uid, inputs, output,
-                            output.getHoverName().getString(), settingsWidget.getValues()));
+                    new LabRecipePayload(uid, inputs, outputs, outputName(outputs), settingsWidget.getValues()));
         }
 
         private void saveNewRecipe() {
@@ -634,40 +650,53 @@ public final class LabScreen {
             if (support == null) {
                 return;
             }
-            List<ItemStack> inputs = machineLayout.getInputs();
+            List<LabIngredient> inputs = machineLayout.getInputs();
             if (!hasInput(inputs)) {
                 return;
             }
-            ItemStack output = machineLayout.getOutput();
-            if (output.isEmpty()) {
+            List<LabRecipeOutput> outputs = machineLayout.getOutputs();
+            if (outputs.isEmpty()) {
                 return;
             }
             sendRecipeEdit(LabRecipeEditAction.SAVE_NEW, null,
-                    new LabRecipePayload(machine.recipeTypeUid(), inputs, output,
-                            output.getHoverName().getString(), settingsWidget.getValues()));
+                    new LabRecipePayload(machine.recipeTypeUid(), inputs, outputs,
+                            outputName(outputs), settingsWidget.getValues()));
         }
 
         private void saveGenericOverride() {
-            List<ItemStack> inputs = machineLayout.getInputs();
+            List<LabIngredient> inputs = machineLayout.getInputs();
             if (!hasInput(inputs)) {
                 return;
             }
-            ItemStack output = machineLayout.getOutput();
-            if (output.isEmpty()) {
+            List<LabRecipeOutput> outputs = machineLayout.getOutputs();
+            if (outputs.isEmpty()) {
                 return;
             }
             sendRecipeEdit(LabRecipeEditAction.OVERRIDE, modifyTarget.id(),
-                    new LabRecipePayload(null, inputs, output,
-                            output.getHoverName().getString(), LabRecipeFieldValues.defaults()));
+                    new LabRecipePayload(null, inputs, outputs,
+                            outputName(outputs), LabRecipeFieldValues.defaults()));
         }
 
-        private static boolean hasInput(List<ItemStack> inputs) {
-            for (ItemStack input : inputs) {
+        private static boolean hasInput(List<LabIngredient> inputs) {
+            for (LabIngredient input : inputs) {
                 if (!input.isEmpty()) {
                     return true;
                 }
             }
             return false;
+        }
+
+        private static String outputName(List<LabRecipeOutput> outputs) {
+            ItemStack item = LabRecipeOutput.firstItem(outputs);
+            if (!item.isEmpty()) {
+                return item.getHoverName().getString();
+            }
+            for (LabRecipeOutput output : outputs) {
+                if (output instanceof LabRecipeOutput.Fluid fluid && !fluid.fluid().isEmpty()) {
+                    return fluid.fluid().getDisplayName().getString();
+                }
+            }
+            return "";
         }
 
         private ResourceLocation resolveModifyUid(LabRecipeIndex.LabRecipeEntry entry) {

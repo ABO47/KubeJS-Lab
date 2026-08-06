@@ -6,14 +6,15 @@ import com.google.gson.JsonObject;
 
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.StonecutterRecipe;
 
 import com.abo47.kubejslab.recipe.LabRecipeMachine;
+import com.abo47.kubejslab.recipe.model.LabIngredient;
 import com.abo47.kubejslab.recipe.model.LabRecipeField;
 import com.abo47.kubejslab.recipe.model.LabRecipeFieldValues;
 import com.abo47.kubejslab.recipe.model.LabRecipeJson;
+import com.abo47.kubejslab.recipe.model.LabRecipeOutput;
 
 public final class StonecutterMachine implements LabRecipeMachine {
     private static final ResourceLocation JEI_UID = new ResourceLocation("minecraft", "stonecutting");
@@ -35,15 +36,16 @@ public final class StonecutterMachine implements LabRecipeMachine {
     }
 
     @Override
-    public JsonObject buildJson(String jsonType, List<ItemStack> inputs, ItemStack output,
+    public JsonObject buildJson(String jsonType, List<LabIngredient> inputs, List<LabRecipeOutput> outputs,
             LabRecipeFieldValues values) {
-        if (inputs.isEmpty() || output.isEmpty()) {
+        if (inputs.isEmpty() || LabRecipeOutput.firstItem(outputs).isEmpty()) {
             return null;
         }
         JsonObject json = new JsonObject();
         json.addProperty("type", JSON_TYPE);
-        json.add("ingredient", LabRecipeJson.itemJson(inputs.get(0)));
-        json.addProperty("result", output.getItem().builtInRegistryHolder().key().location().toString());
+        json.add("ingredient", LabRecipeJson.ingredientJson(inputs.get(0)));
+        json.addProperty("result", LabRecipeOutput.firstItem(outputs).getItem().builtInRegistryHolder().key().location()
+                .toString());
         json.addProperty("count", values.count());
         return json;
     }
@@ -53,7 +55,8 @@ public final class StonecutterMachine implements LabRecipeMachine {
         if (original instanceof StonecutterRecipe recipe) {
             return new LabRecipeFieldValues(current.shapeless(), current.experience(), current.cookingTime(),
                     recipe.getResultItem(RegistryAccess.EMPTY).getCount(), current.processingTime(),
-                    current.heatRequirement(), current.keepHeldItem());
+                    current.heatRequirement(), current.keepHeldItem(), current.acceptMirrored(),
+                    current.gridWidth(), current.gridHeight());
         }
         return current;
     }

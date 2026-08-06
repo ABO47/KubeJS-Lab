@@ -284,7 +284,7 @@ public final class LabMachineDropdownWidget extends WidgetGroup {
             return false;
         }
         int scrollMax = Math.max(0, filtered().size() - LabLayout.DROPDOWN_MAX_ROWS);
-        int next = LabScrollMath.wheel(scroll, scrollMax, LabLayout.DROPDOWN_ROW_H, wheelDelta);
+        int next = LabScrollMath.wheel(scroll, scrollMax, 1, wheelDelta);
         if (next != scroll) {
             scroll = next;
         }

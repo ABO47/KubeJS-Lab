@@ -5,11 +5,12 @@ import java.util.List;
 import com.google.gson.JsonObject;
 
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Recipe;
 
+import com.abo47.kubejslab.recipe.model.LabIngredient;
 import com.abo47.kubejslab.recipe.model.LabRecipeField;
 import com.abo47.kubejslab.recipe.model.LabRecipeFieldValues;
+import com.abo47.kubejslab.recipe.model.LabRecipeOutput;
 
 public interface LabRecipeMachine {
     ResourceLocation jeiUid();
@@ -24,13 +25,18 @@ public interface LabRecipeMachine {
         return false;
     }
 
+    default boolean supportsChance() {
+        return false;
+    }
+
     default boolean allowsEmptyResult(Recipe<?> original) {
         return false;
     }
 
     List<LabRecipeField> fields();
 
-    JsonObject buildJson(String jsonType, List<ItemStack> inputs, ItemStack output, LabRecipeFieldValues values);
+    JsonObject buildJson(String jsonType, List<LabIngredient> inputs, List<LabRecipeOutput> outputs,
+            LabRecipeFieldValues values);
 
     default LabRecipeFieldValues prefill(LabRecipeFieldValues current, Recipe<?> original) {
         return current;

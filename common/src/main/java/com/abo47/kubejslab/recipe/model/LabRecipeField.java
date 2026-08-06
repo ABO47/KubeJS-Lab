@@ -7,5 +7,8 @@ public enum LabRecipeField {
     COUNT,
     PROCESSING_TIME,
     HEAT_REQUIREMENT,
-    KEEP_HELD_ITEM
+    KEEP_HELD_ITEM,
+    ACCEPT_MIRRORED,
+    GRID_WIDTH,
+    GRID_HEIGHT
 }

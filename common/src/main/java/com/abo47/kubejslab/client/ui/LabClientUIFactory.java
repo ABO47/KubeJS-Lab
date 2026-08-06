@@ -21,7 +21,6 @@ public final class LabClientUIFactory {
         ModularUI ui = LabScreen.createUI(holder, player);
         ui.initWidgets();
         LabGuiContainer gui = new LabGuiContainer(ui, windowId);
-        ui.mainGroup.readInitialData(buf);
         LabScreen.activateClient(ui);
         minecraft.setScreen(gui);
         minecraft.player.containerMenu = gui.getMenu();

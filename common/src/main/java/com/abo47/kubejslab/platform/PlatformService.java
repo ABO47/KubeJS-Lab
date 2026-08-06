@@ -1,7 +1,13 @@
 package com.abo47.kubejslab.platform;
 
+import java.util.Optional;
+
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
+
+import mezz.jei.api.gui.ingredient.IRecipeSlotView;
+
+import com.lowdragmc.lowdraglib.side.fluid.FluidStack;
 
 import com.abo47.kubejslab.network.recipe.C2SRecipeEditPacket;
 import com.abo47.kubejslab.network.recipe.S2CRecipeStatePacket;
@@ -16,4 +22,6 @@ public interface PlatformService {
     void sendRecipeEdit(C2SRecipeEditPacket packet);
 
     void sendRecipeState(ServerPlayer player, S2CRecipeStatePacket packet);
+
+    Optional<FluidStack> readFluidIngredient(IRecipeSlotView view);
 }

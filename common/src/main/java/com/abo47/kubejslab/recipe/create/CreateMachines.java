@@ -16,18 +16,31 @@ public final class CreateMachines {
         if (!Platform.isModLoaded(MOD_ID)) {
             return;
         }
-        LabRecipeMachines.register(new ProcessingRecipeMachine(uid("milling"), true, false, false));
-        LabRecipeMachines.register(new ProcessingRecipeMachine(uid("crushing"), true, false, false));
-        LabRecipeMachines.register(new ProcessingRecipeMachine(uid("pressing"), false, false, false));
-        LabRecipeMachines.register(new ProcessingRecipeMachine(uid("splashing"), false, false, false));
-        LabRecipeMachines.register(new ProcessingRecipeMachine(uid("haunting"), false, false, false));
-        LabRecipeMachines.register(new ProcessingRecipeMachine(uid("mixing"), true, true, false));
-        LabRecipeMachines.register(new ProcessingRecipeMachine(uid("compacting"), true, true, false));
-        LabRecipeMachines.register(new ProcessingRecipeMachine(uid("cutting"), true, false, false));
-        LabRecipeMachines.register(new ProcessingRecipeMachine(uid("sandpaper_polishing"), false, false, false));
-        LabRecipeMachines.register(new ProcessingRecipeMachine(uid("deploying"), false, false, true));
-        LabRecipeMachines.register(new ProcessingRecipeMachine(uid("item_application"), false, false, true));
+        LabRecipeMachines.register(processing("milling", "milling", true, false, false, true));
+        LabRecipeMachines.register(processing("crushing", "crushing", true, false, false, true));
+        LabRecipeMachines.register(processing("pressing", "pressing", false, false, false, false));
+        LabRecipeMachines.register(processing("fan_washing", "splashing", false, false, false, true));
+        LabRecipeMachines.register(processing("fan_haunting", "haunting", false, false, false, true));
+        LabRecipeMachines.register(processing("mixing", "mixing", true, true, false, false));
+        LabRecipeMachines.register(processing("packing", "compacting", true, true, false, false));
+        LabRecipeMachines.register(processing("sawing", "cutting", true, false, false, true));
+        LabRecipeMachines.register(processing("sandpaper_polishing", "sandpaper_polishing", false, false, false, true));
+        LabRecipeMachines.register(processing("deploying", "deploying", false, false, true, false));
+        LabRecipeMachines.register(processing("item_application", "item_application", false, false, true, false));
+        LabRecipeMachines.register(processing("spout_filling", "filling", false, false, false, false));
+        LabRecipeMachines.register(processing("draining", "emptying", false, false, false, false));
         LabRecipeMachines.register(new MechanicalCraftingMachine());
+    }
+
+    private static ProcessingRecipeMachine processing(String jeiPath, String jsonPath, boolean duration,
+            boolean heat, boolean keepHeldItem) {
+        return processing(jeiPath, jsonPath, duration, heat, keepHeldItem, false);
+    }
+
+    private static ProcessingRecipeMachine processing(String jeiPath, String jsonPath, boolean duration,
+            boolean heat, boolean keepHeldItem, boolean chance) {
+        return new ProcessingRecipeMachine(uid(jeiPath), uid(jsonPath).toString(), duration, heat, keepHeldItem,
+                chance);
     }
 
     private static ResourceLocation uid(String path) {

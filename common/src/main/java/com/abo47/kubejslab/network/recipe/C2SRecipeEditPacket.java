@@ -8,12 +8,12 @@ import javax.annotation.Nullable;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.item.ItemStack;
 
-import com.abo47.kubejslab.network.recipe.LabPacketCodecs;
 import com.abo47.kubejslab.recipe.model.LabRecipeEditAction;
 import com.abo47.kubejslab.recipe.model.LabRecipeFieldValues;
 import com.abo47.kubejslab.recipe.model.HeatRequirement;
+import com.abo47.kubejslab.recipe.model.LabIngredient;
+import com.abo47.kubejslab.recipe.model.LabRecipeOutput;
 import com.abo47.kubejslab.recipe.model.LabRecipePayload;
 import com.abo47.kubejslab.recipe.runtime.LabRecipeService;
 
@@ -31,10 +31,13 @@ public record C2SRecipeEditPacket(LabRecipeEditAction action, @Nullable Resource
             buf.writeUtf(payload.machineUid().toString());
         }
         buf.writeVarInt(payload.inputs().size());
-        for (ItemStack stack : payload.inputs()) {
-            LabPacketCodecs.writeStack(buf, stack);
+        for (LabIngredient ingredient : payload.inputs()) {
+            LabPacketCodecs.writeIngredient(buf, ingredient);
         }
-        LabPacketCodecs.writeStack(buf, payload.output());
+        buf.writeVarInt(payload.outputs().size());
+        for (LabRecipeOutput output : payload.outputs()) {
+            LabPacketCodecs.writeOutput(buf, output);
+        }
         buf.writeUtf(payload.name() == null ? "" : payload.name());
         LabRecipeFieldValues values = payload.values();
         buf.writeBoolean(values.shapeless());
@@ -44,6 +47,9 @@ public record C2SRecipeEditPacket(LabRecipeEditAction action, @Nullable Resource
         buf.writeVarInt(values.processingTime());
         buf.writeUtf(values.heatRequirement().name());
         buf.writeBoolean(values.keepHeldItem());
+        buf.writeBoolean(values.acceptMirrored());
+        buf.writeVarInt(values.gridWidth());
+        buf.writeVarInt(values.gridHeight());
     }
 
     public static C2SRecipeEditPacket read(FriendlyByteBuf buf) {
@@ -51,11 +57,15 @@ public record C2SRecipeEditPacket(LabRecipeEditAction action, @Nullable Resource
         ResourceLocation targetId = buf.readBoolean() ? new ResourceLocation(buf.readUtf()) : null;
         ResourceLocation machineUid = buf.readBoolean() ? new ResourceLocation(buf.readUtf()) : null;
         int inputCount = Math.min(buf.readVarInt(), 9);
-        List<ItemStack> inputs = new ArrayList<>(inputCount);
+        List<LabIngredient> inputs = new ArrayList<>(inputCount);
         for (int i = 0; i < inputCount; i++) {
-            inputs.add(LabPacketCodecs.readStack(buf));
+            inputs.add(LabPacketCodecs.readIngredient(buf));
         }
-        ItemStack output = LabPacketCodecs.readStack(buf);
+        int outputCount = Math.min(buf.readVarInt(), 12);
+        List<LabRecipeOutput> outputs = new ArrayList<>(outputCount);
+        for (int i = 0; i < outputCount; i++) {
+            outputs.add(LabPacketCodecs.readOutput(buf));
+        }
         String name = buf.readUtf();
         boolean shapeless = buf.readBoolean();
         float experience = buf.readFloat();
@@ -64,10 +74,13 @@ public record C2SRecipeEditPacket(LabRecipeEditAction action, @Nullable Resource
         int processingTime = Math.min(buf.readVarInt(), 200000);
         HeatRequirement heatRequirement = HeatRequirement.byName(buf.readUtf());
         boolean keepHeldItem = buf.readBoolean();
+        boolean acceptMirrored = buf.readBoolean();
+        int gridWidth = Math.max(1, Math.min(9, buf.readVarInt()));
+        int gridHeight = Math.max(1, Math.min(9, buf.readVarInt()));
         return new C2SRecipeEditPacket(action, targetId,
-                new LabRecipePayload(machineUid, inputs, output, name,
+                new LabRecipePayload(machineUid, inputs, outputs, name,
                         new LabRecipeFieldValues(shapeless, experience, cookingTime, count, processingTime,
-                                heatRequirement, keepHeldItem)));
+                                heatRequirement, keepHeldItem, acceptMirrored, gridWidth, gridHeight)));
     }
 
     public void handle(ServerPlayer player) {

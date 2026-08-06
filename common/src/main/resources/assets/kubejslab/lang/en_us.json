@@ -29,5 +29,16 @@
   "kubejslab.gui.lab_recipe_keep_held_item": "keep held item",
   "kubejslab.gui.lab_recipe_heat_none": "none",
   "kubejslab.gui.lab_recipe_heat_heated": "heated",
-  "kubejslab.gui.lab_recipe_heat_superheated": "superheated"
+  "kubejslab.gui.lab_recipe_heat_superheated": "superheated",
+  "kubejslab.gui.lab_recipe_chance": "chance",
+  "kubejslab.gui.lab_recipe_unit_percent": "%",
+  "kubejslab.gui.lab_recipe_accept_mirrored": "accept mirrored",
+  "kubejslab.gui.lab_recipe_grid_width": "grid width",
+  "kubejslab.gui.lab_recipe_grid_height": "grid height",
+  "kubejslab.gui.lab_picker_minimize": "Minimize picker",
+  "kubejslab.gui.lab_picker_expand": "Expand picker",
+  "kubejslab.gui.lab_picker_mode_items": "Items",
+  "kubejslab.gui.lab_picker_mode_tags": "Tags",
+  "kubejslab.gui.lab_picker_mode_fluids": "Fluids",
+  "kubejslab.gui.lab_picker_empty": "no matches"
 }

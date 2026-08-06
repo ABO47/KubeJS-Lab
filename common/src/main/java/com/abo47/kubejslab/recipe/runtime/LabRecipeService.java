@@ -30,6 +30,7 @@ import com.abo47.kubejslab.network.recipe.S2CRecipeStatePacket;
 import com.abo47.kubejslab.recipe.LabRecipeMachine;
 import com.abo47.kubejslab.recipe.LabRecipeMachines;
 import com.abo47.kubejslab.recipe.model.LabRecipeEditAction;
+import com.abo47.kubejslab.recipe.model.LabRecipeOutput;
 import com.abo47.kubejslab.recipe.model.LabRecipePayload;
 import com.abo47.kubejslab.recipe.model.LabRecipeStateEntry;
 import com.abo47.kubejslab.recipe.model.LabRecipeStatus;
@@ -74,7 +75,7 @@ public final class LabRecipeService {
     }
 
     private static void saveNew(LabRecipePayload payload) throws IOException {
-        ItemStack output = payload.output();
+        ItemStack output = LabRecipeOutput.displayStack(payload.outputs());
         if (output.isEmpty()) {
             return;
         }
@@ -120,8 +121,9 @@ public final class LabRecipeService {
             return;
         }
         Files.writeString(file, GSON.toJson(json) + "\n");
+        ItemStack display = LabRecipeOutput.displayStack(payload.outputs());
         STATE.put(targetId,
-                new LabRecipeStateEntry(targetId, LabRecipeStatus.MODIFIED, payload.output(), payload.name(), true,
+                new LabRecipeStateEntry(targetId, LabRecipeStatus.MODIFIED, display, payload.name(), true,
                         payload.machineUid()));
     }
 
@@ -131,7 +133,8 @@ public final class LabRecipeService {
         }
         LabRecipeStateEntry entry = STATE.get(targetId);
         boolean wasModified = entry != null && entry.wasModified();
-        STATE.put(targetId, new LabRecipeStateEntry(targetId, LabRecipeStatus.DISABLED, payload.output(), payload.name(),
+        ItemStack display = LabRecipeOutput.displayStack(payload.outputs());
+        STATE.put(targetId, new LabRecipeStateEntry(targetId, LabRecipeStatus.DISABLED, display, payload.name(),
                 wasModified, payload.machineUid()));
     }
 
@@ -197,7 +200,7 @@ public final class LabRecipeService {
         if (machine == null) {
             return null;
         }
-        return machine.buildJson(machine.jsonTypeFor(original), payload.inputs(), payload.output(), payload.values());
+        return machine.buildJson(machine.jsonTypeFor(original), payload.inputs(), payload.outputs(), payload.values());
     }
 
     private static ResourceLocation generateId(ItemStack output) {

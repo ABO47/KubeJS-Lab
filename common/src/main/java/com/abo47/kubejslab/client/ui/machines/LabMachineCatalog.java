@@ -19,6 +19,7 @@ import mezz.jei.api.recipe.category.IRecipeCategory;
 import mezz.jei.api.runtime.IJeiRuntime;
 
 import com.abo47.kubejslab.client.jei.LabJeiPlugin;
+import com.abo47.kubejslab.recipe.LabRecipeMachine;
 import com.abo47.kubejslab.recipe.LabRecipeMachines;
 
 public final class LabMachineCatalog {
@@ -96,6 +97,25 @@ public final class LabMachineCatalog {
             } catch (RuntimeException | LinkageError ignored) {
             }
         }
+        Map<String, List<LabMachine>> byName = new HashMap<>();
+        for (LabMachine machine : built) {
+            byName.computeIfAbsent(machine.name(), key -> new ArrayList<>()).add(machine);
+        }
+        List<LabMachine> disambiguated = new ArrayList<>();
+        for (List<LabMachine> group : byName.values()) {
+            if (group.size() == 1) {
+                disambiguated.add(group.get(0));
+                continue;
+            }
+            for (LabMachine machine : group) {
+                ResourceLocation uid = machine.recipeTypeUid();
+                LabRecipeMachine support = LabRecipeMachines.get(uid);
+                String label = support != null ? support.jsonType() : uid.getPath();
+                disambiguated.add(new LabMachine(machine.category(), machine.icon(),
+                        machine.name() + " (" + label + ")", machine.supported()));
+            }
+        }
+        built = disambiguated;
         built.sort(Comparator.comparing(LabMachine::supported, Comparator.reverseOrder())
                 .thenComparing(LabMachine::name, String.CASE_INSENSITIVE_ORDER)
                 .thenComparing(machine -> machine.recipeTypeUid().toString()));

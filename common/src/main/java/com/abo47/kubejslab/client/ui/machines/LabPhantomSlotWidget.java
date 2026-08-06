@@ -30,16 +30,17 @@ public final class LabPhantomSlotWidget extends PhantomSlotWidget {
         if (button == LabColors.MOUSE_BUTTON_LEFT) {
             if (!carried.isEmpty()) {
                 dragOwner.beginPaint(button);
-                dragOwner.paintSlot(button, handler);
+                dragOwner.paintSlot(button, handler.data());
             } else if (!current.isEmpty()) {
                 gui.getModularUIContainer().setCarried(current.copy());
                 slotReference.set(ItemStack.EMPTY);
+                handler.data().clear();
             } else {
                 return false;
             }
         } else if (button == LabColors.MOUSE_BUTTON_RIGHT) {
             dragOwner.beginPaint(button);
-            dragOwner.paintSlot(button, handler);
+            dragOwner.paintSlot(button, handler.data());
         } else {
             return false;
         }
@@ -49,7 +50,7 @@ public final class LabPhantomSlotWidget extends PhantomSlotWidget {
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
         if (dragOwner != null && dragOwner.isPainting(button) && isMouseOverElement(mouseX, mouseY)) {
-            dragOwner.paintSlot(button, handler);
+            dragOwner.paintSlot(button, handler.data());
             return true;
         }
         return false;

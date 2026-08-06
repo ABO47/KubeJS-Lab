@@ -26,6 +26,17 @@ public final class LabGuiKeys {
     public static final String LAB_RECIPE_HEAT_NONE = "kubejslab.gui.lab_recipe_heat_none";
     public static final String LAB_RECIPE_HEAT_HEATED = "kubejslab.gui.lab_recipe_heat_heated";
     public static final String LAB_RECIPE_HEAT_SUPERHEATED = "kubejslab.gui.lab_recipe_heat_superheated";
+    public static final String LAB_RECIPE_CHANCE = "kubejslab.gui.lab_recipe_chance";
+    public static final String LAB_RECIPE_UNIT_PERCENT = "kubejslab.gui.lab_recipe_unit_percent";
+    public static final String LAB_RECIPE_ACCEPT_MIRRORED = "kubejslab.gui.lab_recipe_accept_mirrored";
+    public static final String LAB_RECIPE_GRID_WIDTH = "kubejslab.gui.lab_recipe_grid_width";
+    public static final String LAB_RECIPE_GRID_HEIGHT = "kubejslab.gui.lab_recipe_grid_height";
+    public static final String LAB_PICKER_MINIMIZE = "kubejslab.gui.lab_picker_minimize";
+    public static final String LAB_PICKER_EXPAND = "kubejslab.gui.lab_picker_expand";
+    public static final String LAB_PICKER_MODE_ITEMS = "kubejslab.gui.lab_picker_mode_items";
+    public static final String LAB_PICKER_MODE_TAGS = "kubejslab.gui.lab_picker_mode_tags";
+    public static final String LAB_PICKER_MODE_FLUIDS = "kubejslab.gui.lab_picker_mode_fluids";
+    public static final String LAB_PICKER_EMPTY = "kubejslab.gui.lab_picker_empty";
 
     private LabGuiKeys() {
     }
