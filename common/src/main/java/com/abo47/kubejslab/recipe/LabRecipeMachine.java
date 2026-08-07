@@ -41,6 +41,14 @@ public interface LabRecipeMachine {
         return false;
     }
 
+    default List<Float> outputChances(Recipe<?> original) {
+        return List.of();
+    }
+
+    default ResourceLocation tagForInput(Recipe<?> original, int inputSlotIndex) {
+        return null;
+    }
+
     default String displayLabel() {
         return null;
     }

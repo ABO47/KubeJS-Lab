@@ -56,12 +56,18 @@ public record C2SRecipeEditPacket(LabRecipeEditAction action, @Nullable Resource
         buf.writeVarInt(values.gridWidth());
         buf.writeVarInt(values.gridHeight());
         buf.writeVarInt(values.outputCount());
+        buf.writeVarInt(values.energy());
+        buf.writeVarInt(values.creosoteAmount());
+        buf.writeUtf(values.mold(), 32767);
+        buf.writeUtf(values.blueprintCategory(), 32767);
+        buf.writeUtf(values.clocheRenderType().name(), 32767);
+        buf.writeUtf(values.clocheRenderBlock(), 32767);
         int total = buf.writerIndex() - start;
         KubeJSLab.LOGGER.info(
-                "[Net] C2SRecipeEditPacket encoded: ids={}b, inputs={}b, outputs={}b, name+values={}b, total={}b ({} inputs, {} outputs, grid={}x{}, outputCount={})",
+                "[Net] C2SRecipeEditPacket encoded: ids={}b, inputs={}b, outputs={}b, name+values={}b, total={}b ({} inputs, {} outputs, grid={}x{}, outputCount={}, energy={})",
                 afterIds, afterInputs - afterIds, afterOutputs - afterInputs, total - afterOutputs, total,
                 payload.inputs().size(), payload.outputs().size(), values.gridWidth(), values.gridHeight(),
-                values.outputCount());
+                values.outputCount(), values.energy());
     }
 
     public static C2SRecipeEditPacket read(FriendlyByteBuf buf) {
@@ -90,10 +96,18 @@ public record C2SRecipeEditPacket(LabRecipeEditAction action, @Nullable Resource
         int gridWidth = Math.max(1, Math.min(9, buf.readVarInt()));
         int gridHeight = Math.max(1, Math.min(9, buf.readVarInt()));
         int recipeOutputCount = Math.max(1, Math.min(6, buf.readVarInt()));
+        int energy = Math.max(0, Math.min(100000, buf.readVarInt()));
+        int creosoteAmount = Math.max(0, Math.min(200000, buf.readVarInt()));
+        String mold = buf.readUtf();
+        String blueprintCategory = buf.readUtf();
+        com.abo47.kubejslab.recipe.model.ClocheRenderType clocheRenderType =
+                com.abo47.kubejslab.recipe.model.ClocheRenderType.byName(buf.readUtf());
+        String clocheRenderBlock = buf.readUtf();
         return new C2SRecipeEditPacket(action, targetId,
                 new LabRecipePayload(machineUid, inputs, outputs, name,
                         new LabRecipeFieldValues(shapeless, experience, cookingTime, count, processingTime,
-                                heatRequirement, keepHeldItem, acceptMirrored, gridWidth, gridHeight, recipeOutputCount)));
+                                heatRequirement, keepHeldItem, acceptMirrored, gridWidth, gridHeight, recipeOutputCount,
+                                energy, creosoteAmount, mold, blueprintCategory, clocheRenderType, clocheRenderBlock)));
     }
 
     public void handle(ServerPlayer player) {

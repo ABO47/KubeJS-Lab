@@ -21,6 +21,7 @@ import com.abo47.kubejslab.client.ui.base.LabNumberFieldWidget;
 import com.abo47.kubejslab.client.ui.base.LabScrollBarWidget;
 import com.abo47.kubejslab.client.ui.base.LabScrollMath;
 import com.abo47.kubejslab.client.ui.base.LabToggleSwitchWidget;
+import com.abo47.kubejslab.recipe.model.ClocheRenderType;
 import com.abo47.kubejslab.recipe.model.HeatRequirement;
 import com.abo47.kubejslab.recipe.model.LabRecipeField;
 import com.abo47.kubejslab.recipe.model.LabRecipeFieldValues;
@@ -51,6 +52,12 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
     private final TextFieldWidget gridWidthField;
     private final TextFieldWidget gridHeightField;
     private final TextFieldWidget outputCountField;
+    private final TextFieldWidget energyField;
+    private final TextFieldWidget creosoteAmountField;
+    private final TextFieldWidget moldField;
+    private final TextFieldWidget blueprintCategoryField;
+    private final LabActionButton clocheRenderTypeButton;
+    private final TextFieldWidget clocheRenderBlockField;
     private final TextTexture shapelessLabel;
     private final TextTexture experienceLabel;
     private final TextTexture cookingTimeLabel;
@@ -62,6 +69,12 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
     private final TextTexture gridWidthLabel;
     private final TextTexture gridHeightLabel;
     private final TextTexture outputCountLabel;
+    private final TextTexture energyLabel;
+    private final TextTexture creosoteAmountLabel;
+    private final TextTexture moldLabel;
+    private final TextTexture blueprintCategoryLabel;
+    private final TextTexture clocheRenderTypeLabel;
+    private final TextTexture clocheRenderBlockLabel;
     private final TextTexture chanceLabel;
     private final LabActionButton clearButton;
     private final LabActionButton saveButton;
@@ -78,6 +91,12 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
     private String gridWidthText = Integer.toString(LabRecipeFieldValues.defaults().gridWidth());
     private String gridHeightText = Integer.toString(LabRecipeFieldValues.defaults().gridHeight());
     private String outputCountText = Integer.toString(LabRecipeFieldValues.defaults().outputCount());
+    private String energyText = "0";
+    private String creosoteAmountText = "0";
+    private String moldText = "";
+    private String blueprintCategoryText = "";
+    private ClocheRenderType clocheRenderType = ClocheRenderType.GENERIC;
+    private String clocheRenderBlockText = "";
     private boolean outputCountEnabled;
     private Runnable outputCountListener;
     private List<LabRecipeField> fields = List.of();
@@ -110,6 +129,12 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
         gridWidthLabel = rowLabel(LabGuiKeys.LAB_RECIPE_GRID_WIDTH, labelW);
         gridHeightLabel = rowLabel(LabGuiKeys.LAB_RECIPE_GRID_HEIGHT, labelW);
         outputCountLabel = rowLabel(LabGuiKeys.LAB_RECIPE_OUTPUT_COUNT, labelW);
+        energyLabel = rowLabel(LabGuiKeys.LAB_RECIPE_ENERGY, labelW);
+        creosoteAmountLabel = rowLabel(LabGuiKeys.LAB_RECIPE_CREOSOTE_AMOUNT, labelW);
+        moldLabel = rowLabel(LabGuiKeys.LAB_RECIPE_MOLD, labelW);
+        blueprintCategoryLabel = rowLabel(LabGuiKeys.LAB_RECIPE_BLUEPRINT_CATEGORY, labelW);
+        clocheRenderTypeLabel = rowLabel(LabGuiKeys.LAB_RECIPE_CLOCHE_RENDER_TYPE, labelW);
+        clocheRenderBlockLabel = rowLabel(LabGuiKeys.LAB_RECIPE_CLOCHE_RENDER_BLOCK, labelW);
         chanceLabel = rowLabel(LabGuiKeys.LAB_RECIPE_CHANCE, labelW);
 
         shapelessToggle = new LabToggleSwitchWidget(
@@ -182,6 +207,33 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
                 outputCountText);
         addWidget(outputCountField);
 
+        energyField = numberField(0, 0, FIELD_W,
+                () -> energyText,
+                value -> energyText = value,
+                energyText);
+        addWidget(energyField);
+
+        creosoteAmountField = numberField(0, 0, FIELD_W,
+                () -> creosoteAmountText,
+                value -> creosoteAmountText = value,
+                creosoteAmountText);
+        addWidget(creosoteAmountField);
+
+        moldField = textField(0, 0, FIELD_W, () -> moldText, value -> moldText = value, moldText);
+        addWidget(moldField);
+
+        blueprintCategoryField = textField(0, 0, FIELD_W, () -> blueprintCategoryText,
+                value -> blueprintCategoryText = value, blueprintCategoryText);
+        addWidget(blueprintCategoryField);
+
+        clocheRenderTypeButton = new LabActionButton(0, 0, CYCLE_W, FIELD_H,
+                clocheRenderLabelText(clocheRenderType), this::cycleClocheRenderType);
+        addWidget(clocheRenderTypeButton);
+
+        clocheRenderBlockField = textField(0, 0, FIELD_W, () -> clocheRenderBlockText,
+                value -> clocheRenderBlockText = value, clocheRenderBlockText);
+        addWidget(clocheRenderBlockField);
+
         int btnH = LabLayout.SETTINGS_BTN_H;
         int bottomY = h - pad - btnH;
         int btnW = (cardW - LabLayout.SETTINGS_BTN_GAP) / 2;
@@ -233,6 +285,10 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
         if (!fields.contains(LabRecipeField.ACCEPT_MIRRORED)) {
             acceptMirrored = true;
         }
+        if (!fields.contains(LabRecipeField.CLOCHE_RENDER_TYPE)) {
+            clocheRenderType = ClocheRenderType.GENERIC;
+            clocheRenderTypeButton.setLabel(clocheRenderLabelText(clocheRenderType));
+        }
         shapelessToggle.setVisible(fields.contains(LabRecipeField.SHAPELESS));
         experienceField.setVisible(fields.contains(LabRecipeField.EXPERIENCE));
         cookingTimeField.setVisible(fields.contains(LabRecipeField.COOKING_TIME));
@@ -244,6 +300,12 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
         gridWidthField.setVisible(fields.contains(LabRecipeField.GRID_WIDTH));
         gridHeightField.setVisible(fields.contains(LabRecipeField.GRID_HEIGHT));
         outputCountField.setVisible(fields.contains(LabRecipeField.OUTPUT_COUNT) && outputCountEnabled);
+        energyField.setVisible(fields.contains(LabRecipeField.ENERGY));
+        creosoteAmountField.setVisible(fields.contains(LabRecipeField.CREOSOTE_AMOUNT));
+        moldField.setVisible(fields.contains(LabRecipeField.MOLD));
+        blueprintCategoryField.setVisible(fields.contains(LabRecipeField.BLUEPRINT_CATEGORY));
+        clocheRenderTypeButton.setVisible(fields.contains(LabRecipeField.CLOCHE_RENDER_TYPE));
+        clocheRenderBlockField.setVisible(fields.contains(LabRecipeField.CLOCHE_RENDER_BLOCK));
         scrollOffset = 0;
         rebuildRows();
     }
@@ -271,7 +333,7 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
         rebuildRows();
     }
 
-    public LabRecipeFieldValues getValues() {
+public LabRecipeFieldValues getValues() {
         LabRecipeFieldValues defaults = LabRecipeFieldValues.defaults();
         return new LabRecipeFieldValues(
                 shapeless,
@@ -284,7 +346,14 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
                 fields.contains(LabRecipeField.ACCEPT_MIRRORED) ? acceptMirrored : defaults.acceptMirrored(),
                 Math.max(1, Math.min(9, parseInt(gridWidthText, defaults.gridWidth()))),
                 Math.max(1, Math.min(9, parseInt(gridHeightText, defaults.gridHeight()))),
-                Math.max(1, Math.min(6, parseInt(outputCountText, defaults.outputCount()))));
+                Math.max(1, Math.min(6, parseInt(outputCountText, defaults.outputCount()))),
+                Math.max(0, parseInt(energyText, defaults.energy())),
+                Math.max(0, parseInt(creosoteAmountText, defaults.creosoteAmount())),
+                moldText,
+                blueprintCategoryText,
+                fields.contains(LabRecipeField.CLOCHE_RENDER_TYPE) ? clocheRenderType : defaults.clocheRenderType(),
+                fields.contains(LabRecipeField.CLOCHE_RENDER_BLOCK) ? clocheRenderBlockText
+                        : defaults.clocheRenderBlock());
     }
 
     public void applyValues(LabRecipeFieldValues values) {
@@ -296,9 +365,13 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
         heatRequirement = values.heatRequirement();
         keepHeldItem = values.keepHeldItem();
         acceptMirrored = values.acceptMirrored();
-        gridWidthText = Integer.toString(Math.max(1, Math.min(9, values.gridWidth())));
-        gridHeightText = Integer.toString(Math.max(1, Math.min(9, values.gridHeight())));
         outputCountText = Integer.toString(Math.max(1, Math.min(6, values.outputCount())));
+        energyText = Integer.toString(values.energy());
+        creosoteAmountText = Integer.toString(values.creosoteAmount());
+        moldText = values.mold();
+        blueprintCategoryText = values.blueprintCategory();
+        clocheRenderType = values.clocheRenderType();
+        clocheRenderBlockText = values.clocheRenderBlock();
         experienceField.setCurrentString(experienceText);
         cookingTimeField.setCurrentString(cookingTimeText);
         countField.setCurrentString(countText);
@@ -306,7 +379,13 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
         gridWidthField.setCurrentString(gridWidthText);
         gridHeightField.setCurrentString(gridHeightText);
         outputCountField.setCurrentString(outputCountText);
+        energyField.setCurrentString(energyText);
+        creosoteAmountField.setCurrentString(creosoteAmountText);
+        moldField.setCurrentString(moldText);
+        blueprintCategoryField.setCurrentString(blueprintCategoryText);
+        clocheRenderBlockField.setCurrentString(clocheRenderBlockText);
         heatCycleButton.setLabel(heatLabelText(heatRequirement));
+        clocheRenderTypeButton.setLabel(clocheRenderLabelText(clocheRenderType));
     }
 
     public void setOnClear(Runnable onClear) {
@@ -430,6 +509,15 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
                         built.add(new FieldRow(outputCountLabel, outputCountField, null));
                     }
                 }
+                case ENERGY -> built.add(new FieldRow(energyLabel, energyField, null));
+                case CREOSOTE_AMOUNT -> built.add(new FieldRow(creosoteAmountLabel, creosoteAmountField, null));
+                case MOLD -> built.add(new FieldRow(moldLabel, moldField, null));
+                case BLUEPRINT_CATEGORY ->
+                        built.add(new FieldRow(blueprintCategoryLabel, blueprintCategoryField, null));
+                case CLOCHE_RENDER_TYPE ->
+                        built.add(new FieldRow(clocheRenderTypeLabel, clocheRenderTypeButton, null));
+                case CLOCHE_RENDER_BLOCK ->
+                        built.add(new FieldRow(clocheRenderBlockLabel, clocheRenderBlockField, null));
             }
         }
         for (int i = 0; i < outputRows.size(); i++) {
@@ -475,7 +563,7 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
         if (control == shapelessToggle || control == keepHeldItemToggle || control == acceptMirroredToggle) {
             return LabToggleSwitchWidget.DEFAULT_WIDTH;
         }
-        if (control == heatCycleButton) {
+        if (control == heatCycleButton || control == clocheRenderTypeButton) {
             return CYCLE_W;
         }
         return FIELD_W;
@@ -484,6 +572,7 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
     private int controlX(int cardX, int cardW, int pad, FieldRow row) {
         return row.control == shapelessToggle || row.control == heatCycleButton
                 || row.control == keepHeldItemToggle || row.control == acceptMirroredToggle
+                || row.control == clocheRenderTypeButton
                 ? cardX + cardW - pad - controlWidth(row.control)
                 : cardX + cardW - pad - FIELD_W - 4;
     }
@@ -516,6 +605,20 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
         heatCycleButton.setLabel(heatLabelText(heatRequirement));
     }
 
+    private void cycleClocheRenderType() {
+        clocheRenderType = ClocheRenderType.cycle(clocheRenderType);
+        clocheRenderTypeButton.setLabel(clocheRenderLabelText(clocheRenderType));
+    }
+
+    private static String clocheRenderLabelText(ClocheRenderType type) {
+        return Component.translatable(switch (type) {
+            case CROP -> LabGuiKeys.LAB_RECIPE_CLOCHE_CROP;
+            case STACKING -> LabGuiKeys.LAB_RECIPE_CLOCHE_STACKING;
+            case STEM -> LabGuiKeys.LAB_RECIPE_CLOCHE_STEM;
+            case GENERIC -> LabGuiKeys.LAB_RECIPE_CLOCHE_GENERIC;
+        }).getString();
+    }
+
     private static String heatLabelText(HeatRequirement heat) {
         return Component.translatable(switch (heat) {
             case NONE -> LabGuiKeys.LAB_RECIPE_HEAT_NONE;
@@ -529,6 +632,22 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
         TextFieldWidget field = LabNumberFieldWidget.create(x, y, w, FIELD_H, supplier, responder);
         configureField(field, initial);
         return field;
+    }
+
+    private static TextFieldWidget textField(int x, int y, int w, Supplier<String> supplier,
+            Consumer<String> responder, String initial) {
+        TextFieldWidget field = new TextFieldWidget(x, y, w, FIELD_H, supplier, responder);
+        configureTextField(field, initial);
+        return field;
+    }
+
+    private static void configureTextField(TextFieldWidget field, String initial) {
+        field.setClientSideWidget();
+        field.setMaxStringLength(40);
+        field.setBordered(false);
+        field.setBackground(LabColors.bordered(LabColors.SURFACE_BASE, LabColors.BORDER_BASE));
+        field.setTextColor(LabColors.TEXT_PRIMARY);
+        field.setCurrentString(initial);
     }
 
     private static void configureField(TextFieldWidget field, String initial) {

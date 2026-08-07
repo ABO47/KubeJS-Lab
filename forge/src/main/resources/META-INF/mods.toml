@@ -66,5 +66,12 @@ versionRange="[6.0.8,)"
 ordering="NONE"
 side="BOTH"
 
+[[dependencies.${mod_id}]]
+modId="immersiveengineering"
+mandatory=false
+versionRange="[1.20.1-10.2.0-183,)"
+ordering="NONE"
+side="BOTH"
+
 [[mixins]]
 config="kubejslab.forge.mixins.json"

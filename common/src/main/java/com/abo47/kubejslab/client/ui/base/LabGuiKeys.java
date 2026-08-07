@@ -33,6 +33,16 @@ public final class LabGuiKeys {
     public static final String LAB_RECIPE_GRID_HEIGHT = "kubejslab.gui.lab_recipe_grid_height";
 
     public static final String LAB_RECIPE_OUTPUT_COUNT = "kubejslab.gui.lab_recipe_output_count";
+    public static final String LAB_RECIPE_ENERGY = "kubejslab.gui.lab_recipe_energy";
+    public static final String LAB_RECIPE_CREOSOTE_AMOUNT = "kubejslab.gui.lab_recipe_creosote_amount";
+    public static final String LAB_RECIPE_MOLD = "kubejslab.gui.lab_recipe_mold";
+    public static final String LAB_RECIPE_BLUEPRINT_CATEGORY = "kubejslab.gui.lab_recipe_blueprint_category";
+    public static final String LAB_RECIPE_CLOCHE_RENDER_TYPE = "kubejslab.gui.lab_recipe_cloche_render_type";
+    public static final String LAB_RECIPE_CLOCHE_RENDER_BLOCK = "kubejslab.gui.lab_recipe_cloche_render_block";
+    public static final String LAB_RECIPE_CLOCHE_CROP = "kubejslab.gui.lab_recipe_cloche_crop";
+    public static final String LAB_RECIPE_CLOCHE_STACKING = "kubejslab.gui.lab_recipe_cloche_stacking";
+    public static final String LAB_RECIPE_CLOCHE_STEM = "kubejslab.gui.lab_recipe_cloche_stem";
+    public static final String LAB_RECIPE_CLOCHE_GENERIC = "kubejslab.gui.lab_recipe_cloche_generic";
     public static final String LAB_PICKER_MINIMIZE = "kubejslab.gui.lab_picker_minimize";
     public static final String LAB_PICKER_EXPAND = "kubejslab.gui.lab_picker_expand";
     public static final String LAB_PICKER_MODE_ITEMS = "kubejslab.gui.lab_picker_mode_items";

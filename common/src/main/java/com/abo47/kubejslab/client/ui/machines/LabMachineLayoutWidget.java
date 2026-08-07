@@ -254,6 +254,9 @@ public final class LabMachineLayoutWidget extends WidgetGroup {
         }
         Recipe<?> original = entry == null ? null : LabRecipeIndex.recipeById(entry.id());
         List<ProcessingOutput> rollable = rollableResults(original);
+        List<Float> ieChances = support == null || support.outputChances(original).isEmpty()
+                ? List.of()
+                : support.outputChances(original);
         int itemInputIndex = 0;
         int itemOutputIndex = 0;
         for (IRecipeSlotView view : source.getRecipeSlotsView().getSlotViews()) {
@@ -298,7 +301,7 @@ public final class LabMachineLayoutWidget extends WidgetGroup {
                 addWidget(slot);
             }
             if (view.getRole() == RecipeIngredientRole.OUTPUT && !fluidSlot) {
-                applyChance(data, rollable, itemOutputIndex);
+                applyChance(data, rollable, ieChances, itemOutputIndex);
                 itemOutputIndex++;
             }
 
@@ -467,6 +470,12 @@ public final class LabMachineLayoutWidget extends WidgetGroup {
         if (!input || original == null) {
             return;
         }
+        LabRecipeMachine support = machine == null ? null : LabRecipeMachines.get(machine.recipeTypeUid());
+        ResourceLocation ieTag = support == null ? null : support.tagForInput(original, index);
+        if (ieTag != null) {
+            data.setTagValue(ieTag);
+            return;
+        }
         List<Ingredient> ingredients = original.getIngredients();
         if (index >= ingredients.size()) {
             return;
@@ -481,7 +490,11 @@ public final class LabMachineLayoutWidget extends WidgetGroup {
         }
     }
 
-    private static void applyChance(SlotData data, List<ProcessingOutput> rollable, int index) {
+    private static void applyChance(SlotData data, List<ProcessingOutput> rollable, List<Float> ieChances, int index) {
+        if (!ieChances.isEmpty() && index < ieChances.size()) {
+            data.setChance(ieChances.get(index));
+            return;
+        }
         if (index < rollable.size()) {
             data.setChance(rollable.get(index).getChance());
         }
