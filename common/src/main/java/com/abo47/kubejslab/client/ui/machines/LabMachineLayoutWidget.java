@@ -464,14 +464,31 @@ public final class LabMachineLayoutWidget extends WidgetGroup {
         if (LabJeiPlugin.runtime() == null) {
             return null;
         }
-        return findSample(LabJeiPlugin.runtime(), machine.category());
+        return findSample(LabJeiPlugin.runtime(), resolveLayoutCategory(machine));
     }
 
     private IRecipeLayoutDrawable<?> findJeiLayout(LabRecipeIndex.LabRecipeEntry entry) {
         if (LabJeiPlugin.runtime() == null || machine == null) {
             return null;
         }
-        return findEntry(LabJeiPlugin.runtime(), machine.category(), entry.id());
+        return findEntry(LabJeiPlugin.runtime(), resolveLayoutCategory(machine), entry.id());
+    }
+
+    private IRecipeCategory<?> resolveLayoutCategory(LabMachine machine) {
+        LabRecipeMachine support = machine == null ? null : LabRecipeMachines.get(machine.recipeTypeUid());
+        if (support == null || support.recipeIdSourceUid() == null) {
+            return machine.category();
+        }
+        IRecipeManager manager = LabJeiPlugin.runtime().getRecipeManager();
+        ResourceLocation source = support.recipeIdSourceUid();
+        try (Stream<IRecipeCategory<?>> stream = manager.createRecipeCategoryLookup().get()) {
+            return stream
+                    .filter(c -> source.equals(c.getRecipeType().getUid()))
+                    .findFirst()
+                    .orElse(machine.category());
+        } catch (RuntimeException | LinkageError ignored) {
+            return machine.category();
+        }
     }
 
     private static <R> IRecipeLayoutDrawable<?> findSample(IJeiRuntime runtime, IRecipeCategory<R> category) {

@@ -110,7 +110,9 @@ public final class LabMachineCatalog {
             for (LabMachine machine : group) {
                 ResourceLocation uid = machine.recipeTypeUid();
                 LabRecipeMachine support = LabRecipeMachines.get(uid);
-                String label = support != null ? support.jsonType() : uid.getPath();
+                String label = support != null && support.displayLabel() != null
+                        ? support.displayLabel()
+                        : (support != null ? labelFor(support.jsonType()) : uid.getPath());
                 disambiguated.add(new LabMachine(machine.category(), machine.icon(),
                         machine.name() + " (" + label + ")", machine.supported()));
             }
@@ -122,12 +124,29 @@ public final class LabMachineCatalog {
         return List.copyOf(built);
     }
 
+    private static String labelFor(String jsonType) {
+        int colon = jsonType.indexOf(':');
+        return colon >= 0 ? jsonType.substring(colon + 1) : jsonType;
+    }
+
     private static Set<ResourceLocation> computeRecipeIds(LabMachine machine) {
         IJeiRuntime runtime = LabJeiPlugin.runtime();
         if (runtime == null) {
             return Set.of();
         }
-        return computeIds(runtime.getRecipeManager(), machine.category());
+        IRecipeManager manager = runtime.getRecipeManager();
+        LabRecipeMachine support = LabRecipeMachines.get(machine.recipeTypeUid());
+        IRecipeCategory<?> category = machine.category();
+        if (support != null && support.recipeIdSourceUid() != null) {
+            ResourceLocation source = support.recipeIdSourceUid();
+            try (Stream<IRecipeCategory<?>> stream = manager.createRecipeCategoryLookup().get()) {
+                category = stream
+                        .filter(c -> source.equals(c.getRecipeType().getUid()))
+                        .findFirst()
+                        .orElse(category);
+            }
+        }
+        return computeIds(manager, category);
     }
 
     private static <R> Set<ResourceLocation> computeIds(IRecipeManager manager, IRecipeCategory<R> category) {

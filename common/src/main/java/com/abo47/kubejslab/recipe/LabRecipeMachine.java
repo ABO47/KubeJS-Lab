@@ -37,6 +37,14 @@ public interface LabRecipeMachine {
         return false;
     }
 
+    default String displayLabel() {
+        return null;
+    }
+
+    default ResourceLocation recipeIdSourceUid() {
+        return null;
+    }
+
     List<LabRecipeField> fields();
 
     JsonObject buildJson(String jsonType, List<LabIngredient> inputs, List<LabRecipeOutput> outputs,

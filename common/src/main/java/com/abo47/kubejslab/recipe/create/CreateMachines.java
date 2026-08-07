@@ -23,13 +23,15 @@ public final class CreateMachines {
         LabRecipeMachines.register(processing("fan_haunting", "haunting", false, false, false, true));
         LabRecipeMachines.register(processing("mixing", "mixing", true, true, false, false));
         LabRecipeMachines.register(processing("packing", "compacting", true, true, false, false));
-        LabRecipeMachines.register(processing("sawing", "cutting", true, false, false, true));
+        LabRecipeMachines.register(new ProcessingRecipeMachine(uid("sawing"), uid("cutting").toString(),
+                true, false, false, true, "sawing"));
         LabRecipeMachines.register(processing("sandpaper_polishing", "sandpaper_polishing", false, false, false, true));
         LabRecipeMachines.register(processing("deploying", "deploying", false, false, true, false));
         LabRecipeMachines.register(processing("item_application", "item_application", false, false, true, false));
         LabRecipeMachines.register(processing("spout_filling", "filling", false, false, false, false));
         LabRecipeMachines.register(processing("draining", "emptying", false, false, false, false));
         LabRecipeMachines.register(new MechanicalCraftingMachine());
+        LabRecipeMachines.register(new BlockCuttingMachine());
     }
 
     private static ProcessingRecipeMachine processing(String jeiPath, String jsonPath, boolean duration,

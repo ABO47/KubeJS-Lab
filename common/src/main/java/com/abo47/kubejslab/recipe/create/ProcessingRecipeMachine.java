@@ -27,6 +27,7 @@ public final class ProcessingRecipeMachine implements LabRecipeMachine {
     private final boolean supportsHeat;
     private final boolean supportsKeepHeldItem;
     private final boolean supportsChance;
+    private final String displayLabel;
     private final List<LabRecipeField> fields;
 
     public ProcessingRecipeMachine(ResourceLocation jeiUid, String jsonType, boolean supportsDuration,
@@ -36,12 +37,18 @@ public final class ProcessingRecipeMachine implements LabRecipeMachine {
 
     public ProcessingRecipeMachine(ResourceLocation jeiUid, String jsonType, boolean supportsDuration,
             boolean supportsHeat, boolean supportsKeepHeldItem, boolean supportsChance) {
+        this(jeiUid, jsonType, supportsDuration, supportsHeat, supportsKeepHeldItem, supportsChance, null);
+    }
+
+    public ProcessingRecipeMachine(ResourceLocation jeiUid, String jsonType, boolean supportsDuration,
+            boolean supportsHeat, boolean supportsKeepHeldItem, boolean supportsChance, String displayLabel) {
         this.jeiUid = jeiUid;
         this.jsonType = jsonType;
         this.supportsDuration = supportsDuration;
         this.supportsHeat = supportsHeat;
         this.supportsKeepHeldItem = supportsKeepHeldItem;
         this.supportsChance = supportsChance;
+        this.displayLabel = displayLabel;
         this.fields = new ArrayList<>();
         if (supportsDuration) {
             this.fields.add(LabRecipeField.PROCESSING_TIME);
@@ -73,6 +80,11 @@ public final class ProcessingRecipeMachine implements LabRecipeMachine {
     @Override
     public String jsonType() {
         return jsonType;
+    }
+
+    @Override
+    public String displayLabel() {
+        return displayLabel;
     }
 
     @Override
