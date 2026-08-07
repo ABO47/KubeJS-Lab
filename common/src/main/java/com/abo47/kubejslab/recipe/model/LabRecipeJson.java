@@ -3,7 +3,10 @@ package com.abo47.kubejslab.recipe.model;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+import dev.architectury.platform.Platform;
+
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
 
 import com.lowdragmc.lowdraglib.side.fluid.FluidStack;
@@ -19,6 +22,30 @@ public final class LabRecipeJson {
             obj.addProperty("nbt", stack.getTag().toString());
         }
         return obj;
+    }
+
+    public static JsonObject itemIngredientJson(ItemStack stack) {
+        JsonObject obj = new JsonObject();
+        obj.addProperty("item", stack.getItem().builtInRegistryHolder().key().location().toString());
+        if (stack.getCount() > 1) {
+            obj.addProperty("count", stack.getCount());
+        }
+        if (stack.hasTag()) {
+            CompoundTag nbt = ingredientNbt(stack);
+            if (!nbt.isEmpty()) {
+                obj.addProperty("type", "forge:partial_nbt");
+                obj.addProperty("nbt", nbt.toString());
+            }
+        }
+        return obj;
+    }
+
+    private static CompoundTag ingredientNbt(ItemStack stack) {
+        CompoundTag tag = stack.getTag().copy();
+        if (tag.contains("Damage") && tag.getInt("Damage") == 0) {
+            tag.remove("Damage");
+        }
+        return tag;
     }
 
     public static JsonObject itemWithCount(ItemStack stack) {
@@ -49,7 +76,7 @@ public final class LabRecipeJson {
 
     public static JsonObject ingredientJson(LabIngredient ingredient) {
         if (ingredient instanceof LabIngredient.Item item) {
-            return itemWithCount(item.stack());
+            return Platform.isForge() ? itemIngredientJson(item.stack()) : itemWithCount(item.stack());
         }
         if (ingredient instanceof LabIngredient.Tag tag) {
             JsonObject obj = new JsonObject();
