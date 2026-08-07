@@ -38,6 +38,11 @@ public final class MechanicalCraftingMachine implements LabRecipeMachine {
     }
 
     @Override
+    public boolean supportsGridSize() {
+        return true;
+    }
+
+    @Override
     public List<LabRecipeField> fields() {
         return List.of(LabRecipeField.GRID_WIDTH, LabRecipeField.GRID_HEIGHT, LabRecipeField.ACCEPT_MIRRORED);
     }

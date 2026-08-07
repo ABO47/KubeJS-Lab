@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -40,7 +41,6 @@ import mezz.jei.api.recipe.RecipeIngredientRole;
 import mezz.jei.api.recipe.category.IRecipeCategory;
 import mezz.jei.api.runtime.IJeiRuntime;
 
-import com.simibubi.create.content.kinetics.crafter.MechanicalCraftingRecipe;
 import com.simibubi.create.content.processing.recipe.ProcessingOutput;
 import com.simibubi.create.content.processing.recipe.ProcessingRecipe;
 
@@ -78,6 +78,10 @@ public final class LabMachineLayoutWidget extends WidgetGroup {
     }
 
     public void setGridSize(int width, int height) {
+        LabRecipeMachine support = machine == null ? null : LabRecipeMachines.get(machine.recipeTypeUid());
+        if (support == null || !support.supportsGridSize()) {
+            return;
+        }
         int w = Math.max(1, Math.min(9, width));
         int h = Math.max(1, Math.min(9, height));
         if (gridWidth == w && gridHeight == h) {
@@ -86,6 +90,16 @@ public final class LabMachineLayoutWidget extends WidgetGroup {
         gridWidth = w;
         gridHeight = h;
         rebuild();
+    }
+
+    private int effectiveGridWidth() {
+        LabRecipeMachine support = machine == null ? null : LabRecipeMachines.get(machine.recipeTypeUid());
+        return support != null && support.supportsGridSize() ? Math.max(1, gridWidth) : 3;
+    }
+
+    private int effectiveGridHeight() {
+        LabRecipeMachine support = machine == null ? null : LabRecipeMachines.get(machine.recipeTypeUid());
+        return support != null && support.supportsGridSize() ? Math.max(1, gridHeight) : 3;
     }
 
     public void setOutputCount(int count) {
@@ -136,8 +150,8 @@ public final class LabMachineLayoutWidget extends WidgetGroup {
         }
         LabRecipeMachine support = machine == null ? null : LabRecipeMachines.get(machine.recipeTypeUid());
         if (support != null && support.gridLayout()) {
-            int width = Math.max(1, gridWidth);
-            int height = Math.max(1, gridHeight);
+            int width = effectiveGridWidth();
+            int height = effectiveGridHeight();
             LabIngredient[] cells = new LabIngredient[width * height];
             for (int i = 0; i < cells.length; i++) {
                 cells[i] = new LabIngredient.Item(ItemStack.EMPTY);
@@ -316,8 +330,8 @@ public final class LabMachineLayoutWidget extends WidgetGroup {
     }
 
     private void rebuildGrid(Map<Long, SlotData> snapshot) {
-        int w = Math.max(1, gridWidth);
-        int h = Math.max(1, gridHeight);
+        int w = effectiveGridWidth();
+        int h = effectiveGridHeight();
         int ox = LabLayout.MACHINE_PAD;
         int oy = Math.max(LabLayout.MACHINE_PAD, (getSizeHeight() - h * 18) / 2);
 
@@ -405,19 +419,32 @@ public final class LabMachineLayoutWidget extends WidgetGroup {
     }
 
     private static Ingredient gridIngredientAt(Recipe<?> original, int row, int col) {
-        if (!(original instanceof MechanicalCraftingRecipe crafting)) {
-            KubeJSLab.LOGGER.warn("[MechCrafting] gridIngredientAt: original {} is not a MechanicalCraftingRecipe ({})",
-                    original.getId(), original.getClass().getName());
+        if (original == null) {
             return Ingredient.EMPTY;
         }
-        ShapedRecipe shaped = crafting;
-        int width = Math.max(1, Math.min(9, shaped.getWidth()));
-        int index = row * width + col;
-        List<Ingredient> ingredients = shaped.getIngredients();
+        List<Ingredient> ingredients = original.getIngredients();
+        if (ingredients.isEmpty()) {
+            return Ingredient.EMPTY;
+        }
+        if (original instanceof ShapedRecipe shaped) {
+            int width = Math.max(1, Math.min(9, shaped.getWidth()));
+            int height = Math.max(1, Math.min(9, shaped.getHeight()));
+            if (col >= width || row >= height) {
+                return Ingredient.EMPTY;
+            }
+            int index = row * width + col;
+            Ingredient result = index >= 0 && index < ingredients.size() ? ingredients.get(index) : Ingredient.EMPTY;
+            if (!result.isEmpty()) {
+                KubeJSLab.LOGGER.debug("[MechCrafting] gridIngredientAt({},{}): width={}, index={} -> {}", row, col, width,
+                        index, result.toJson());
+            }
+            return result;
+        }
+        int index = row * 3 + col;
         Ingredient result = index >= 0 && index < ingredients.size() ? ingredients.get(index) : Ingredient.EMPTY;
         if (!result.isEmpty()) {
-            KubeJSLab.LOGGER.debug("[MechCrafting] gridIngredientAt({},{}): width={}, index={} -> {}", row, col, width,
-                    index, result.toJson());
+            KubeJSLab.LOGGER.debug("[MechCrafting] gridIngredientAt({},{}): flat index={} -> {} (from {})", row, col,
+                    index, result.toJson(), original.getClass().getSimpleName());
         }
         return result;
     }
@@ -507,11 +534,33 @@ public final class LabMachineLayoutWidget extends WidgetGroup {
             IJeiRuntime runtime, IRecipeCategory<R> category, ResourceLocation entryId) {
         IRecipeManager manager = runtime.getRecipeManager();
         try (Stream<R> stream = manager.createRecipeLookup(category.getRecipeType()).includeHidden().get()) {
-            return stream
+            Optional<R> match = stream
                     .filter(recipe -> entryId.equals(category.getRegistryName(recipe)))
-                    .findFirst()
-                    .flatMap(recipe -> manager.createRecipeLayoutDrawable(category, recipe, emptyFocus(runtime)))
-                    .orElse(null);
+                    .findFirst();
+            if (match.isPresent()) {
+                Optional<IRecipeLayoutDrawable<R>> drawable =
+                        manager.createRecipeLayoutDrawable(category, match.get(), emptyFocus(runtime));
+                if (drawable.isPresent()) {
+                    return drawable.get();
+                }
+            }
+        } catch (RuntimeException | LinkageError ignored) {
+            // fall through to the cache path
+        }
+        return buildDrawableFromCache(runtime, category, entryId);
+    }
+
+    private static <R> IRecipeLayoutDrawable<?> buildDrawableFromCache(
+            IJeiRuntime runtime, IRecipeCategory<R> category, ResourceLocation entryId) {
+        Recipe<?> cached = LabRecipeIndex.recipeById(entryId);
+        if (cached == null) {
+            return null;
+        }
+        IRecipeManager manager = runtime.getRecipeManager();
+        @SuppressWarnings("unchecked")
+        R recipe = (R) cached;
+        try {
+            return manager.createRecipeLayoutDrawable(category, recipe, emptyFocus(runtime)).orElse(null);
         } catch (RuntimeException | LinkageError ignored) {
             return null;
         }

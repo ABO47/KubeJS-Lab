@@ -27,6 +27,7 @@ public final class ProcessingRecipeMachine implements LabRecipeMachine {
     private final boolean supportsHeat;
     private final boolean supportsKeepHeldItem;
     private final boolean supportsChance;
+    private final boolean supportsOutputCount;
     private final String displayLabel;
     private final List<LabRecipeField> fields;
 
@@ -42,12 +43,20 @@ public final class ProcessingRecipeMachine implements LabRecipeMachine {
 
     public ProcessingRecipeMachine(ResourceLocation jeiUid, String jsonType, boolean supportsDuration,
             boolean supportsHeat, boolean supportsKeepHeldItem, boolean supportsChance, String displayLabel) {
+        this(jeiUid, jsonType, supportsDuration, supportsHeat, supportsKeepHeldItem, supportsChance, displayLabel,
+                supportsChance);
+    }
+
+    public ProcessingRecipeMachine(ResourceLocation jeiUid, String jsonType, boolean supportsDuration,
+            boolean supportsHeat, boolean supportsKeepHeldItem, boolean supportsChance, String displayLabel,
+            boolean supportsOutputCount) {
         this.jeiUid = jeiUid;
         this.jsonType = jsonType;
         this.supportsDuration = supportsDuration;
         this.supportsHeat = supportsHeat;
         this.supportsKeepHeldItem = supportsKeepHeldItem;
         this.supportsChance = supportsChance;
+        this.supportsOutputCount = supportsOutputCount;
         this.displayLabel = displayLabel;
         this.fields = new ArrayList<>();
         if (supportsDuration) {
@@ -59,7 +68,9 @@ public final class ProcessingRecipeMachine implements LabRecipeMachine {
         if (supportsKeepHeldItem) {
             this.fields.add(LabRecipeField.KEEP_HELD_ITEM);
         }
-        this.fields.add(LabRecipeField.OUTPUT_COUNT);
+        if (supportsOutputCount) {
+            this.fields.add(LabRecipeField.OUTPUT_COUNT);
+        }
     }
 
     @Override
@@ -69,7 +80,7 @@ public final class ProcessingRecipeMachine implements LabRecipeMachine {
 
     @Override
     public boolean supportsOutputCount() {
-        return true;
+        return supportsOutputCount;
     }
 
     @Override

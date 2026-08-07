@@ -2,8 +2,10 @@ package com.abo47.kubejslab.client.ui.recipes;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 import net.minecraft.client.Minecraft;
@@ -15,6 +17,7 @@ import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeManager;
 
 public final class LabRecipeIndex {
+    private static final Map<ResourceLocation, Recipe<?>> RECIPE_CACHE = new HashMap<>();
     private static RecipeManager cachedManager;
     private static int cachedCount = -1;
     private static List<LabRecipeEntry> entries = List.of();
@@ -59,7 +62,13 @@ public final class LabRecipeIndex {
 
     public static Recipe<?> recipeById(ResourceLocation id) {
         entries();
-        return cachedManager == null ? null : cachedManager.byKey(id).orElse(null);
+        if (cachedManager != null) {
+            Recipe<?> recipe = cachedManager.byKey(id).orElse(null);
+            if (recipe != null) {
+                return recipe;
+            }
+        }
+        return RECIPE_CACHE.get(id);
     }
 
     private static List<LabRecipeEntry> entries() {
@@ -83,6 +92,7 @@ public final class LabRecipeIndex {
     private static List<LabRecipeEntry> build(RecipeManager manager, RegistryAccess registryAccess) {
         List<LabRecipeEntry> built = new ArrayList<>();
         for (Recipe<?> recipe : manager.getRecipes()) {
+            RECIPE_CACHE.put(recipe.getId(), recipe);
             ItemStack result = resultItem(recipe, registryAccess);
             if (result.isEmpty()) {
                 continue;

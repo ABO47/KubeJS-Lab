@@ -25,6 +25,10 @@ public interface LabRecipeMachine {
         return false;
     }
 
+    default boolean supportsGridSize() {
+        return false;
+    }
+
     default boolean supportsChance() {
         return false;
     }
