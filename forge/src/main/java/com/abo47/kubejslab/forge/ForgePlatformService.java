@@ -62,7 +62,7 @@ public final class ForgePlatformService implements PlatformService {
     public ItemStack fluidOutputDisplay(Recipe<?> recipe) {
         if (recipe instanceof IMultiblockRecipe multiblock) {
             List<?> outputs = multiblock.getFluidOutputs();
-            if (!outputs.isEmpty()) {
+            if (outputs != null && !outputs.isEmpty()) {
                 net.minecraftforge.fluids.FluidStack fluid = (net.minecraftforge.fluids.FluidStack) outputs.get(0);
                 Item bucket = fluid.getFluid().getBucket();
                 if (bucket != null) {
@@ -77,7 +77,7 @@ public final class ForgePlatformService implements PlatformService {
     public String fluidOutputDisplayName(Recipe<?> recipe) {
         if (recipe instanceof IMultiblockRecipe multiblock) {
             List<?> outputs = multiblock.getFluidOutputs();
-            if (!outputs.isEmpty()) {
+            if (outputs != null && !outputs.isEmpty()) {
                 net.minecraftforge.fluids.FluidStack fluid = (net.minecraftforge.fluids.FluidStack) outputs.get(0);
                 return fluid.getFluid().getFluidType().getDescription().getString();
             }

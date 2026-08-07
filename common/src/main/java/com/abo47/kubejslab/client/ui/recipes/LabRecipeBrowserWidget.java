@@ -75,7 +75,8 @@ public final class LabRecipeBrowserWidget extends WidgetGroup {
     public void rebuild() {
         clearAllWidgets();
         cards = new ArrayList<>();
-        List<LabRecipeIndex.LabRecipeEntry> entries = new ArrayList<>(LabRecipeIndex.search(query, kubejsOnly, machineRecipeIds));
+        List<LabRecipeIndex.LabRecipeEntry> entries =
+                new ArrayList<>(LabRecipeIndex.search(query, kubejsOnly, machineRecipeIds));
         entries.addAll(LabRecipeStates.disabledEntries(machineUid).stream()
                 .filter(e -> kubejsOnly == e.kubejs())
                 .filter(e -> query.isBlank() || e.matches(query))

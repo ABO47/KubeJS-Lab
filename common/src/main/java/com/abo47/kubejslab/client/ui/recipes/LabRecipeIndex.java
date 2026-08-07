@@ -16,6 +16,7 @@ import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.item.ItemStack;
 
+import com.abo47.kubejslab.KubeJSLab;
 import com.abo47.kubejslab.platform.Services;
 
 import blusunrize.immersiveengineering.api.crafting.IMultiblockRecipe;
@@ -88,8 +89,14 @@ public final class LabRecipeIndex {
         if (manager != cachedManager || manager.getRecipes().size() != cachedCount) {
             cachedManager = manager;
             cachedCount = manager.getRecipes().size();
-            entries = build(manager, connection.registryAccess());
-            version++;
+            try {
+                entries = build(manager, connection.registryAccess());
+                version++;
+            } catch (RuntimeException e) {
+                cachedManager = null;
+                cachedCount = -1;
+                KubeJSLab.LOGGER.warn("[Index] failed to build recipe index, will retry", e);
+            }
         }
         return entries;
     }
@@ -115,8 +122,11 @@ public final class LabRecipeIndex {
     }
 
     private static boolean hasFluidOutput(Recipe<?> recipe) {
-        return recipe instanceof IMultiblockRecipe multiblock
-                && !multiblock.getFluidOutputs().isEmpty();
+        if (recipe instanceof IMultiblockRecipe multiblock) {
+            List<?> outputs = multiblock.getFluidOutputs();
+            return outputs != null && !outputs.isEmpty();
+        }
+        return false;
     }
 
     private static ItemStack resultItem(Recipe<?> recipe, RegistryAccess registryAccess) {
