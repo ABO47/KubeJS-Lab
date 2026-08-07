@@ -4,7 +4,9 @@ public enum ClocheRenderType {
     CROP,
     STACKING,
     STEM,
-    GENERIC;
+    GENERIC,
+    HEMP,
+    CHORUS;
 
     public static ClocheRenderType cycle(ClocheRenderType current) {
         ClocheRenderType[] values = values();

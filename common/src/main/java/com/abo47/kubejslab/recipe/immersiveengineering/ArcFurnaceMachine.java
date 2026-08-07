@@ -2,18 +2,20 @@ package com.abo47.kubejslab.recipe.immersiveengineering;
 
 import java.util.List;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-
-import blusunrize.immersiveengineering.api.crafting.ArcFurnaceRecipe;
-import blusunrize.immersiveengineering.api.crafting.StackWithChance;
+import net.minecraft.world.item.crafting.Recipe;
 
 import com.abo47.kubejslab.recipe.model.LabIngredient;
 import com.abo47.kubejslab.recipe.model.LabRecipeField;
 import com.abo47.kubejslab.recipe.model.LabRecipeFieldValues;
 import com.abo47.kubejslab.recipe.model.LabRecipeOutput;
+import com.abo47.kubejslab.recipe.model.LabSlotDescriptor;
+import com.abo47.kubejslab.recipe.model.LabSlotKind;
 
-import net.minecraft.world.item.crafting.Recipe;
+import blusunrize.immersiveengineering.api.crafting.ArcFurnaceRecipe;
+import blusunrize.immersiveengineering.api.crafting.StackWithChance;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+
 
 public class ArcFurnaceMachine extends ImmersiveEngineeringMachine {
     public ArcFurnaceMachine() {
@@ -26,8 +28,29 @@ public class ArcFurnaceMachine extends ImmersiveEngineeringMachine {
     }
 
     @Override
-    public boolean supportsOutputCount() {
-        return true;
+    public List<LabSlotDescriptor> inputSlots() {
+        List<LabSlotDescriptor> slots = new java.util.ArrayList<>(16);
+        for (int row = 0; row < 3; row++) {
+            for (int col = 0; col < 4; col++) {
+                slots.add(new LabSlotDescriptor(true, LabSlotKind.ITEM, col, row, true));
+            }
+        }
+        for (int col = 0; col < 4; col++) {
+            slots.add(new LabSlotDescriptor(true, LabSlotKind.ITEM, col, 3, true));
+        }
+        return slots;
+    }
+
+    @Override
+    public List<LabSlotDescriptor> outputSlots() {
+        List<LabSlotDescriptor> slots = new java.util.ArrayList<>(7);
+        for (int row = 0; row < 3; row++) {
+            for (int col = 5; col <= 6; col++) {
+                slots.add(new LabSlotDescriptor(false, LabSlotKind.ITEM, col, row, true));
+            }
+        }
+        slots.add(new LabSlotDescriptor(false, LabSlotKind.ITEM, 7, 2, false));
+        return slots;
     }
 
     @Override
@@ -45,7 +68,9 @@ public class ArcFurnaceMachine extends ImmersiveEngineeringMachine {
         json.add("additives", additives);
         JsonArray results = new JsonArray();
         JsonArray secondaries = new JsonArray();
-        for (LabRecipeOutput output : outputs) {
+        int sliceEnd = Math.min(outputs.size(), 6);
+        for (int i = 0; i < sliceEnd; i++) {
+            LabRecipeOutput output = outputs.get(i);
             if (output instanceof LabRecipeOutput.Item item && item.chance() < 1.0f) {
                 JsonObject secondary = new JsonObject();
                 secondary.add("output", readOutput(item));
@@ -57,6 +82,9 @@ public class ArcFurnaceMachine extends ImmersiveEngineeringMachine {
         }
         json.add("results", results);
         json.add("secondaries", secondaries);
+        if (outputs.size() > 6) {
+            json.add("slag", readOutput(outputs.get(6)));
+        }
         json.addProperty("time", values.processingTime());
         json.addProperty("energy", Math.max(0, values.energy()));
         return json;
@@ -80,7 +108,7 @@ public class ArcFurnaceMachine extends ImmersiveEngineeringMachine {
         if (original instanceof ArcFurnaceRecipe arc) {
             return new LabRecipeFieldValues(current.shapeless(), current.experience(), current.cookingTime(),
                     current.count(), arc.getTotalProcessTime(), current.heatRequirement(), current.keepHeldItem(),
-                    current.acceptMirrored(), current.gridWidth(), current.gridHeight(), current.outputCount(),
+                    current.acceptMirrored(), current.gridWidth(), current.gridHeight(),
                     arc.getTotalProcessEnergy(), current.creosoteAmount(), current.mold(), current.blueprintCategory(),
                     current.clocheRenderType(), current.clocheRenderBlock());
         }

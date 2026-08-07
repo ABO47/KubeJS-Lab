@@ -1,21 +1,22 @@
 package com.abo47.kubejslab.client.ui.picker;
 
-import java.util.List;
 import java.util.function.Consumer;
-
+import java.util.List;
 import javax.annotation.Nonnull;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 
-import com.abo47.kubejslab.client.ui.base.LabGlow;
 import com.lowdragmc.lowdraglib.gui.texture.ItemStackTexture;
 import com.lowdragmc.lowdraglib.gui.util.DrawerHelper;
 import com.lowdragmc.lowdraglib.gui.widget.SlotWidget;
 import com.lowdragmc.lowdraglib.gui.widget.Widget;
 import com.lowdragmc.lowdraglib.side.fluid.FluidStack;
+
+import com.abo47.kubejslab.client.ui.base.LabGlow;
+
 
 public final class LabPickTile extends Widget {
     private static final int TILE = 18;

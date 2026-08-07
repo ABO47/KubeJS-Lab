@@ -2,6 +2,7 @@ package com.abo47.kubejslab.recipe.vanilla;
 
 import com.abo47.kubejslab.recipe.LabRecipeMachines;
 
+
 public final class VanillaRecipeMachines {
     private VanillaRecipeMachines() {
     }

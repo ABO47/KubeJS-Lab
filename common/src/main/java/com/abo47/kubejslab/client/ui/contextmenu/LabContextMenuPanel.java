@@ -1,17 +1,18 @@
 package com.abo47.kubejslab.client.ui.contextmenu;
-import com.abo47.kubejslab.client.ui.base.LabColors;
-import com.abo47.kubejslab.client.ui.base.LabGlow;
-
 import java.util.List;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.Minecraft;
 
 import com.lowdragmc.lowdraglib.gui.texture.ColorRectTexture;
 import com.lowdragmc.lowdraglib.gui.texture.IGuiTexture;
 import com.lowdragmc.lowdraglib.gui.texture.TextTexture;
 import com.lowdragmc.lowdraglib.gui.widget.ButtonWidget;
 import com.lowdragmc.lowdraglib.gui.widget.WidgetGroup;
+
+import com.abo47.kubejslab.client.ui.base.LabColors;
+import com.abo47.kubejslab.client.ui.base.LabGlow;
+
 
 public final class LabContextMenuPanel {
     private static final int CONTEXT_ROW_H = 12;

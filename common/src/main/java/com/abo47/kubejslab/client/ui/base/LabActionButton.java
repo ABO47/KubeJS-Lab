@@ -8,6 +8,7 @@ import com.lowdragmc.lowdraglib.gui.texture.IGuiTexture;
 import com.lowdragmc.lowdraglib.gui.texture.TextTexture;
 import com.lowdragmc.lowdraglib.gui.widget.ButtonWidget;
 
+
 public final class LabActionButton extends ButtonWidget {
     private final TextTexture label;
 

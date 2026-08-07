@@ -6,6 +6,7 @@ import net.minecraft.world.item.ItemStack;
 
 import com.lowdragmc.lowdraglib.side.fluid.FluidStack;
 
+
 public sealed interface LabRecipeOutput permits LabRecipeOutput.Item, LabRecipeOutput.Fluid {
 
     boolean isEmpty();

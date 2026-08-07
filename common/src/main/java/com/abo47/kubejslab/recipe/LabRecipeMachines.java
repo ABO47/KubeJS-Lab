@@ -2,7 +2,6 @@ package com.abo47.kubejslab.recipe;
 
 import java.util.HashMap;
 import java.util.Map;
-
 import javax.annotation.Nullable;
 
 import net.minecraft.resources.ResourceLocation;
@@ -10,6 +9,7 @@ import net.minecraft.resources.ResourceLocation;
 import com.abo47.kubejslab.recipe.create.CreateMachines;
 import com.abo47.kubejslab.recipe.immersiveengineering.ImmersiveEngineeringMachines;
 import com.abo47.kubejslab.recipe.vanilla.VanillaRecipeMachines;
+
 
 public final class LabRecipeMachines {
     private static final Map<ResourceLocation, LabRecipeMachine> MACHINES = new HashMap<>();

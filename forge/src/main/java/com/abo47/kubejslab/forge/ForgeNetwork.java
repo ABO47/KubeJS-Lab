@@ -4,18 +4,17 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 
-import com.abo47.kubejslab.KubeJSLab;
-
 import com.abo47.kubejslab.client.ui.LabClientUIFactory;
 import com.abo47.kubejslab.client.ui.LabUIFactory;
+import com.abo47.kubejslab.KubeJSLab;
 import com.abo47.kubejslab.network.recipe.C2SRecipeEditPacket;
 import com.abo47.kubejslab.network.recipe.S2CRecipeStatePacket;
 
+import io.netty.buffer.Unpooled;
 import net.minecraftforge.network.NetworkDirection;
 import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.simple.SimpleChannel;
 
-import io.netty.buffer.Unpooled;
 
 public final class ForgeNetwork {
     private static final String PROTOCOL = "3";

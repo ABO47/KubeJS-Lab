@@ -1,23 +1,24 @@
 package com.abo47.kubejslab.client.ui.machines;
 
-import com.abo47.kubejslab.client.ui.base.LabColors;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.ItemStack;
 
 import com.lowdragmc.lowdraglib.gui.util.DrawerHelper;
 import com.lowdragmc.lowdraglib.gui.widget.SlotWidget;
 import com.lowdragmc.lowdraglib.gui.widget.Widget;
 
+import com.abo47.kubejslab.client.ui.base.LabColors;
+
 import mezz.jei.api.recipe.RecipeIngredientRole;
 
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.world.item.BucketItem;
-import net.minecraft.world.item.ItemStack;
 
 public final class LabPhantomFluidSlotWidget extends Widget {
-    private final LabMachineLayoutWidget.SlotData data;
+    private final LabSlotData data;
     private LabMachineLayoutWidget dragOwner;
     private RecipeIngredientRole role;
 
-    public LabPhantomFluidSlotWidget(LabMachineLayoutWidget.SlotData data, int x, int y) {
+    public LabPhantomFluidSlotWidget(LabSlotData data, int x, int y) {
         super(x, y, 18, 18);
         this.data = data;
     }
@@ -68,18 +69,35 @@ public final class LabPhantomFluidSlotWidget extends Widget {
     }
 
     @Override
+    public boolean mouseWheelMove(double mouseX, double mouseY, double wheelDelta) {
+        if (dragOwner != null && isMouseOverElement(mouseX, mouseY) && !data.fluid.isEmpty()) {
+            dragOwner.adjustStackCount(data, (int) Math.signum(wheelDelta));
+            return true;
+        }
+        return super.mouseWheelMove(mouseX, mouseY, wheelDelta);
+    }
+
+    @Override
     public void drawInBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
         super.drawInBackground(graphics, mouseX, mouseY, partialTicks);
         int x = getPositionX();
         int y = getPositionY();
         SlotWidget.ITEM_SLOT_TEXTURE.draw(graphics, mouseX, mouseY, x, y, 18, 18);
         if (role != null) {
-            int color = role == RecipeIngredientRole.INPUT ? 0x402E7CF6 : 0x40FF8C42;
+            int color = role == RecipeIngredientRole.INPUT ? LabColors.INPUT_TINT : LabColors.OUTPUT_TINT;
             graphics.fill(x, y, x + 18, y + 18, color);
         }
         if (!data.fluid.isEmpty()) {
             long capacity = Math.max(data.fluid.getAmount(), 1000);
             DrawerHelper.drawFluidForGui(graphics, data.fluid, capacity, x + 1, y + 1, 16, 16);
+        }
+    }
+
+    @Override
+    public void updateScreen() {
+        if (!data.fluid.isEmpty()) {
+            setHoverTooltips(Component.literal(data.fluid.getDisplayName().getString()),
+                    Component.literal(data.fluid.getAmount() + " mB"));
         }
     }
 }

@@ -1,20 +1,23 @@
 package com.abo47.kubejslab.recipe.immersiveengineering;
 
+import java.util.ArrayList;
 import java.util.List;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-
-import blusunrize.immersiveengineering.api.crafting.CrusherRecipe;
-import blusunrize.immersiveengineering.api.crafting.StackWithChance;
+import net.minecraft.world.item.crafting.Recipe;
 
 import com.abo47.kubejslab.recipe.model.LabIngredient;
 import com.abo47.kubejslab.recipe.model.LabRecipeField;
 import com.abo47.kubejslab.recipe.model.LabRecipeFieldValues;
 import com.abo47.kubejslab.recipe.model.LabRecipeJson;
 import com.abo47.kubejslab.recipe.model.LabRecipeOutput;
+import com.abo47.kubejslab.recipe.model.LabSlotDescriptor;
+import com.abo47.kubejslab.recipe.model.LabSlotKind;
 
-import net.minecraft.world.item.crafting.Recipe;
+import blusunrize.immersiveengineering.api.crafting.CrusherRecipe;
+import blusunrize.immersiveengineering.api.crafting.StackWithChance;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+
 
 public class CrusherMachine extends ImmersiveEngineeringMachine {
     public CrusherMachine() {
@@ -24,6 +27,20 @@ public class CrusherMachine extends ImmersiveEngineeringMachine {
     @Override
     public boolean supportsChance() {
         return true;
+    }
+
+    @Override
+    public List<LabSlotDescriptor> inputSlots() {
+        return new ArrayList<>(List.of(new LabSlotDescriptor(true, LabSlotKind.ITEM, 0, 0, false)));
+    }
+
+    @Override
+    public List<LabSlotDescriptor> outputSlots() {
+        List<LabSlotDescriptor> slots = new ArrayList<>();
+        slots.add(new LabSlotDescriptor(false, LabSlotKind.ITEM, 1, 0, false));
+        slots.add(new LabSlotDescriptor(false, LabSlotKind.ITEM, 1, 1, true));
+        slots.add(new LabSlotDescriptor(false, LabSlotKind.ITEM, 2, 1, true));
+        return slots;
     }
 
     @Override
@@ -68,7 +85,7 @@ public class CrusherMachine extends ImmersiveEngineeringMachine {
         if (original instanceof CrusherRecipe crusher) {
             return new LabRecipeFieldValues(current.shapeless(), current.experience(), current.cookingTime(),
                     current.count(), current.processingTime(), current.heatRequirement(), current.keepHeldItem(),
-                    current.acceptMirrored(), current.gridWidth(), current.gridHeight(), current.outputCount(),
+                    current.acceptMirrored(), current.gridWidth(), current.gridHeight(),
                     crusher.getTotalProcessEnergy(), current.creosoteAmount(), current.mold(),
                     current.blueprintCategory(), current.clocheRenderType(), current.clocheRenderBlock());
         }

@@ -6,6 +6,7 @@ import java.util.Map;
 import com.lowdragmc.lowdraglib.gui.texture.ColorRectTexture;
 import com.lowdragmc.lowdraglib.gui.texture.IGuiTexture;
 
+
 public final class LabColors {
     private static final Map<Long, IGuiTexture> BORDERED_CACHE = new HashMap<>();
 
@@ -23,6 +24,10 @@ public final class LabColors {
     public static final int INTERACTIVE = 0xFF64C3D2;
     public static final int WARNING = 0xFFE5B44A;
     public static final int ERROR = 0xFFE06F73;
+    public static final int POPUP_FILL = 0xFF0D1114;
+    public static final int TAG_GOLD = 0xffd9b84c;
+    public static final int INPUT_TINT = 0x402E7CF6;
+    public static final int OUTPUT_TINT = 0x40FF8C42;
 
     public static final int MOUSE_BUTTON_LEFT = 0;
     public static final int MOUSE_BUTTON_RIGHT = 1;

@@ -1,7 +1,4 @@
 package com.abo47.kubejslab.client.ui.recipes;
-import com.abo47.kubejslab.client.ui.base.LabColors;
-import com.abo47.kubejslab.client.ui.base.LabGlow;
-
 import javax.annotation.Nonnull;
 
 import net.minecraft.client.gui.GuiGraphics;
@@ -11,7 +8,10 @@ import com.lowdragmc.lowdraglib.gui.texture.ItemStackTexture;
 import com.lowdragmc.lowdraglib.gui.texture.TextTexture;
 import com.lowdragmc.lowdraglib.gui.widget.Widget;
 
+import com.abo47.kubejslab.client.ui.base.LabColors;
+import com.abo47.kubejslab.client.ui.base.LabGlow;
 import com.abo47.kubejslab.recipe.model.LabRecipeStatus;
+
 
 public final class LabRecipeCardWidget extends Widget {
     private static final IGuiTexture CARD_TEXTURE =

@@ -10,6 +10,7 @@ import com.lowdragmc.lowdraglib.gui.texture.IGuiTexture;
 import com.lowdragmc.lowdraglib.gui.util.ClickData;
 import com.lowdragmc.lowdraglib.gui.widget.SwitchWidget;
 
+
 public final class LabToggleSwitchWidget extends SwitchWidget {
     public static final int DEFAULT_WIDTH = 34;
     public static final int DEFAULT_HEIGHT = 16;

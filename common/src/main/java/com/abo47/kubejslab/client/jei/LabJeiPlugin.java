@@ -4,13 +4,14 @@ import javax.annotation.Nonnull;
 
 import net.minecraft.resources.ResourceLocation;
 
+import com.abo47.kubejslab.KubeJSLab;
+
+import mezz.jei.api.helpers.IJeiHelpers;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
 import mezz.jei.api.registration.IRecipeCategoryRegistration;
-import mezz.jei.api.helpers.IJeiHelpers;
 import mezz.jei.api.runtime.IJeiRuntime;
 
-import com.abo47.kubejslab.KubeJSLab;
 
 @JeiPlugin
 public final class LabJeiPlugin implements IModPlugin {

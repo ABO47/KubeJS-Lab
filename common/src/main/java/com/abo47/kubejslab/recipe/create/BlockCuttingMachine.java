@@ -2,14 +2,10 @@ package com.abo47.kubejslab.recipe.create;
 
 import java.util.List;
 
-import com.google.gson.JsonObject;
-
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.StonecutterRecipe;
-
-import com.simibubi.create.compat.jei.category.BlockCuttingCategory.CondensedBlockCuttingRecipe;
 
 import com.abo47.kubejslab.recipe.LabRecipeMachine;
 import com.abo47.kubejslab.recipe.model.LabIngredient;
@@ -17,6 +13,10 @@ import com.abo47.kubejslab.recipe.model.LabRecipeField;
 import com.abo47.kubejslab.recipe.model.LabRecipeFieldValues;
 import com.abo47.kubejslab.recipe.model.LabRecipeJson;
 import com.abo47.kubejslab.recipe.model.LabRecipeOutput;
+
+import com.google.gson.JsonObject;
+import com.simibubi.create.compat.jei.category.BlockCuttingCategory.CondensedBlockCuttingRecipe;
+
 
 public final class BlockCuttingMachine implements LabRecipeMachine {
     private static final ResourceLocation JEI_UID = new ResourceLocation("create", "block_cutting");
@@ -72,6 +72,6 @@ public final class BlockCuttingMachine implements LabRecipeMachine {
         }
         return new LabRecipeFieldValues(current.shapeless(), current.experience(), current.cookingTime(), count,
                 current.processingTime(), current.heatRequirement(), current.keepHeldItem(), current.acceptMirrored(),
-                current.gridWidth(), current.gridHeight(), current.outputCount());
+                current.gridWidth(), current.gridHeight());
     }
 }

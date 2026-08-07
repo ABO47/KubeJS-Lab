@@ -2,10 +2,7 @@ package com.abo47.kubejslab.recipe.immersiveengineering;
 
 import java.util.List;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-
-import blusunrize.immersiveengineering.api.crafting.SawmillRecipe;
+import net.minecraft.world.item.crafting.Recipe;
 
 import com.abo47.kubejslab.recipe.model.LabIngredient;
 import com.abo47.kubejslab.recipe.model.LabRecipeField;
@@ -13,7 +10,10 @@ import com.abo47.kubejslab.recipe.model.LabRecipeFieldValues;
 import com.abo47.kubejslab.recipe.model.LabRecipeJson;
 import com.abo47.kubejslab.recipe.model.LabRecipeOutput;
 
-import net.minecraft.world.item.crafting.Recipe;
+import blusunrize.immersiveengineering.api.crafting.SawmillRecipe;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+
 
 public class SawmillMachine extends ImmersiveEngineeringMachine {
     public SawmillMachine() {
@@ -56,7 +56,7 @@ public class SawmillMachine extends ImmersiveEngineeringMachine {
         if (original instanceof SawmillRecipe sawmill) {
             return new LabRecipeFieldValues(current.shapeless(), current.experience(), current.cookingTime(),
                     current.count(), current.processingTime(), current.heatRequirement(), current.keepHeldItem(),
-                    current.acceptMirrored(), current.gridWidth(), current.gridHeight(), current.outputCount(),
+                    current.acceptMirrored(), current.gridWidth(), current.gridHeight(),
                     sawmill.getTotalProcessEnergy(), current.creosoteAmount(), current.mold(),
                     current.blueprintCategory(), current.clocheRenderType(), current.clocheRenderBlock());
         }

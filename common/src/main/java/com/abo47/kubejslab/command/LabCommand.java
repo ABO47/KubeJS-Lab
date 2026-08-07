@@ -1,13 +1,15 @@
 package com.abo47.kubejslab.command;
 
-import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
-import net.minecraft.commands.CommandSourceStack;
+import com.mojang.brigadier.CommandDispatcher;
+
 import net.minecraft.commands.Commands;
+import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.server.level.ServerPlayer;
 
-import com.abo47.kubejslab.KubeJSLab;
 import com.abo47.kubejslab.client.ui.LabUIFactory;
+import com.abo47.kubejslab.KubeJSLab;
+
 
 public final class LabCommand {
     private LabCommand() {

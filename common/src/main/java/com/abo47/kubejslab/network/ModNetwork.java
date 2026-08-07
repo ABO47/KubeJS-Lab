@@ -7,6 +7,7 @@ import com.abo47.kubejslab.network.recipe.C2SRecipeEditPacket;
 import com.abo47.kubejslab.network.recipe.S2CRecipeStatePacket;
 import com.abo47.kubejslab.platform.Services;
 
+
 public final class ModNetwork {
     private ModNetwork() {
     }

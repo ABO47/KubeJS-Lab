@@ -1,8 +1,7 @@
 package com.abo47.kubejslab.client.ui.contextmenu;
-import com.abo47.kubejslab.client.ui.base.LabColors;
-
 import java.util.function.LongSupplier;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 
 import net.minecraft.client.gui.GuiGraphics;
@@ -11,7 +10,8 @@ import com.lowdragmc.lowdraglib.gui.texture.ColorRectTexture;
 import com.lowdragmc.lowdraglib.gui.widget.WidgetGroup;
 import com.lowdragmc.lowdraglib.utils.Position;
 
-import com.mojang.blaze3d.systems.RenderSystem;
+import com.abo47.kubejslab.client.ui.base.LabColors;
+
 
 public final class LabContextMenuPopWidget extends WidgetGroup {
     private static final long MENU_MS = 95;

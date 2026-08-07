@@ -2,16 +2,16 @@ package com.abo47.kubejslab.recipe.immersiveengineering;
 
 import java.util.List;
 
-import com.google.gson.JsonObject;
-
-import blusunrize.immersiveengineering.api.crafting.CokeOvenRecipe;
+import net.minecraft.world.item.crafting.Recipe;
 
 import com.abo47.kubejslab.recipe.model.LabIngredient;
 import com.abo47.kubejslab.recipe.model.LabRecipeField;
 import com.abo47.kubejslab.recipe.model.LabRecipeFieldValues;
 import com.abo47.kubejslab.recipe.model.LabRecipeOutput;
 
-import net.minecraft.world.item.crafting.Recipe;
+import blusunrize.immersiveengineering.api.crafting.CokeOvenRecipe;
+import com.google.gson.JsonObject;
+
 
 public class CokeOvenMachine extends ImmersiveEngineeringMachine {
     public CokeOvenMachine() {
@@ -39,7 +39,7 @@ public class CokeOvenMachine extends ImmersiveEngineeringMachine {
         if (original instanceof CokeOvenRecipe coke) {
             return new LabRecipeFieldValues(current.shapeless(), current.experience(), current.cookingTime(),
                     current.count(), coke.time, current.heatRequirement(), current.keepHeldItem(),
-                    current.acceptMirrored(), current.gridWidth(), current.gridHeight(), current.outputCount(),
+                    current.acceptMirrored(), current.gridWidth(), current.gridHeight(),
                     current.energy(), coke.creosoteOutput, current.mold(), current.blueprintCategory(),
                     current.clocheRenderType(), current.clocheRenderBlock());
         }

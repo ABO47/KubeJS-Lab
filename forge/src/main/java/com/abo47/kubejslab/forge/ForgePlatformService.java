@@ -1,18 +1,24 @@
 package com.abo47.kubejslab.forge;
 
+import java.util.List;
 import java.util.Optional;
 
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
-
-import mezz.jei.api.forge.ForgeTypes;
-import mezz.jei.api.gui.ingredient.IRecipeSlotView;
+import net.minecraft.world.item.crafting.Recipe;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 
 import com.lowdragmc.lowdraglib.side.fluid.FluidStack;
 
 import com.abo47.kubejslab.network.recipe.C2SRecipeEditPacket;
 import com.abo47.kubejslab.network.recipe.S2CRecipeStatePacket;
 import com.abo47.kubejslab.platform.PlatformService;
+
+import blusunrize.immersiveengineering.api.crafting.IMultiblockRecipe;
+import mezz.jei.api.forge.ForgeTypes;
+import mezz.jei.api.gui.ingredient.IRecipeSlotView;
+
 
 public final class ForgePlatformService implements PlatformService {
     @Override
@@ -50,5 +56,32 @@ public final class ForgePlatformService implements PlatformService {
                 .map(fs -> fs.getTag() == null
                         ? FluidStack.create(fs.getFluid(), fs.getAmount())
                         : FluidStack.create(fs.getFluid(), fs.getAmount(), fs.getTag()));
+    }
+
+    @Override
+    public ItemStack fluidOutputDisplay(Recipe<?> recipe) {
+        if (recipe instanceof IMultiblockRecipe multiblock) {
+            List<?> outputs = multiblock.getFluidOutputs();
+            if (!outputs.isEmpty()) {
+                net.minecraftforge.fluids.FluidStack fluid = (net.minecraftforge.fluids.FluidStack) outputs.get(0);
+                Item bucket = fluid.getFluid().getBucket();
+                if (bucket != null) {
+                    return new ItemStack(bucket);
+                }
+            }
+        }
+        return ItemStack.EMPTY;
+    }
+
+    @Override
+    public String fluidOutputDisplayName(Recipe<?> recipe) {
+        if (recipe instanceof IMultiblockRecipe multiblock) {
+            List<?> outputs = multiblock.getFluidOutputs();
+            if (!outputs.isEmpty()) {
+                net.minecraftforge.fluids.FluidStack fluid = (net.minecraftforge.fluids.FluidStack) outputs.get(0);
+                return fluid.getFluid().getFluidType().getDescription().getString();
+            }
+        }
+        return "";
     }
 }

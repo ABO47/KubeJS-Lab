@@ -2,8 +2,6 @@ package com.abo47.kubejslab.recipe.vanilla;
 
 import java.util.List;
 
-import com.google.gson.JsonObject;
-
 import net.minecraft.world.item.crafting.AbstractCookingRecipe;
 import net.minecraft.world.item.crafting.Recipe;
 
@@ -13,6 +11,9 @@ import com.abo47.kubejslab.recipe.model.LabRecipeField;
 import com.abo47.kubejslab.recipe.model.LabRecipeFieldValues;
 import com.abo47.kubejslab.recipe.model.LabRecipeJson;
 import com.abo47.kubejslab.recipe.model.LabRecipeOutput;
+
+import com.google.gson.JsonObject;
+
 
 public abstract class CookingBase implements LabRecipeMachine {
     @Override
@@ -40,7 +41,7 @@ public abstract class CookingBase implements LabRecipeMachine {
         if (original instanceof AbstractCookingRecipe cooking) {
             return new LabRecipeFieldValues(current.shapeless(), cooking.getExperience(),
                     cooking.getCookingTime(), current.count(), current.processingTime(), current.heatRequirement(),
-                    current.keepHeldItem(), current.acceptMirrored(), current.gridWidth(), current.gridHeight(), current.outputCount());
+                    current.keepHeldItem(), current.acceptMirrored(), current.gridWidth(), current.gridHeight());
         }
         return current;
     }

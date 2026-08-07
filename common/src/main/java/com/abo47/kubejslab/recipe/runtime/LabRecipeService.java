@@ -10,21 +10,14 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-
-import dev.architectury.platform.Platform;
-
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.TagParser;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.item.ItemStack;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.item.crafting.Recipe;
+import net.minecraft.world.item.ItemStack;
 
 import com.abo47.kubejslab.KubeJSLab;
 import com.abo47.kubejslab.network.ModNetwork;
@@ -36,6 +29,13 @@ import com.abo47.kubejslab.recipe.model.LabRecipeOutput;
 import com.abo47.kubejslab.recipe.model.LabRecipePayload;
 import com.abo47.kubejslab.recipe.model.LabRecipeStateEntry;
 import com.abo47.kubejslab.recipe.model.LabRecipeStatus;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import dev.architectury.platform.Platform;
+
 
 public final class LabRecipeService {
     private static final String KUBEJS_NAMESPACE = "kubejs";

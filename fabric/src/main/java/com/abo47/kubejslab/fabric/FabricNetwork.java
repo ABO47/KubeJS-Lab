@@ -1,16 +1,16 @@
 package com.abo47.kubejslab.fabric;
 
-import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 
-import com.abo47.kubejslab.KubeJSLab;
-
 import com.abo47.kubejslab.client.ui.LabUIFactory;
+import com.abo47.kubejslab.KubeJSLab;
 import com.abo47.kubejslab.network.recipe.C2SRecipeEditPacket;
 
 import io.netty.buffer.Unpooled;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+
 
 public final class FabricNetwork {
     public static final ResourceLocation OPEN_SCREEN = new ResourceLocation(KubeJSLab.MOD_ID, "open_screen");

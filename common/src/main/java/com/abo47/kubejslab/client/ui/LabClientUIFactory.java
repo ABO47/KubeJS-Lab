@@ -7,6 +7,7 @@ import net.minecraft.world.entity.player.Player;
 
 import com.lowdragmc.lowdraglib.gui.modular.ModularUI;
 
+
 public final class LabClientUIFactory {
     private LabClientUIFactory() {
     }

@@ -8,6 +8,7 @@ import com.lowdragmc.lowdraglib.gui.texture.ColorRectTexture;
 import com.lowdragmc.lowdraglib.gui.texture.TextTexture;
 import com.lowdragmc.lowdraglib.gui.widget.Widget;
 
+
 public final class LabTab extends Widget {
     private static final ColorRectTexture ACTIVE_FILL = new ColorRectTexture(LabColors.SURFACE_BASE);
     private static final ColorRectTexture INACTIVE_FILL = new ColorRectTexture(

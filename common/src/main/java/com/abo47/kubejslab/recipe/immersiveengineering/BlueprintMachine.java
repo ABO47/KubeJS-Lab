@@ -1,22 +1,39 @@
 package com.abo47.kubejslab.recipe.immersiveengineering;
 
+import java.util.ArrayList;
 import java.util.List;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-
-import blusunrize.immersiveengineering.api.crafting.BlueprintCraftingRecipe;
+import net.minecraft.world.item.crafting.Recipe;
 
 import com.abo47.kubejslab.recipe.model.LabIngredient;
 import com.abo47.kubejslab.recipe.model.LabRecipeField;
 import com.abo47.kubejslab.recipe.model.LabRecipeFieldValues;
 import com.abo47.kubejslab.recipe.model.LabRecipeOutput;
+import com.abo47.kubejslab.recipe.model.LabSlotDescriptor;
+import com.abo47.kubejslab.recipe.model.LabSlotKind;
 
-import net.minecraft.world.item.crafting.Recipe;
+import blusunrize.immersiveengineering.api.crafting.BlueprintCraftingRecipe;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+
 
 public class BlueprintMachine extends ImmersiveEngineeringMachine {
     public BlueprintMachine() {
         super("blueprint", LabRecipeField.BLUEPRINT_CATEGORY);
+    }
+
+    @Override
+    public List<LabSlotDescriptor> inputSlots() {
+        List<LabSlotDescriptor> slots = new ArrayList<>();
+        for (int i = 0; i < 6; i++) {
+            slots.add(new LabSlotDescriptor(true, LabSlotKind.ITEM, i % 2, i / 2, true));
+        }
+        return slots;
+    }
+
+    @Override
+    public List<LabSlotDescriptor> outputSlots() {
+        return new ArrayList<>(List.of(new LabSlotDescriptor(false, LabSlotKind.ITEM, 3, 1, false)));
     }
 
     @Override
@@ -26,8 +43,8 @@ public class BlueprintMachine extends ImmersiveEngineeringMachine {
         json.addProperty("type", type);
         json.addProperty("category", values.blueprintCategory());
         JsonArray recipeInputs = new JsonArray();
-        for (int i = 1; i < inputs.size(); i++) {
-            recipeInputs.add(ingredientWithSize(inputs.get(i)));
+        for (LabIngredient input : inputs) {
+            recipeInputs.add(ingredientWithSize(input));
         }
         json.add("inputs", recipeInputs);
         if (!outputs.isEmpty()) {
@@ -41,7 +58,7 @@ public class BlueprintMachine extends ImmersiveEngineeringMachine {
         if (original instanceof BlueprintCraftingRecipe blueprints) {
             return new LabRecipeFieldValues(current.shapeless(), current.experience(), current.cookingTime(),
                     current.count(), current.processingTime(), current.heatRequirement(), current.keepHeldItem(),
-                    current.acceptMirrored(), current.gridWidth(), current.gridHeight(), current.outputCount(),
+                    current.acceptMirrored(), current.gridWidth(), current.gridHeight(),
                     current.energy(), current.creosoteAmount(), current.mold(), blueprints.blueprintCategory,
                     current.clocheRenderType(), current.clocheRenderBlock());
         }

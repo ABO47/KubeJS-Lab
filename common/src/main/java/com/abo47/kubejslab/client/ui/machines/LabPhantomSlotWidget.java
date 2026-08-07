@@ -1,27 +1,29 @@
 package com.abo47.kubejslab.client.ui.machines;
 
-import com.abo47.kubejslab.client.ui.base.LabColors;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.ItemStack;
 
 import com.lowdragmc.lowdraglib.gui.util.DrawerHelper;
 import com.lowdragmc.lowdraglib.gui.widget.PhantomSlotWidget;
 import com.lowdragmc.lowdraglib.side.item.IItemTransfer;
 
+import com.abo47.kubejslab.client.ui.base.LabColors;
+import com.abo47.kubejslab.recipe.model.LabSlotKind;
+
 import mezz.jei.api.recipe.RecipeIngredientRole;
 
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.network.chat.Component;
-import net.minecraft.world.item.ItemStack;
 
 public final class LabPhantomSlotWidget extends PhantomSlotWidget {
-    private final LabMachineLayoutWidget.PhantomHandler handler;
+    private final LabPhantomHandler handler;
     private LabMachineLayoutWidget dragOwner;
     private boolean tagTooltipSet;
     private RecipeIngredientRole role;
 
     public LabPhantomSlotWidget(IItemTransfer itemHandler, int slotIndex, int xPosition, int yPosition) {
         super(itemHandler, slotIndex, xPosition, yPosition);
-        this.handler = (LabMachineLayoutWidget.PhantomHandler) itemHandler;
+        this.handler = (LabPhantomHandler) itemHandler;
     }
 
     void setDragOwner(LabMachineLayoutWidget dragOwner) {
@@ -34,7 +36,7 @@ public final class LabPhantomSlotWidget extends PhantomSlotWidget {
 
     @Override
     public void updateScreen() {
-        boolean isTag = handler.data().kind == LabMachineLayoutWidget.SlotKind.TAG
+        boolean isTag = handler.data().kind == LabSlotKind.TAG
                 && handler.data().tag != null;
         if (isTag && !tagTooltipSet) {
             setHoverTooltips(Component.literal("#" + handler.data().tag));
@@ -51,16 +53,16 @@ public final class LabPhantomSlotWidget extends PhantomSlotWidget {
         if (role != null) {
             int x = getPositionX();
             int y = getPositionY();
-            int color = role == RecipeIngredientRole.INPUT ? 0x402E7CF6 : 0x40FF8C42;
+            int color = role == RecipeIngredientRole.INPUT ? LabColors.INPUT_TINT : LabColors.OUTPUT_TINT;
             g.fill(x, y, x + getSizeWidth(), y + getSizeHeight(), color);
             ItemStack stack = handler.data().stack;
             if (!stack.isEmpty()) {
                 DrawerHelper.drawItemStack(g, stack, x + 1, y + 1, -1, null);
             }
         }
-        if (handler.data().kind == LabMachineLayoutWidget.SlotKind.TAG) {
+        if (handler.data().kind == LabSlotKind.TAG) {
             g.drawString(Minecraft.getInstance().font, "#", getPositionX() + getSizeWidth() - 8,
-                    getPositionY() + getSizeHeight() - 9, 0xffd9b84c);
+                    getPositionY() + getSizeHeight() - 9, LabColors.TAG_GOLD);
         }
     }
 
@@ -108,5 +110,14 @@ public final class LabPhantomSlotWidget extends PhantomSlotWidget {
             return true;
         }
         return false;
+    }
+
+    @Override
+    public boolean mouseWheelMove(double mouseX, double mouseY, double wheelDelta) {
+        if (dragOwner != null && isMouseOverElement(mouseX, mouseY) && !handler.data().isEmpty()) {
+            dragOwner.adjustStackCount(handler.data(), (int) Math.signum(wheelDelta));
+            return true;
+        }
+        return super.mouseWheelMove(mouseX, mouseY, wheelDelta);
     }
 }

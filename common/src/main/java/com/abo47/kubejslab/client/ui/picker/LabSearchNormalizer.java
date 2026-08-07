@@ -2,6 +2,7 @@ package com.abo47.kubejslab.client.ui.picker;
 
 import java.util.Locale;
 
+
 public final class LabSearchNormalizer {
     private LabSearchNormalizer() {
     }

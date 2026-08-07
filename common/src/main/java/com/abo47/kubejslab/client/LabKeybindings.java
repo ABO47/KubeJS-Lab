@@ -3,11 +3,14 @@ package com.abo47.kubejslab.client;
 import java.util.function.Consumer;
 
 import org.lwjgl.glfw.GLFW;
+
 import com.mojang.blaze3d.platform.InputConstants;
+
 import net.minecraft.client.KeyMapping;
 
 import com.abo47.kubejslab.KubeJSLab;
 import com.abo47.kubejslab.network.ModNetwork;
+
 
 public final class LabKeybindings {
     private static final String CATEGORY = "key.categories." + KubeJSLab.MOD_ID;

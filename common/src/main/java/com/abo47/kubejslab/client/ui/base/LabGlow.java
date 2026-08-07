@@ -8,6 +8,7 @@ import net.minecraft.util.FastColor;
 
 import com.lowdragmc.lowdraglib.gui.texture.ShaderTexture;
 
+
 public final class LabGlow {
     private static final ResourceLocation GLOW_SHADER = new ResourceLocation("kubejslab", "glow");
 

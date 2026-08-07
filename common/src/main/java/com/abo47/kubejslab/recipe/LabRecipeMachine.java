@@ -2,8 +2,6 @@ package com.abo47.kubejslab.recipe;
 
 import java.util.List;
 
-import com.google.gson.JsonObject;
-
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.crafting.Recipe;
 
@@ -11,6 +9,10 @@ import com.abo47.kubejslab.recipe.model.LabIngredient;
 import com.abo47.kubejslab.recipe.model.LabRecipeField;
 import com.abo47.kubejslab.recipe.model.LabRecipeFieldValues;
 import com.abo47.kubejslab.recipe.model.LabRecipeOutput;
+import com.abo47.kubejslab.recipe.model.LabSlotDescriptor;
+
+import com.google.gson.JsonObject;
+
 
 public interface LabRecipeMachine {
     ResourceLocation jeiUid();
@@ -33,10 +35,6 @@ public interface LabRecipeMachine {
         return false;
     }
 
-    default boolean supportsOutputCount() {
-        return false;
-    }
-
     default boolean allowsEmptyResult(Recipe<?> original) {
         return false;
     }
@@ -55,6 +53,22 @@ public interface LabRecipeMachine {
 
     default ResourceLocation recipeIdSourceUid() {
         return null;
+    }
+
+    default List<LabSlotDescriptor> inputSlots() {
+        return List.of();
+    }
+
+    default List<LabSlotDescriptor> outputSlots() {
+        return List.of();
+    }
+
+    default boolean supportsFluidInputAmount() {
+        return false;
+    }
+
+    default boolean supportsFluidOutputAmount() {
+        return false;
     }
 
     List<LabRecipeField> fields();

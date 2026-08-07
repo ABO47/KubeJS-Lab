@@ -1,13 +1,14 @@
 package com.abo47.kubejslab.forge;
 
-import com.abo47.kubejslab.KubeJSLab;
 import com.abo47.kubejslab.client.LabKeybindings;
+import com.abo47.kubejslab.KubeJSLab;
 
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+
 
 @Mod.EventBusSubscriber(modid = KubeJSLab.MOD_ID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.MOD)
 public final class ForgeClientEvents {

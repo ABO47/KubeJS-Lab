@@ -1,33 +1,30 @@
 package com.abo47.kubejslab.client.ui.machines;
-import com.abo47.kubejslab.client.ui.base.LabColors;
-import com.abo47.kubejslab.client.ui.base.LabGlow;
-import com.abo47.kubejslab.client.ui.base.LabGuiKeys;
-import com.abo47.kubejslab.client.ui.base.LabLayout;
-import com.abo47.kubejslab.client.ui.base.LabScrollMath;
-
 import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-
+import java.util.List;
+import java.util.Locale;
 import javax.annotation.Nonnull;
 
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.resources.language.I18n;
 import net.minecraft.resources.ResourceLocation;
 
 import com.lowdragmc.lowdraglib.gui.texture.ColorRectTexture;
 import com.lowdragmc.lowdraglib.gui.texture.IGuiTexture;
-import com.lowdragmc.lowdraglib.gui.texture.ItemStackTexture;
 import com.lowdragmc.lowdraglib.gui.texture.TextTexture;
 import com.lowdragmc.lowdraglib.gui.widget.TextFieldWidget;
 import com.lowdragmc.lowdraglib.gui.widget.Widget;
 import com.lowdragmc.lowdraglib.gui.widget.WidgetGroup;
 
+import com.abo47.kubejslab.client.ui.base.LabColors;
+import com.abo47.kubejslab.client.ui.base.LabGlow;
+import com.abo47.kubejslab.client.ui.base.LabLayout;
+import com.abo47.kubejslab.client.ui.base.LabScrollMath;
+
+
 public final class LabMachineDropdownWidget extends WidgetGroup {
     private static final ColorRectTexture SELECTED_FILL = new ColorRectTexture(LabColors.SURFACE_BASE);
-    private static final ColorRectTexture POPUP_FILL = new ColorRectTexture(0xFF0D1114);
+    private static final ColorRectTexture POPUP_FILL = new ColorRectTexture(LabColors.POPUP_FILL);
     private static final ColorRectTexture POPUP_BORDER = new ColorRectTexture(LabColors.BORDER_BASE);
 
     private final TextFieldWidget searchField;
@@ -41,7 +38,7 @@ public final class LabMachineDropdownWidget extends WidgetGroup {
     private String cachedFilterText = "";
     private List<LabMachine> cachedFiltered = List.of();
     private List<LabMachine> cachedVisible = List.of();
-    private List<RowTextures> cachedRowTextures = List.of();
+    private List<LabDropdownRowTextures.Textures> cachedRowTextures = List.of();
 
     public LabMachineDropdownWidget(int x, int y, int w, int h) {
         super(x, y, w, h);
@@ -181,18 +178,7 @@ public final class LabMachineDropdownWidget extends WidgetGroup {
             return;
         }
         cachedVisible = visible;
-        cachedRowTextures = new ArrayList<>(visible.size());
-        int w = getSizeWidth();
-        for (LabMachine machine : visible) {
-            cachedRowTextures.add(new RowTextures(
-                    new ItemStackTexture(machine.icon()),
-                    new TextTexture(displayName(machine), LabColors.TEXT_PRIMARY)
-                            .setWidth(w - 22)
-                            .setType(TextTexture.TextType.LEFT_HIDE),
-                    new TextTexture(displayName(machine), LabColors.TEXT_MUTED)
-                            .setWidth(w - 22)
-                            .setType(TextTexture.TextType.LEFT_HIDE)));
-        }
+        cachedRowTextures = LabDropdownRowTextures.forMachines(visible, getSizeWidth());
     }
 
     @Override
@@ -234,7 +220,7 @@ public final class LabMachineDropdownWidget extends WidgetGroup {
                 break;
             }
             LabMachine machine = visible.get(index);
-            RowTextures tex = cachedRowTextures.get(index);
+            LabDropdownRowTextures.Textures tex = cachedRowTextures.get(index);
             int ry = popupY + 1 + row * rowH;
             if (machine == selected) {
                 SELECTED_FILL.draw(g, mx, my, x + 1, ry, w - 2, rowH - 1);
@@ -299,12 +285,6 @@ public final class LabMachineDropdownWidget extends WidgetGroup {
     }
 
     private static String displayName(LabMachine machine) {
-        if (machine.supported()) {
-            return machine.name();
-        }
-        return machine.name() + " (" + I18n.get(LabGuiKeys.NOT_SUPPORTED) + ")";
-    }
-
-    private record RowTextures(ItemStackTexture icon, TextTexture nameSelected, TextTexture nameNormal) {
+        return LabDropdownRowTextures.displayName(machine);
     }
 }

@@ -1,17 +1,17 @@
 package com.abo47.kubejslab.fabric;
 
-import com.abo47.kubejslab.client.LabKeybindings;
-
-import net.fabricmc.api.ClientModInitializer;
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.network.FriendlyByteBuf;
 
+import com.abo47.kubejslab.client.LabKeybindings;
 import com.abo47.kubejslab.client.ui.LabClientUIFactory;
 import com.abo47.kubejslab.network.recipe.S2CRecipeStatePacket;
 
 import io.netty.buffer.Unpooled;
+import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+
 
 public final class FabricModClient implements ClientModInitializer {
     @Override

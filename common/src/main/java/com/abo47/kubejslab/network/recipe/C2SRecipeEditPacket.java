@@ -2,7 +2,6 @@ package com.abo47.kubejslab.network.recipe;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.annotation.Nullable;
 
 import net.minecraft.network.FriendlyByteBuf;
@@ -10,13 +9,14 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 
 import com.abo47.kubejslab.KubeJSLab;
-import com.abo47.kubejslab.recipe.model.LabRecipeEditAction;
-import com.abo47.kubejslab.recipe.model.LabRecipeFieldValues;
 import com.abo47.kubejslab.recipe.model.HeatRequirement;
 import com.abo47.kubejslab.recipe.model.LabIngredient;
+import com.abo47.kubejslab.recipe.model.LabRecipeEditAction;
+import com.abo47.kubejslab.recipe.model.LabRecipeFieldValues;
 import com.abo47.kubejslab.recipe.model.LabRecipeOutput;
 import com.abo47.kubejslab.recipe.model.LabRecipePayload;
 import com.abo47.kubejslab.recipe.runtime.LabRecipeService;
+
 
 public record C2SRecipeEditPacket(LabRecipeEditAction action, @Nullable ResourceLocation targetId,
         LabRecipePayload payload) {
@@ -55,19 +55,20 @@ public record C2SRecipeEditPacket(LabRecipeEditAction action, @Nullable Resource
         buf.writeBoolean(values.acceptMirrored());
         buf.writeVarInt(values.gridWidth());
         buf.writeVarInt(values.gridHeight());
-        buf.writeVarInt(values.outputCount());
         buf.writeVarInt(values.energy());
         buf.writeVarInt(values.creosoteAmount());
         buf.writeUtf(values.mold(), 32767);
         buf.writeUtf(values.blueprintCategory(), 32767);
         buf.writeUtf(values.clocheRenderType().name(), 32767);
         buf.writeUtf(values.clocheRenderBlock(), 32767);
+        buf.writeVarInt(values.fluidInputAmount());
+        buf.writeVarInt(values.fluidOutputAmount());
         int total = buf.writerIndex() - start;
         KubeJSLab.LOGGER.info(
-                "[Net] C2SRecipeEditPacket encoded: ids={}b, inputs={}b, outputs={}b, name+values={}b, total={}b ({} inputs, {} outputs, grid={}x{}, outputCount={}, energy={})",
+                "[Net] C2SRecipeEditPacket encoded: ids={}b, inputs={}b, outputs={}b, name+values={}b, total={}b ({} inputs, {} outputs, grid={}x{}, energy={})",
                 afterIds, afterInputs - afterIds, afterOutputs - afterInputs, total - afterOutputs, total,
                 payload.inputs().size(), payload.outputs().size(), values.gridWidth(), values.gridHeight(),
-                values.outputCount(), values.energy());
+                values.energy());
     }
 
     public static C2SRecipeEditPacket read(FriendlyByteBuf buf) {
@@ -95,7 +96,6 @@ public record C2SRecipeEditPacket(LabRecipeEditAction action, @Nullable Resource
         boolean acceptMirrored = buf.readBoolean();
         int gridWidth = Math.max(1, Math.min(9, buf.readVarInt()));
         int gridHeight = Math.max(1, Math.min(9, buf.readVarInt()));
-        int recipeOutputCount = Math.max(1, Math.min(6, buf.readVarInt()));
         int energy = Math.max(0, Math.min(100000, buf.readVarInt()));
         int creosoteAmount = Math.max(0, Math.min(200000, buf.readVarInt()));
         String mold = buf.readUtf();
@@ -103,18 +103,20 @@ public record C2SRecipeEditPacket(LabRecipeEditAction action, @Nullable Resource
         com.abo47.kubejslab.recipe.model.ClocheRenderType clocheRenderType =
                 com.abo47.kubejslab.recipe.model.ClocheRenderType.byName(buf.readUtf());
         String clocheRenderBlock = buf.readUtf();
+        int fluidInputAmount = Math.max(0, Math.min(1000000, buf.readVarInt()));
+        int fluidOutputAmount = Math.max(0, Math.min(1000000, buf.readVarInt()));
         return new C2SRecipeEditPacket(action, targetId,
                 new LabRecipePayload(machineUid, inputs, outputs, name,
                         new LabRecipeFieldValues(shapeless, experience, cookingTime, count, processingTime,
-                                heatRequirement, keepHeldItem, acceptMirrored, gridWidth, gridHeight, recipeOutputCount,
-                                energy, creosoteAmount, mold, blueprintCategory, clocheRenderType, clocheRenderBlock)));
+                                heatRequirement, keepHeldItem, acceptMirrored, gridWidth, gridHeight,
+                                energy, creosoteAmount, mold, blueprintCategory, clocheRenderType, clocheRenderBlock,
+                                fluidInputAmount, fluidOutputAmount)));
     }
 
     public void handle(ServerPlayer player) {
-        KubeJSLab.LOGGER.info("[Net] C2SRecipeEditPacket received from {}: action={}, targetId={}, machineUid={}, inputs={}, outputs={}, name={}, grid={}x{}, outputCount={}",
+        KubeJSLab.LOGGER.info("[Net] C2SRecipeEditPacket received from {}: action={}, targetId={}, machineUid={}, inputs={}, outputs={}, name={}, grid={}x{}",
                 player.getName().getString(), action, targetId, payload.machineUid(), payload.inputs().size(),
-                payload.outputs().size(), payload.name(), payload.values().gridWidth(), payload.values().gridHeight(),
-                payload.values().outputCount());
+                payload.outputs().size(), payload.name(), payload.values().gridWidth(), payload.values().gridHeight());
         if (!player.hasPermissions(2)) {
             KubeJSLab.LOGGER.warn("[Net] C2SRecipeEditPacket rejected: {} lacks permission level 2", player.getName().getString());
             return;

@@ -2,13 +2,8 @@ package com.abo47.kubejslab.fabric;
 
 import java.util.Optional;
 
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
-
-import mezz.jei.api.fabric.constants.FabricTypes;
-import mezz.jei.api.gui.ingredient.IRecipeSlotView;
 
 import com.lowdragmc.lowdraglib.side.fluid.FluidStack;
 
@@ -17,6 +12,11 @@ import com.abo47.kubejslab.network.recipe.S2CRecipeStatePacket;
 import com.abo47.kubejslab.platform.PlatformService;
 
 import io.netty.buffer.Unpooled;
+import mezz.jei.api.fabric.constants.FabricTypes;
+import mezz.jei.api.gui.ingredient.IRecipeSlotView;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+
 
 public final class FabricPlatformService implements PlatformService {
     @Override

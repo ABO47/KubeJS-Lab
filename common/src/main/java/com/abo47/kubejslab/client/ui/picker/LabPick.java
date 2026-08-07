@@ -1,9 +1,10 @@
 package com.abo47.kubejslab.client.ui.picker;
 
-import com.lowdragmc.lowdraglib.side.fluid.FluidStack;
-
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
+
+import com.lowdragmc.lowdraglib.side.fluid.FluidStack;
+
 
 public sealed interface LabPick permits LabPick.Item, LabPick.Tag, LabPick.Fluid {
 

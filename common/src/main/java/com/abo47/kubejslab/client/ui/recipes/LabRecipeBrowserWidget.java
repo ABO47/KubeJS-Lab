@@ -1,15 +1,10 @@
 package com.abo47.kubejslab.client.ui.recipes;
-import com.abo47.kubejslab.client.ui.base.LabLayout;
-import com.abo47.kubejslab.client.ui.base.LabScrollBarWidget;
-import com.abo47.kubejslab.client.ui.base.LabScrollMath;
-
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.function.Consumer;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Consumer;
-
 import javax.annotation.Nonnull;
 
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -20,7 +15,10 @@ import net.minecraft.resources.ResourceLocation;
 import com.lowdragmc.lowdraglib.gui.widget.Widget;
 import com.lowdragmc.lowdraglib.gui.widget.WidgetGroup;
 
-import com.abo47.kubejslab.recipe.model.LabRecipeStatus;
+import com.abo47.kubejslab.client.ui.base.LabLayout;
+import com.abo47.kubejslab.client.ui.base.LabScrollBarWidget;
+import com.abo47.kubejslab.client.ui.base.LabScrollMath;
+
 
 public final class LabRecipeBrowserWidget extends WidgetGroup {
     private String query;

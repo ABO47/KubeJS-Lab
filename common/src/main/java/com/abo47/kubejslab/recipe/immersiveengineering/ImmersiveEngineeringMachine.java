@@ -2,8 +2,6 @@ package com.abo47.kubejslab.recipe.immersiveengineering;
 
 import java.util.List;
 
-import com.google.gson.JsonObject;
-
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
@@ -16,6 +14,9 @@ import com.abo47.kubejslab.recipe.model.LabIngredient;
 import com.abo47.kubejslab.recipe.model.LabRecipeField;
 import com.abo47.kubejslab.recipe.model.LabRecipeJson;
 import com.abo47.kubejslab.recipe.model.LabRecipeOutput;
+
+import com.google.gson.JsonObject;
+
 
 public abstract class ImmersiveEngineeringMachine implements LabRecipeMachine {
     private final ResourceLocation jeiUid;
@@ -54,6 +55,10 @@ public abstract class ImmersiveEngineeringMachine implements LabRecipeMachine {
     }
 
     protected static JsonObject fluidTagInput(LabIngredient ingredient) {
+        return fluidTagInput(ingredient, -1);
+    }
+
+    protected static JsonObject fluidTagInput(LabIngredient ingredient, int amountOverride) {
         JsonObject json = new JsonObject();
         if (ingredient instanceof LabIngredient.Fluid fluid) {
             FluidStack stack = fluid.fluid();
@@ -64,12 +69,19 @@ public abstract class ImmersiveEngineeringMachine implements LabRecipeMachine {
             if (tag != null) {
                 json.addProperty("tag", tag.toString());
             }
-            json.addProperty("amount", stack.getAmount());
+            json.addProperty("amount", amountOverride > 0 ? amountOverride : stack.getAmount());
             if (stack.getTag() != null) {
                 json.addProperty("nbt", stack.getTag().toString());
             }
         }
         return json;
+    }
+
+    protected static JsonObject outputWithAmount(LabRecipeOutput output, int amountOverride) {
+        if (output instanceof LabRecipeOutput.Fluid fluid && amountOverride > 0) {
+            return LabRecipeJson.fluidJson(fluid.fluid().copy(amountOverride));
+        }
+        return readOutput(output);
     }
 
     protected static JsonObject readOutput(LabRecipeOutput output) {

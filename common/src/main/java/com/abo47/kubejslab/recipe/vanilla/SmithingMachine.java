@@ -2,8 +2,6 @@ package com.abo47.kubejslab.recipe.vanilla;
 
 import java.util.List;
 
-import com.google.gson.JsonObject;
-
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.SmithingTrimRecipe;
@@ -14,6 +12,9 @@ import com.abo47.kubejslab.recipe.model.LabRecipeField;
 import com.abo47.kubejslab.recipe.model.LabRecipeFieldValues;
 import com.abo47.kubejslab.recipe.model.LabRecipeJson;
 import com.abo47.kubejslab.recipe.model.LabRecipeOutput;
+
+import com.google.gson.JsonObject;
+
 
 public final class SmithingMachine implements LabRecipeMachine {
     private static final ResourceLocation JEI_UID = new ResourceLocation("minecraft", "smithing");

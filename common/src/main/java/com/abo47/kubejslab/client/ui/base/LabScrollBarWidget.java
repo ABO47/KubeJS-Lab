@@ -4,13 +4,13 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
 import java.util.function.IntSupplier;
-
 import javax.annotation.Nonnull;
 
 import net.minecraft.client.gui.GuiGraphics;
 
 import com.lowdragmc.lowdraglib.gui.texture.ColorRectTexture;
 import com.lowdragmc.lowdraglib.gui.widget.Widget;
+
 
 public final class LabScrollBarWidget extends Widget {
     public static final int RESERVED_WIDTH = LabLayout.SCROLLBAR_W;

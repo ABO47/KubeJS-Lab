@@ -1,15 +1,15 @@
 package com.abo47.kubejslab.recipe.model;
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-
-import dev.architectury.platform.Platform;
-
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
 
 import com.lowdragmc.lowdraglib.side.fluid.FluidStack;
+
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import dev.architectury.platform.Platform;
+
 
 public final class LabRecipeJson {
     private LabRecipeJson() {

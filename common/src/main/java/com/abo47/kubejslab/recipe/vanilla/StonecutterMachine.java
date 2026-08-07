@@ -2,8 +2,6 @@ package com.abo47.kubejslab.recipe.vanilla;
 
 import java.util.List;
 
-import com.google.gson.JsonObject;
-
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.crafting.Recipe;
@@ -15,6 +13,9 @@ import com.abo47.kubejslab.recipe.model.LabRecipeField;
 import com.abo47.kubejslab.recipe.model.LabRecipeFieldValues;
 import com.abo47.kubejslab.recipe.model.LabRecipeJson;
 import com.abo47.kubejslab.recipe.model.LabRecipeOutput;
+
+import com.google.gson.JsonObject;
+
 
 public final class StonecutterMachine implements LabRecipeMachine {
     private static final ResourceLocation JEI_UID = new ResourceLocation("minecraft", "stonecutting");
@@ -56,7 +57,7 @@ public final class StonecutterMachine implements LabRecipeMachine {
             return new LabRecipeFieldValues(current.shapeless(), current.experience(), current.cookingTime(),
                     recipe.getResultItem(RegistryAccess.EMPTY).getCount(), current.processingTime(),
                     current.heatRequirement(), current.keepHeldItem(), current.acceptMirrored(),
-                    current.gridWidth(), current.gridHeight(), current.outputCount());
+                    current.gridWidth(), current.gridHeight());
         }
         return current;
     }

@@ -12,9 +12,14 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeManager;
+import net.minecraft.world.item.ItemStack;
+
+import com.abo47.kubejslab.platform.Services;
+
+import blusunrize.immersiveengineering.api.crafting.IMultiblockRecipe;
+
 
 public final class LabRecipeIndex {
     private static final Map<ResourceLocation, Recipe<?>> RECIPE_CACHE = new HashMap<>();
@@ -94,14 +99,24 @@ public final class LabRecipeIndex {
         for (Recipe<?> recipe : manager.getRecipes()) {
             RECIPE_CACHE.put(recipe.getId(), recipe);
             ItemStack result = resultItem(recipe, registryAccess);
-            if (result.isEmpty()) {
+            boolean hasFluid = hasFluidOutput(recipe);
+            if (result.isEmpty() && !hasFluid) {
                 continue;
             }
-            built.add(LabRecipeEntry.of(recipe.getId(), result, displayName(result, recipe.getId())));
+            if (result.isEmpty() && hasFluid) {
+                result = Services.platform().fluidOutputDisplay(recipe);
+            }
+            built.add(LabRecipeEntry.of(recipe.getId(), result,
+                    fluidNameOrFallback(recipe, result, hasFluid)));
         }
         built.sort(Comparator.comparing(LabRecipeEntry::name, String.CASE_INSENSITIVE_ORDER)
                 .thenComparing(LabRecipeEntry::id));
         return List.copyOf(built);
+    }
+
+    private static boolean hasFluidOutput(Recipe<?> recipe) {
+        return recipe instanceof IMultiblockRecipe multiblock
+                && !multiblock.getFluidOutputs().isEmpty();
     }
 
     private static ItemStack resultItem(Recipe<?> recipe, RegistryAccess registryAccess) {
@@ -112,12 +127,15 @@ public final class LabRecipeIndex {
         }
     }
 
-    private static String displayName(ItemStack stack, ResourceLocation id) {
-        String name = stack.getHoverName().getString();
-        if (name.isBlank()) {
-            name = id.getPath();
+    private static String fluidNameOrFallback(Recipe<?> recipe, ItemStack result, boolean hasFluid) {
+        if (!result.isEmpty()) {
+            return result.getHoverName().getString();
         }
-        return name;
+        String name = Services.platform().fluidOutputDisplayName(recipe);
+        if (!name.isBlank()) {
+            return name;
+        }
+        return recipe.getId().getPath();
     }
 
     private static String normalize(String value) {

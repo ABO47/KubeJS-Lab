@@ -3,14 +3,8 @@ package com.abo47.kubejslab.recipe.create;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.crafting.Recipe;
-
-import com.simibubi.create.content.kinetics.deployer.ItemApplicationRecipe;
-import com.simibubi.create.content.processing.recipe.ProcessingRecipe;
 
 import com.abo47.kubejslab.recipe.LabRecipeMachine;
 import com.abo47.kubejslab.recipe.model.HeatRequirement;
@@ -20,14 +14,19 @@ import com.abo47.kubejslab.recipe.model.LabRecipeFieldValues;
 import com.abo47.kubejslab.recipe.model.LabRecipeJson;
 import com.abo47.kubejslab.recipe.model.LabRecipeOutput;
 
-public final class ProcessingRecipeMachine implements LabRecipeMachine {
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.simibubi.create.content.kinetics.deployer.ItemApplicationRecipe;
+import com.simibubi.create.content.processing.recipe.ProcessingRecipe;
+
+
+public class ProcessingRecipeMachine implements LabRecipeMachine {
     private final ResourceLocation jeiUid;
     private final String jsonType;
     private final boolean supportsDuration;
     private final boolean supportsHeat;
     private final boolean supportsKeepHeldItem;
     private final boolean supportsChance;
-    private final boolean supportsOutputCount;
     private final String displayLabel;
     private final List<LabRecipeField> fields;
 
@@ -43,20 +42,12 @@ public final class ProcessingRecipeMachine implements LabRecipeMachine {
 
     public ProcessingRecipeMachine(ResourceLocation jeiUid, String jsonType, boolean supportsDuration,
             boolean supportsHeat, boolean supportsKeepHeldItem, boolean supportsChance, String displayLabel) {
-        this(jeiUid, jsonType, supportsDuration, supportsHeat, supportsKeepHeldItem, supportsChance, displayLabel,
-                supportsChance);
-    }
-
-    public ProcessingRecipeMachine(ResourceLocation jeiUid, String jsonType, boolean supportsDuration,
-            boolean supportsHeat, boolean supportsKeepHeldItem, boolean supportsChance, String displayLabel,
-            boolean supportsOutputCount) {
         this.jeiUid = jeiUid;
         this.jsonType = jsonType;
         this.supportsDuration = supportsDuration;
         this.supportsHeat = supportsHeat;
         this.supportsKeepHeldItem = supportsKeepHeldItem;
         this.supportsChance = supportsChance;
-        this.supportsOutputCount = supportsOutputCount;
         this.displayLabel = displayLabel;
         this.fields = new ArrayList<>();
         if (supportsDuration) {
@@ -68,19 +59,11 @@ public final class ProcessingRecipeMachine implements LabRecipeMachine {
         if (supportsKeepHeldItem) {
             this.fields.add(LabRecipeField.KEEP_HELD_ITEM);
         }
-        if (supportsOutputCount) {
-            this.fields.add(LabRecipeField.OUTPUT_COUNT);
-        }
     }
 
     @Override
     public boolean supportsChance() {
         return supportsChance;
-    }
-
-    @Override
-    public boolean supportsOutputCount() {
-        return supportsOutputCount;
     }
 
     @Override
@@ -140,7 +123,7 @@ public final class ProcessingRecipeMachine implements LabRecipeMachine {
             return new LabRecipeFieldValues(current.shapeless(), current.experience(), current.cookingTime(),
                     current.count(), current.processingTime(), current.heatRequirement(),
                     application.shouldKeepHeldItem(), current.acceptMirrored(), current.gridWidth(),
-                    current.gridHeight(), current.outputCount());
+                    current.gridHeight());
         }
         if (original instanceof ProcessingRecipe<?> processing) {
             HeatRequirement heat = switch (processing.getRequiredHeat()) {
@@ -150,7 +133,7 @@ public final class ProcessingRecipeMachine implements LabRecipeMachine {
             };
             return new LabRecipeFieldValues(current.shapeless(), current.experience(), current.cookingTime(),
                     current.count(), processing.getProcessingDuration(), heat, current.keepHeldItem(),
-                    current.acceptMirrored(), current.gridWidth(), current.gridHeight(), current.outputCount());
+                    current.acceptMirrored(), current.gridWidth(), current.gridHeight());
         }
         return current;
     }

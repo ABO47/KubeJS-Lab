@@ -4,10 +4,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 
-import io.netty.buffer.Unpooled;
-
-import dev.architectury.platform.Platform;
-
 import com.lowdragmc.lowdraglib.core.mixins.accessor.ServerPlayerAccessor;
 import com.lowdragmc.lowdraglib.gui.modular.ModularUI;
 import com.lowdragmc.lowdraglib.gui.modular.ModularUIContainer;
@@ -16,6 +12,10 @@ import com.lowdragmc.lowdraglib.side.ForgeEventHooks;
 import com.abo47.kubejslab.KubeJSLab;
 import com.abo47.kubejslab.network.ModNetwork;
 import com.abo47.kubejslab.recipe.runtime.LabRecipeService;
+
+import dev.architectury.platform.Platform;
+import io.netty.buffer.Unpooled;
+
 
 public final class LabUIFactory {
     private LabUIFactory() {

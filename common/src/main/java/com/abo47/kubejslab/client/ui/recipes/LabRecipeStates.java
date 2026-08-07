@@ -10,6 +10,7 @@ import net.minecraft.resources.ResourceLocation;
 import com.abo47.kubejslab.recipe.model.LabRecipeStateEntry;
 import com.abo47.kubejslab.recipe.model.LabRecipeStatus;
 
+
 public final class LabRecipeStates {
     private static final Map<ResourceLocation, LabRecipeStateEntry> STATES = new LinkedHashMap<>();
 

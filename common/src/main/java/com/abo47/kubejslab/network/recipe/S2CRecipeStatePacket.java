@@ -7,11 +7,12 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 
-import com.abo47.kubejslab.KubeJSLab;
-import com.abo47.kubejslab.client.ui.recipes.LabRecipeStates;
 import com.abo47.kubejslab.client.ui.LabScreen;
+import com.abo47.kubejslab.client.ui.recipes.LabRecipeStates;
+import com.abo47.kubejslab.KubeJSLab;
 import com.abo47.kubejslab.recipe.model.LabRecipeStateEntry;
 import com.abo47.kubejslab.recipe.model.LabRecipeStatus;
+
 
 public record S2CRecipeStatePacket(Map<ResourceLocation, LabRecipeStateEntry> states) {
 

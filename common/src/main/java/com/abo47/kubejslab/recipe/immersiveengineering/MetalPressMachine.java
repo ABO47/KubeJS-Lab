@@ -2,18 +2,18 @@ package com.abo47.kubejslab.recipe.immersiveengineering;
 
 import java.util.List;
 
-import com.google.gson.JsonObject;
-
-import blusunrize.immersiveengineering.api.crafting.MetalPressRecipe;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.crafting.Recipe;
 
 import com.abo47.kubejslab.recipe.model.LabIngredient;
 import com.abo47.kubejslab.recipe.model.LabRecipeField;
 import com.abo47.kubejslab.recipe.model.LabRecipeFieldValues;
 import com.abo47.kubejslab.recipe.model.LabRecipeOutput;
 
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.crafting.Recipe;
+import blusunrize.immersiveengineering.api.crafting.MetalPressRecipe;
+import com.google.gson.JsonObject;
+
 
 public class MetalPressMachine extends ImmersiveEngineeringMachine {
     public MetalPressMachine() {
@@ -42,7 +42,7 @@ public class MetalPressMachine extends ImmersiveEngineeringMachine {
             ResourceLocation moldKey = BuiltInRegistries.ITEM.getKey(press.mold);
             return new LabRecipeFieldValues(current.shapeless(), current.experience(), current.cookingTime(),
                     current.count(), current.processingTime(), current.heatRequirement(), current.keepHeldItem(),
-                    current.acceptMirrored(), current.gridWidth(), current.gridHeight(), current.outputCount(),
+                    current.acceptMirrored(), current.gridWidth(), current.gridHeight(),
                     press.getTotalProcessEnergy(), current.creosoteAmount(), moldKey == null ? "" : moldKey.toString(),
                     current.blueprintCategory(), current.clocheRenderType(), current.clocheRenderBlock());
         }

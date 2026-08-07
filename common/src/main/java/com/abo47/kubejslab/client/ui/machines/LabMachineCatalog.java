@@ -1,6 +1,4 @@
 package com.abo47.kubejslab.client.ui.machines;
-import com.abo47.kubejslab.client.ui.recipes.LabRecipeIndex;
-
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -14,13 +12,15 @@ import java.util.stream.Stream;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 
-import mezz.jei.api.recipe.IRecipeManager;
-import mezz.jei.api.recipe.category.IRecipeCategory;
-import mezz.jei.api.runtime.IJeiRuntime;
-
 import com.abo47.kubejslab.client.jei.LabJeiPlugin;
+import com.abo47.kubejslab.client.ui.recipes.LabRecipeIndex;
 import com.abo47.kubejslab.recipe.LabRecipeMachine;
 import com.abo47.kubejslab.recipe.LabRecipeMachines;
+
+import mezz.jei.api.recipe.category.IRecipeCategory;
+import mezz.jei.api.recipe.IRecipeManager;
+import mezz.jei.api.runtime.IJeiRuntime;
+
 
 public final class LabMachineCatalog {
     private static IJeiRuntime cachedRuntime;

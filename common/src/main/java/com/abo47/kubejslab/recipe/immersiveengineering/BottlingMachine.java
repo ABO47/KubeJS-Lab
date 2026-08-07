@@ -2,23 +2,43 @@ package com.abo47.kubejslab.recipe.immersiveengineering;
 
 import java.util.List;
 
+import net.minecraft.world.item.crafting.Recipe;
+
+import com.abo47.kubejslab.recipe.model.LabIngredient;
+import com.abo47.kubejslab.recipe.model.LabRecipeField;
+import com.abo47.kubejslab.recipe.model.LabRecipeFieldValues;
+import com.abo47.kubejslab.recipe.model.LabRecipeOutput;
+import com.abo47.kubejslab.recipe.model.LabSlotDescriptor;
+import com.abo47.kubejslab.recipe.model.LabSlotKind;
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
-import com.abo47.kubejslab.recipe.model.LabIngredient;
-import com.abo47.kubejslab.recipe.model.LabRecipeFieldValues;
-import com.abo47.kubejslab.recipe.model.LabRecipeOutput;
-
-import net.minecraft.world.item.crafting.Recipe;
 
 public class BottlingMachine extends ImmersiveEngineeringMachine {
     public BottlingMachine() {
-        super("bottling_machine");
+        super("bottling_machine", LabRecipeField.FLUID_INPUT_AMOUNT);
     }
 
     @Override
-    public boolean supportsOutputCount() {
+    public boolean supportsFluidInputAmount() {
         return true;
+    }
+
+    @Override
+    public List<LabSlotDescriptor> inputSlots() {
+        return List.of(
+                new LabSlotDescriptor(true, LabSlotKind.ITEM, 0, 0, true),
+                new LabSlotDescriptor(true, LabSlotKind.ITEM, 0, 1, true),
+                new LabSlotDescriptor(true, LabSlotKind.FLUID, 1, 0, false));
+    }
+
+    @Override
+    public List<LabSlotDescriptor> outputSlots() {
+        return List.of(
+                new LabSlotDescriptor(false, LabSlotKind.ITEM, 2, 0, false),
+                new LabSlotDescriptor(false, LabSlotKind.ITEM, 2, 1, true),
+                new LabSlotDescriptor(false, LabSlotKind.ITEM, 2, 2, true));
     }
 
     @Override
@@ -30,7 +50,7 @@ public class BottlingMachine extends ImmersiveEngineeringMachine {
         JsonObject fluidInput = null;
         for (LabIngredient input : inputs) {
             if (input instanceof LabIngredient.Fluid) {
-                fluidInput = fluidTagInput(input);
+                fluidInput = fluidTagInput(input, values.fluidInputAmount());
             } else {
                 itemInputs.add(ingredientWithSize(input));
             }

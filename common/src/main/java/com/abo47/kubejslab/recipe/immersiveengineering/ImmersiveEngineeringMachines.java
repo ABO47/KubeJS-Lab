@@ -1,8 +1,9 @@
 package com.abo47.kubejslab.recipe.immersiveengineering;
 
+import com.abo47.kubejslab.recipe.LabRecipeMachines;
+
 import dev.architectury.platform.Platform;
 
-import com.abo47.kubejslab.recipe.LabRecipeMachines;
 
 public final class ImmersiveEngineeringMachines {
     private ImmersiveEngineeringMachines() {

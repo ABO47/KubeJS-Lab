@@ -1,10 +1,11 @@
 package com.abo47.kubejslab.recipe.create;
 
-import dev.architectury.platform.Platform;
-
 import net.minecraft.resources.ResourceLocation;
 
 import com.abo47.kubejslab.recipe.LabRecipeMachines;
+
+import dev.architectury.platform.Platform;
+
 
 public final class CreateMachines {
     private static final String MOD_ID = "create";
@@ -19,8 +20,10 @@ public final class CreateMachines {
         LabRecipeMachines.register(processing("milling", "milling", true, false, false, true));
         LabRecipeMachines.register(processing("crushing", "crushing", true, false, false, true));
         LabRecipeMachines.register(processing("pressing", "pressing", false, false, false, false));
-        LabRecipeMachines.register(processing("fan_washing", "splashing", false, false, false, true));
-        LabRecipeMachines.register(processing("fan_haunting", "haunting", false, false, false, true));
+        LabRecipeMachines.register(new FanProcessingMachine("fan_washing", "splashing"));
+        LabRecipeMachines.register(new FanProcessingMachine("fan_haunting", "haunting"));
+        LabRecipeMachines.register(new FanSmokingMachine());
+        LabRecipeMachines.register(new FanBlastingMachine());
         LabRecipeMachines.register(processing("mixing", "mixing", true, true, false, false));
         LabRecipeMachines.register(processing("packing", "compacting", true, true, false, false));
         LabRecipeMachines.register(new ProcessingRecipeMachine(uid("sawing"), uid("cutting").toString(),

@@ -4,14 +4,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.ShapedRecipe;
-
-import com.simibubi.create.content.kinetics.crafter.MechanicalCraftingRecipe;
 
 import com.abo47.kubejslab.KubeJSLab;
 import com.abo47.kubejslab.recipe.LabRecipeMachine;
@@ -20,6 +15,11 @@ import com.abo47.kubejslab.recipe.model.LabRecipeField;
 import com.abo47.kubejslab.recipe.model.LabRecipeFieldValues;
 import com.abo47.kubejslab.recipe.model.LabRecipeJson;
 import com.abo47.kubejslab.recipe.model.LabRecipeOutput;
+
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.simibubi.create.content.kinetics.crafter.MechanicalCraftingRecipe;
+
 
 public final class MechanicalCraftingMachine implements LabRecipeMachine {
     @Override
@@ -121,7 +121,7 @@ public final class MechanicalCraftingMachine implements LabRecipeMachine {
                     original.getId(), width, height, crafting.acceptsMirrored());
             return new LabRecipeFieldValues(current.shapeless(), current.experience(), current.cookingTime(),
                     current.count(), current.processingTime(), current.heatRequirement(), current.keepHeldItem(),
-                    crafting.acceptsMirrored(), width, height, current.outputCount());
+                    crafting.acceptsMirrored(), width, height);
         }
         KubeJSLab.LOGGER.warn("[MechCrafting] prefill: original {} is not a MechanicalCraftingRecipe ({}), keeping defaults",
                 original == null ? "null" : original.getId(), original == null ? "null" : original.getClass().getName());

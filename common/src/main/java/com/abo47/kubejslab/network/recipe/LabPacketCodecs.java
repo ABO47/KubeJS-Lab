@@ -11,6 +11,7 @@ import com.lowdragmc.lowdraglib.side.fluid.FluidStack;
 import com.abo47.kubejslab.recipe.model.LabIngredient;
 import com.abo47.kubejslab.recipe.model.LabRecipeOutput;
 
+
 public final class LabPacketCodecs {
     private LabPacketCodecs() {
     }

@@ -4,13 +4,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.ShapelessRecipe;
+import net.minecraft.world.item.ItemStack;
 
 import com.abo47.kubejslab.recipe.LabRecipeMachine;
 import com.abo47.kubejslab.recipe.model.LabIngredient;
@@ -18,6 +15,10 @@ import com.abo47.kubejslab.recipe.model.LabRecipeField;
 import com.abo47.kubejslab.recipe.model.LabRecipeFieldValues;
 import com.abo47.kubejslab.recipe.model.LabRecipeJson;
 import com.abo47.kubejslab.recipe.model.LabRecipeOutput;
+
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+
 
 public final class CraftingMachine implements LabRecipeMachine {
     @Override
@@ -101,6 +102,6 @@ public final class CraftingMachine implements LabRecipeMachine {
     public LabRecipeFieldValues prefill(LabRecipeFieldValues current, Recipe<?> original) {
         return new LabRecipeFieldValues(original instanceof ShapelessRecipe, current.experience(),
                 current.cookingTime(), current.count(), current.processingTime(), current.heatRequirement(),
-                current.keepHeldItem(), current.acceptMirrored(), current.gridWidth(), current.gridHeight(), current.outputCount());
+                current.keepHeldItem(), current.acceptMirrored(), current.gridWidth(), current.gridHeight());
     }
 }

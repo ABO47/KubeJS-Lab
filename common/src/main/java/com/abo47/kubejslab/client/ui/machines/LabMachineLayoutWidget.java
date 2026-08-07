@@ -1,84 +1,58 @@
 package com.abo47.kubejslab.client.ui.machines;
 
-import com.abo47.kubejslab.KubeJSLab;
-import com.abo47.kubejslab.client.ui.base.LabColors;
-import com.abo47.kubejslab.client.ui.base.LabLayout;
-import com.abo47.kubejslab.client.ui.picker.LabPick;
-import com.abo47.kubejslab.client.ui.recipes.LabRecipeIndex;
-import com.abo47.kubejslab.platform.Services;
-
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Stream;
-
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 
 import net.minecraft.client.renderer.Rect2i;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.tags.TagKey;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.Recipe;
-import net.minecraft.world.item.crafting.ShapedRecipe;
+import net.minecraft.world.item.ItemStack;
 
-import mezz.jei.api.constants.VanillaTypes;
-import mezz.jei.api.gui.IRecipeLayoutDrawable;
-import mezz.jei.api.gui.ingredient.IRecipeSlotDrawable;
-import mezz.jei.api.gui.ingredient.IRecipeSlotView;
-import mezz.jei.api.recipe.IFocusGroup;
-import mezz.jei.api.recipe.IRecipeManager;
-import mezz.jei.api.recipe.RecipeIngredientRole;
-import mezz.jei.api.recipe.category.IRecipeCategory;
-import mezz.jei.api.runtime.IJeiRuntime;
+import com.lowdragmc.lowdraglib.gui.texture.IGuiTexture;
+import com.lowdragmc.lowdraglib.gui.widget.WidgetGroup;
 
-import com.simibubi.create.content.processing.recipe.ProcessingOutput;
-import com.simibubi.create.content.processing.recipe.ProcessingRecipe;
-
-import com.abo47.kubejslab.client.jei.LabJeiPlugin;
+import com.abo47.kubejslab.client.ui.picker.LabPick;
 import com.abo47.kubejslab.client.ui.recipes.LabRecipeIndex;
 import com.abo47.kubejslab.client.ui.recipes.LabRecipeSettingsWidget;
+import com.abo47.kubejslab.platform.Services;
 import com.abo47.kubejslab.recipe.LabRecipeMachine;
 import com.abo47.kubejslab.recipe.LabRecipeMachines;
 import com.abo47.kubejslab.recipe.model.LabIngredient;
 import com.abo47.kubejslab.recipe.model.LabRecipeOutput;
+import com.abo47.kubejslab.recipe.model.LabSlotKind;
 
-import com.lowdragmc.lowdraglib.gui.texture.IGuiTexture;
-import com.lowdragmc.lowdraglib.gui.widget.WidgetGroup;
-import com.lowdragmc.lowdraglib.side.fluid.FluidStack;
-import com.lowdragmc.lowdraglib.side.fluid.FluidTransferHelper;
-import com.lowdragmc.lowdraglib.side.fluid.IFluidTransfer;
-import com.lowdragmc.lowdraglib.side.item.IItemTransfer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.simibubi.create.content.processing.recipe.ProcessingOutput;
+import com.simibubi.create.content.processing.recipe.ProcessingRecipe;
+import mezz.jei.api.constants.VanillaTypes;
+import mezz.jei.api.gui.ingredient.IRecipeSlotDrawable;
+import mezz.jei.api.gui.ingredient.IRecipeSlotView;
+import mezz.jei.api.gui.IRecipeLayoutDrawable;
+import mezz.jei.api.recipe.RecipeIngredientRole;
+
 
 public final class LabMachineLayoutWidget extends WidgetGroup {
     private LabMachine machine;
     private LabRecipeIndex.LabRecipeEntry entry;
     private IRecipeLayoutDrawable<?> jeiLayout;
     private IRecipeLayoutDrawable<?> sampleLayout;
-    private final List<SlotPair> slotPairs = new ArrayList<>();
-    private int paintButton = -1;
-    private final Set<SlotData> paintedSlots = new HashSet<>();
-    private LabPick pendingPick;
+    private final List<LabSlotPair> slotPairs = new ArrayList<>();
+    private final LabPaintController paint = new LabPaintController(
+            () -> gui == null ? null : gui.getModularUIContainer(), this::notifyOutputsChanged);
     private Runnable outputsChangedListener;
     private int gridWidth = 3;
     private int gridHeight = 3;
-    private int outputCount = 1;
 
     public LabMachineLayoutWidget(int x, int y, int w, int h) {
         super(x, y, w, h);
     }
 
     public void setGridSize(int width, int height) {
-        LabRecipeMachine support = machine == null ? null : LabRecipeMachines.get(machine.recipeTypeUid());
+        LabRecipeMachine support = support();
         if (support == null || !support.supportsGridSize()) {
             return;
         }
@@ -92,49 +66,39 @@ public final class LabMachineLayoutWidget extends WidgetGroup {
         rebuild();
     }
 
-    private int effectiveGridWidth() {
-        LabRecipeMachine support = machine == null ? null : LabRecipeMachines.get(machine.recipeTypeUid());
+    int effectiveGridWidth() {
+        LabRecipeMachine support = support();
         return support != null && support.supportsGridSize() ? Math.max(1, gridWidth) : 3;
     }
 
-    private int effectiveGridHeight() {
-        LabRecipeMachine support = machine == null ? null : LabRecipeMachines.get(machine.recipeTypeUid());
+    int effectiveGridHeight() {
+        LabRecipeMachine support = support();
         return support != null && support.supportsGridSize() ? Math.max(1, gridHeight) : 3;
-    }
-
-    public void setOutputCount(int count) {
-        int clamped = Math.max(1, Math.min(6, count));
-        if (outputCount == clamped) {
-            return;
-        }
-        outputCount = clamped;
-        rebuild();
     }
 
     public void setMachine(LabMachine machine) {
         if (this.machine != machine) {
             this.gridWidth = 3;
             this.gridHeight = 3;
-            this.outputCount = 1;
             this.slotPairs.clear();
-            this.pendingPick = null;
+            paint.setPendingPick(null);
         }
         this.machine = machine;
         this.entry = null;
         this.jeiLayout = null;
-        this.sampleLayout = machine == null ? null : findSampleLayout(machine);
+        this.sampleLayout = machine == null ? null : LabJeiLayoutFinder.findSampleLayout(machine);
         rebuild();
     }
 
     public void showRecipe(LabRecipeIndex.LabRecipeEntry entry) {
         this.entry = entry;
-        this.jeiLayout = entry == null ? null : findJeiLayout(entry);
+        this.jeiLayout = entry == null ? null : LabJeiLayoutFinder.findJeiLayout(machine, entry);
         this.slotPairs.clear();
         rebuild();
     }
 
     public void setPendingPick(LabPick pendingPick) {
-        this.pendingPick = pendingPick;
+        paint.setPendingPick(pendingPick);
     }
 
     public void setOutputsChangedListener(Runnable outputsChangedListener) {
@@ -142,13 +106,13 @@ public final class LabMachineLayoutWidget extends WidgetGroup {
     }
 
     public List<LabIngredient> getInputs() {
-        List<SlotPair> inputs = new ArrayList<>();
-        for (SlotPair pair : slotPairs) {
-            if (pair.role == RecipeIngredientRole.INPUT && !pair.data.isEmpty()) {
+        List<LabSlotPair> inputs = new ArrayList<>();
+        for (LabSlotPair pair : slotPairs) {
+            if (pair.role() == RecipeIngredientRole.INPUT && !pair.data().isEmpty()) {
                 inputs.add(pair);
             }
         }
-        LabRecipeMachine support = machine == null ? null : LabRecipeMachines.get(machine.recipeTypeUid());
+        LabRecipeMachine support = support();
         if (support != null && support.gridLayout()) {
             int width = effectiveGridWidth();
             int height = effectiveGridHeight();
@@ -156,29 +120,29 @@ public final class LabMachineLayoutWidget extends WidgetGroup {
             for (int i = 0; i < cells.length; i++) {
                 cells[i] = new LabIngredient.Item(ItemStack.EMPTY);
             }
-            for (SlotPair pair : inputs) {
-                if (pair.gx >= 0 && pair.gx < width && pair.gy >= 0 && pair.gy < height) {
-                    cells[pair.gy * width + pair.gx] = pair.data.toIngredient();
+            for (LabSlotPair pair : inputs) {
+                if (pair.gx() >= 0 && pair.gx() < width && pair.gy() >= 0 && pair.gy() < height) {
+                    cells[pair.gy() * width + pair.gx()] = pair.data().toIngredient();
                 }
             }
             return List.of(cells);
         }
-        inputs.sort((SlotPair a, SlotPair b) -> {
+        inputs.sort((LabSlotPair a, LabSlotPair b) -> {
             int row = Integer.compare(a.gy(), b.gy());
             return row != 0 ? row : Integer.compare(a.gx(), b.gx());
         });
         List<LabIngredient> ordered = new ArrayList<>(inputs.size());
-        for (SlotPair pair : inputs) {
-            ordered.add(pair.data.toIngredient());
+        for (LabSlotPair pair : inputs) {
+            ordered.add(pair.data().toIngredient());
         }
         return ordered;
     }
 
     public List<LabRecipeOutput> getOutputs() {
         List<LabRecipeOutput> outputs = new ArrayList<>();
-        for (SlotPair pair : slotPairs) {
-            if (pair.role == RecipeIngredientRole.OUTPUT) {
-                LabRecipeOutput output = pair.data.toOutput();
+        for (LabSlotPair pair : slotPairs) {
+            if (pair.role() == RecipeIngredientRole.OUTPUT) {
+                LabRecipeOutput output = pair.data().toOutput();
                 if (output != null) {
                     outputs.add(output);
                 }
@@ -188,48 +152,61 @@ public final class LabMachineLayoutWidget extends WidgetGroup {
     }
 
     public List<LabRecipeSettingsWidget.OutputRow> getOutputRows() {
-        LabRecipeMachine support = machine == null ? null : LabRecipeMachines.get(machine.recipeTypeUid());
+        LabRecipeMachine support = support();
         if (support == null || !support.supportsChance()) {
             return List.of();
         }
         List<LabRecipeSettingsWidget.OutputRow> rows = new ArrayList<>();
-        for (SlotPair pair : slotPairs) {
-            if (pair.role == RecipeIngredientRole.OUTPUT
-                    && pair.data.kind == SlotKind.ITEM && !pair.data.stack.isEmpty()) {
-                SlotData data = pair.data;
+        for (LabSlotPair pair : slotPairs) {
+            if (pair.role() == RecipeIngredientRole.OUTPUT
+                    && pair.data().kind == LabSlotKind.ITEM && !pair.data().stack.isEmpty()) {
+                LabSlotData data = pair.data();
                 rows.add(new LabRecipeSettingsWidget.OutputRow(data.stack,
                         () -> data.chance,
-                        value -> data.chance = Math.max(0f, Math.min(1f, value))));
+                        value -> data.setChance(value)));
             }
         }
         return rows;
     }
 
     public void clearPhantoms() {
-        for (SlotPair pair : slotPairs) {
-            pair.data.clear();
+        for (LabSlotPair pair : slotPairs) {
+            pair.data().clear();
         }
-        pendingPick = null;
+        paint.setPendingPick(null);
         notifyOutputsChanged();
     }
 
     private void rebuild() {
-        LabRecipeMachine support = machine == null ? null : LabRecipeMachines.get(machine.recipeTypeUid());
+        LabRecipeMachine support = support();
         if (support != null && support.gridLayout()) {
-            Map<Long, SlotData> snapshot = new HashMap<>();
-            for (SlotPair pair : slotPairs) {
-                if (pair.role == RecipeIngredientRole.INPUT && pair.gx >= 0 && pair.gy >= 0) {
-                    snapshot.put(gridKey(pair.gx, pair.gy), pair.data);
+            Map<Long, LabSlotData> snapshot = new HashMap<>();
+            for (LabSlotPair pair : slotPairs) {
+                if (pair.role() == RecipeIngredientRole.INPUT && pair.gx() >= 0 && pair.gy() >= 0) {
+                    snapshot.put(LabGridLayoutBuilder.gridKey(pair.gx(), pair.gy()), pair.data());
                 }
             }
             clearAllWidgets();
             slotPairs.clear();
-            rebuildGrid(snapshot);
+            new LabGridLayoutBuilder(this).build(snapshot);
+            return;
+        }
+        if (support != null && isFixedLayout(support)) {
+            clearAllWidgets();
+            slotPairs.clear();
+            new LabFixedLayoutBuilder(this).build(support);
             return;
         }
         clearAllWidgets();
         slotPairs.clear();
+        buildGenericLayout();
+    }
 
+    private static boolean isFixedLayout(LabRecipeMachine support) {
+        return !support.inputSlots().isEmpty() || !support.outputSlots().isEmpty();
+    }
+
+    private void buildGenericLayout() {
         IRecipeLayoutDrawable<?> source = jeiLayout != null ? jeiLayout : sampleLayout;
         int layoutW;
         int layoutH;
@@ -245,18 +222,16 @@ public final class LabMachineLayoutWidget extends WidgetGroup {
             setBackground(IGuiTexture.EMPTY);
             return;
         }
-
         int ox = (getSizeWidth() - layoutW) / 2;
         int oy = (getSizeHeight() - layoutH) / 2;
-
         if (source == null) {
             return;
         }
-        Recipe<?> original = entry == null ? null : LabRecipeIndex.recipeById(entry.id());
+        Recipe<?> original = original();
         List<ProcessingOutput> rollable = rollableResults(original);
-        List<Float> ieChances = support == null || support.outputChances(original).isEmpty()
+        List<Float> ieChances = support() == null || support().outputChances(original).isEmpty()
                 ? List.of()
-                : support.outputChances(original);
+                : support().outputChances(original);
         int itemInputIndex = 0;
         int itemOutputIndex = 0;
         for (IRecipeSlotView view : source.getRecipeSlotsView().getSlotViews()) {
@@ -270,8 +245,9 @@ public final class LabMachineLayoutWidget extends WidgetGroup {
             } catch (RuntimeException | LinkageError ignored) {
                 continue;
             }
-            SlotData data = new SlotData();
-            boolean fluidSlot = Services.platform().readFluidIngredient(view).map(data::setFluidValue).orElse(false);
+            LabSlotData data = new LabSlotData();
+            boolean fluidSlot = entry != null
+                    && Services.platform().readFluidIngredient(view).map(data::setFluidValue).orElse(false);
             if (fluidSlot) {
                 LabPhantomFluidSlotWidget slot = new LabPhantomFluidSlotWidget(data, ox + rect.getX(), oy + rect.getY());
                 slot.setClientSideWidget();
@@ -291,7 +267,7 @@ public final class LabMachineLayoutWidget extends WidgetGroup {
                 if (view.getRole() == RecipeIngredientRole.INPUT) {
                     itemInputIndex++;
                 }
-                PhantomHandler handler = new PhantomHandler(data);
+                LabPhantomHandler handler = new LabPhantomHandler(data);
                 LabPhantomSlotWidget slot = new LabPhantomSlotWidget(handler, 0,
                         ox + rect.getX(), oy + rect.getY());
                 slot.setClearSlotOnRightClick(true);
@@ -307,170 +283,50 @@ public final class LabMachineLayoutWidget extends WidgetGroup {
 
             int gx = (rect.getX() - 1) / 18;
             int gy = (rect.getY() - 1) / 18;
-            slotPairs.add(new SlotPair(data, view, view.getRole(), gx, gy));
-        }
-        if (entry == null && support != null && support.supportsOutputCount()) {
-            int existing = 0;
-            for (SlotPair pair : slotPairs) {
-                if (pair.role == RecipeIngredientRole.OUTPUT) {
-                    existing++;
-                }
-            }
-            while (existing < outputCount) {
-                SlotData data = new SlotData();
-                LabPhantomSlotWidget slot = new LabPhantomSlotWidget(new PhantomHandler(data), 0,
-                        ox + 2 + existing * 18, oy + layoutH + 4);
-                slot.setClearSlotOnRightClick(true);
-                slot.setClientSideWidget();
-                slot.setDragOwner(this);
-                slot.setRole(RecipeIngredientRole.OUTPUT);
-                addWidget(slot);
-                slotPairs.add(new SlotPair(data, null, RecipeIngredientRole.OUTPUT, existing, layoutH / 18));
-                existing++;
-            }
+            addSlotPair(new LabSlotPair(data, view, view.getRole(), gx, gy));
         }
         notifyOutputsChanged();
     }
 
-    private void rebuildGrid(Map<Long, SlotData> snapshot) {
-        int w = effectiveGridWidth();
-        int h = effectiveGridHeight();
-        int ox = LabLayout.MACHINE_PAD;
-        int oy = Math.max(LabLayout.MACHINE_PAD, (getSizeHeight() - h * 18) / 2);
-
-        Recipe<?> original = entry == null ? null : LabRecipeIndex.recipeById(entry.id());
-        KubeJSLab.LOGGER.info("[MechCrafting] rebuildGrid: grid {}x{}, snapshot cells={}, original={}", w, h,
-                snapshot.size(), original == null ? "null" : original.getId());
-
-        for (int gy = 0; gy < h; gy++) {
-            for (int gx = 0; gx < w; gx++) {
-                SlotData data = snapshot.get(gridKey(gx, gy));
-                if (data == null) {
-                    data = new SlotData();
-                }
-                if (data.isEmpty() && original != null) {
-                    Ingredient ingredient = gridIngredientAt(original, gy, gx);
-                    if (!ingredient.isEmpty()) {
-                        data.setItemValue(firstIngredientStack(ingredient));
-                        JsonElement json = ingredient.toJson();
-                        if (json != null && json.isJsonObject()) {
-                            JsonObject object = json.getAsJsonObject();
-                            if (object.has("tag")) {
-                                data.setTagValue(new ResourceLocation(object.get("tag").getAsString()));
-                            }
-                        }
-                        KubeJSLab.LOGGER.info("[MechCrafting] cell ({},{}) loaded from original: {}", gy, gx, json);
-                    }
-                }
-                PhantomHandler handler = new PhantomHandler(data);
-                LabPhantomSlotWidget slot = new LabPhantomSlotWidget(handler, 0, ox + gx * 18, oy + gy * 18);
-                slot.setClearSlotOnRightClick(true);
-                slot.setClientSideWidget();
-                slot.setDragOwner(this);
-                slot.setRole(RecipeIngredientRole.INPUT);
-                addWidget(slot);
-                slotPairs.add(new SlotPair(data, null, RecipeIngredientRole.INPUT, gx, gy));
-            }
-        }
-
-        IRecipeLayoutDrawable<?> source = jeiLayout != null ? jeiLayout : sampleLayout;
-        if (source != null) {
-            for (IRecipeSlotView view : source.getRecipeSlotsView().getSlotViews()) {
-                if (view.getRole() != RecipeIngredientRole.OUTPUT || !(view instanceof IRecipeSlotDrawable drawable)) {
-                    continue;
-                }
-                Rect2i rect;
-                try {
-                    rect = drawable.getRect();
-                } catch (RuntimeException | LinkageError ignored) {
-                    continue;
-                }
-                SlotData data = new SlotData();
-                boolean fluidSlot = Services.platform().readFluidIngredient(view).map(data::setFluidValue).orElse(false);
-                if (fluidSlot) {
-                    LabPhantomFluidSlotWidget slot = new LabPhantomFluidSlotWidget(data, ox + rect.getX(), oy + rect.getY());
-                    slot.setClientSideWidget();
-                    slot.setDragOwner(this);
-                    slot.setRole(RecipeIngredientRole.OUTPUT);
-                    addWidget(slot);
-                } else {
-                    ItemStack stack = ItemStack.EMPTY;
-                    if (entry != null) {
-                        for (ItemStack s : view.getIngredients(VanillaTypes.ITEM_STACK).toList()) {
-                            stack = s;
-                            break;
-                        }
-                    }
-                    data.setItemValue(stack);
-                    PhantomHandler handler = new PhantomHandler(data);
-                    LabPhantomSlotWidget slot = new LabPhantomSlotWidget(handler, 0, ox + rect.getX(), oy + rect.getY());
-                    slot.setClearSlotOnRightClick(true);
-                    slot.setClientSideWidget();
-                    slot.setDragOwner(this);
-                    slot.setRole(RecipeIngredientRole.OUTPUT);
-                    addWidget(slot);
-                }
-                slotPairs.add(new SlotPair(data, view, RecipeIngredientRole.OUTPUT, (rect.getX() - 1) / 18,
-                        (rect.getY() - 1) / 18));
-            }
-        }
-        notifyOutputsChanged();
+    LabMachine machine() {
+        return machine;
     }
 
-    private static long gridKey(int gx, int gy) {
-        return (long) gx << 32 | gy;
+    LabRecipeIndex.LabRecipeEntry entry() {
+        return entry;
     }
 
-    private static Ingredient gridIngredientAt(Recipe<?> original, int row, int col) {
-        if (original == null) {
-            return Ingredient.EMPTY;
-        }
-        List<Ingredient> ingredients = original.getIngredients();
-        if (ingredients.isEmpty()) {
-            return Ingredient.EMPTY;
-        }
-        if (original instanceof ShapedRecipe shaped) {
-            int width = Math.max(1, Math.min(9, shaped.getWidth()));
-            int height = Math.max(1, Math.min(9, shaped.getHeight()));
-            if (col >= width || row >= height) {
-                return Ingredient.EMPTY;
-            }
-            int index = row * width + col;
-            Ingredient result = index >= 0 && index < ingredients.size() ? ingredients.get(index) : Ingredient.EMPTY;
-            if (!result.isEmpty()) {
-                KubeJSLab.LOGGER.debug("[MechCrafting] gridIngredientAt({},{}): width={}, index={} -> {}", row, col, width,
-                        index, result.toJson());
-            }
-            return result;
-        }
-        int index = row * 3 + col;
-        Ingredient result = index >= 0 && index < ingredients.size() ? ingredients.get(index) : Ingredient.EMPTY;
-        if (!result.isEmpty()) {
-            KubeJSLab.LOGGER.debug("[MechCrafting] gridIngredientAt({},{}): flat index={} -> {} (from {})", row, col,
-                    index, result.toJson(), original.getClass().getSimpleName());
-        }
-        return result;
+    IRecipeLayoutDrawable<?> jeiLayout() {
+        return jeiLayout;
     }
 
-    private static ItemStack firstIngredientStack(Ingredient ingredient) {
-        for (ItemStack stack : ingredient.getItems()) {
-            return stack;
-        }
-        return ItemStack.EMPTY;
+    IRecipeLayoutDrawable<?> sampleLayout() {
+        return sampleLayout;
     }
 
-    private static List<ProcessingOutput> rollableResults(Recipe<?> original) {
-        if (original instanceof ProcessingRecipe<?> processing) {
-            return processing.getRollableResults();
-        }
-        return List.of();
+    Recipe<?> original() {
+        return entry == null ? null : LabRecipeIndex.recipeById(entry.id());
     }
 
-    private void applyIngredientKind(SlotData data, Recipe<?> original, int index, boolean input) {
+    private LabRecipeMachine support() {
+        return machine == null ? null : LabRecipeMachines.get(machine.recipeTypeUid());
+    }
+
+    void addSlotPair(LabSlotPair pair) {
+        slotPairs.add(pair);
+    }
+
+    void notifyOutputsChanged() {
+        if (outputsChangedListener != null) {
+            outputsChangedListener.run();
+        }
+    }
+
+    void applyIngredientKind(LabSlotData data, Recipe<?> original, int index, boolean input) {
         if (!input || original == null) {
             return;
         }
-        LabRecipeMachine support = machine == null ? null : LabRecipeMachines.get(machine.recipeTypeUid());
+        LabRecipeMachine support = support();
         ResourceLocation ieTag = support == null ? null : support.tagForInput(original, index);
         if (ieTag != null) {
             data.setTagValue(ieTag);
@@ -490,7 +346,7 @@ public final class LabMachineLayoutWidget extends WidgetGroup {
         }
     }
 
-    private static void applyChance(SlotData data, List<ProcessingOutput> rollable, List<Float> ieChances, int index) {
+    void applyChance(LabSlotData data, List<ProcessingOutput> rollable, List<Float> ieChances, int index) {
         if (!ieChances.isEmpty() && index < ieChances.size()) {
             data.setChance(ieChances.get(index));
             return;
@@ -500,321 +356,40 @@ public final class LabMachineLayoutWidget extends WidgetGroup {
         }
     }
 
-    private IRecipeLayoutDrawable<?> findSampleLayout(LabMachine machine) {
-        if (LabJeiPlugin.runtime() == null) {
-            return null;
+    static List<ProcessingOutput> rollableResults(Recipe<?> original) {
+        if (original instanceof ProcessingRecipe<?> processing) {
+            return processing.getRollableResults();
         }
-        return findSample(LabJeiPlugin.runtime(), resolveLayoutCategory(machine));
-    }
-
-    private IRecipeLayoutDrawable<?> findJeiLayout(LabRecipeIndex.LabRecipeEntry entry) {
-        if (LabJeiPlugin.runtime() == null || machine == null) {
-            return null;
-        }
-        return findEntry(LabJeiPlugin.runtime(), resolveLayoutCategory(machine), entry.id());
-    }
-
-    private IRecipeCategory<?> resolveLayoutCategory(LabMachine machine) {
-        LabRecipeMachine support = machine == null ? null : LabRecipeMachines.get(machine.recipeTypeUid());
-        if (support == null || support.recipeIdSourceUid() == null) {
-            return machine.category();
-        }
-        IRecipeManager manager = LabJeiPlugin.runtime().getRecipeManager();
-        ResourceLocation source = support.recipeIdSourceUid();
-        try (Stream<IRecipeCategory<?>> stream = manager.createRecipeCategoryLookup().get()) {
-            return stream
-                    .filter(c -> source.equals(c.getRecipeType().getUid()))
-                    .findFirst()
-                    .orElse(machine.category());
-        } catch (RuntimeException | LinkageError ignored) {
-            return machine.category();
-        }
-    }
-
-    private static <R> IRecipeLayoutDrawable<?> findSample(IJeiRuntime runtime, IRecipeCategory<R> category) {
-        IRecipeManager manager = runtime.getRecipeManager();
-        try (Stream<R> stream = manager.createRecipeLookup(category.getRecipeType()).includeHidden().get()) {
-            return stream
-                    .findFirst()
-                    .flatMap(recipe -> manager.createRecipeLayoutDrawable(category, recipe, emptyFocus(runtime)))
-                    .orElse(null);
-        } catch (RuntimeException | LinkageError ignored) {
-            return null;
-        }
-    }
-
-    private static <R> IRecipeLayoutDrawable<?> findEntry(
-            IJeiRuntime runtime, IRecipeCategory<R> category, ResourceLocation entryId) {
-        IRecipeManager manager = runtime.getRecipeManager();
-        try (Stream<R> stream = manager.createRecipeLookup(category.getRecipeType()).includeHidden().get()) {
-            Optional<R> match = stream
-                    .filter(recipe -> entryId.equals(category.getRegistryName(recipe)))
-                    .findFirst();
-            if (match.isPresent()) {
-                Optional<IRecipeLayoutDrawable<R>> drawable =
-                        manager.createRecipeLayoutDrawable(category, match.get(), emptyFocus(runtime));
-                if (drawable.isPresent()) {
-                    return drawable.get();
-                }
-            }
-        } catch (RuntimeException | LinkageError ignored) {
-            // fall through to the cache path
-        }
-        return buildDrawableFromCache(runtime, category, entryId);
-    }
-
-    private static <R> IRecipeLayoutDrawable<?> buildDrawableFromCache(
-            IJeiRuntime runtime, IRecipeCategory<R> category, ResourceLocation entryId) {
-        Recipe<?> cached = LabRecipeIndex.recipeById(entryId);
-        if (cached == null) {
-            return null;
-        }
-        IRecipeManager manager = runtime.getRecipeManager();
-        @SuppressWarnings("unchecked")
-        R recipe = (R) cached;
-        try {
-            return manager.createRecipeLayoutDrawable(category, recipe, emptyFocus(runtime)).orElse(null);
-        } catch (RuntimeException | LinkageError ignored) {
-            return null;
-        }
-    }
-
-    private static IFocusGroup emptyFocus(IJeiRuntime runtime) {
-        return runtime.getJeiHelpers().getFocusFactory().createFocusGroup(Collections.emptyList());
-    }
-
-    private record SlotPair(SlotData data, IRecipeSlotView view, RecipeIngredientRole role, int gx, int gy) {
-    }
-
-    enum SlotKind {
-        ITEM,
-        TAG,
-        FLUID
-    }
-
-    static final class SlotData {
-        SlotKind kind = SlotKind.ITEM;
-        ItemStack stack = ItemStack.EMPTY;
-        ResourceLocation tag;
-        FluidStack fluid = FluidStack.empty();
-        float chance = 1f;
-
-        void setChance(float chance) {
-            this.chance = Math.max(0f, Math.min(1f, chance));
-        }
-
-        void setItemValue(ItemStack stack) {
-            this.kind = SlotKind.ITEM;
-            this.stack = stack == null ? ItemStack.EMPTY : stack.copy();
-            this.tag = null;
-        }
-
-        void setTagValue(ResourceLocation tag) {
-            this.kind = SlotKind.TAG;
-            this.tag = tag;
-            if (this.stack.isEmpty()) {
-                this.stack = firstTagMember(tag);
-            }
-        }
-
-        boolean setFluidValue(FluidStack fluid) {
-            if (fluid == null || fluid.isEmpty()) {
-                return false;
-            }
-            this.kind = SlotKind.FLUID;
-            this.fluid = fluid.copy();
-            this.stack = ItemStack.EMPTY;
-            this.tag = null;
-            return true;
-        }
-
-        boolean isEmpty() {
-            return switch (kind) {
-                case FLUID -> fluid.isEmpty();
-                case TAG -> tag == null;
-                case ITEM -> stack.isEmpty();
-            };
-        }
-
-        void clear() {
-            kind = SlotKind.ITEM;
-            stack = ItemStack.EMPTY;
-            tag = null;
-            fluid = FluidStack.empty();
-            chance = 1f;
-        }
-
-        LabIngredient toIngredient() {
-            return switch (kind) {
-                case FLUID -> new LabIngredient.Fluid(fluid);
-                case TAG -> tag == null ? new LabIngredient.Item(stack) : new LabIngredient.Tag(tag);
-                case ITEM -> new LabIngredient.Item(stack);
-            };
-        }
-
-        LabRecipeOutput toOutput() {
-            return switch (kind) {
-                case FLUID -> fluid.isEmpty() ? null : new LabRecipeOutput.Fluid(fluid);
-                case TAG -> stack.isEmpty() ? null : new LabRecipeOutput.Item(stack, chance);
-                case ITEM -> stack.isEmpty() ? null : new LabRecipeOutput.Item(stack, chance);
-            };
-        }
-
-        private static ItemStack firstTagMember(ResourceLocation tag) {
-            TagKey<Item> key = TagKey.create(Registries.ITEM, tag);
-            for (var holder : BuiltInRegistries.ITEM.getTagOrEmpty(key)) {
-                return new ItemStack(holder);
-            }
-            return ItemStack.EMPTY;
-        }
+        return List.of();
     }
 
     void beginPaint(int button) {
-        paintButton = button;
-        paintedSlots.clear();
+        paint.beginPaint(button);
     }
 
     boolean isPainting(int button) {
-        return paintButton == button;
+        return paint.isPainting(button);
     }
 
     void endPaint() {
-        paintButton = -1;
-        paintedSlots.clear();
-        notifyOutputsChanged();
+        paint.endPaint();
     }
 
-    void paintSlot(int button, SlotData data) {
-        if (gui == null) {
-            return;
-        }
-        if (!paintedSlots.add(data)) {
-            return;
-        }
-        ItemStack carried = gui.getModularUIContainer().getCarried();
-        if (button == LabColors.MOUSE_BUTTON_RIGHT && carried.isEmpty()) {
-            data.clear();
-            return;
-        }
-        if (pendingPick != null) {
-            applyPick(data, pendingPick);
-            return;
-        }
-        if (carried.isEmpty()) {
-            return;
-        }
-        if (data.kind == SlotKind.FLUID) {
-            IFluidTransfer transfer = FluidTransferHelper.getFluidTransfer(carried);
-            if (transfer != null && transfer.getTanks() > 0) {
-                FluidStack content = transfer.getFluidInTank(0);
-                if (!content.isEmpty()) {
-                    data.setFluidValue(content.copy(1000));
-                }
-            }
-            return;
-        }
-        ItemStack current = data.stack;
-        if (current.isEmpty() || !ItemStack.isSameItem(current, carried)) {
-            data.setItemValue(carried.copyWithCount(1));
-        } else {
-            data.setItemValue(current.copyWithCount(Math.min(current.getCount() + 1, current.getMaxStackSize())));
-        }
+    void paintSlot(int button, LabSlotData data) {
+        paint.paintSlot(button, data);
     }
 
-    private static void applyPick(SlotData data, LabPick pick) {
-        if (pick instanceof LabPick.Item item) {
-            if (data.kind != SlotKind.FLUID) {
-                data.setItemValue(item.stack().copyWithCount(1));
-            }
-            return;
-        }
-        if (pick instanceof LabPick.Tag tag) {
-            if (data.kind != SlotKind.FLUID) {
-                data.setTagValue(tag.tag());
-            }
-            return;
-        }
-        if (pick instanceof LabPick.Fluid fluid) {
-            if (data.kind == SlotKind.FLUID) {
-                data.setFluidValue(fluid.fluid());
-            }
-        }
-    }
-
-    private void notifyOutputsChanged() {
-        if (outputsChangedListener != null) {
-            outputsChangedListener.run();
-        }
+    void adjustStackCount(LabSlotData data, int delta) {
+        paint.adjustStackCount(data, delta);
     }
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
         boolean handled = super.mouseReleased(mouseX, mouseY, button);
-        if (paintButton == button) {
-            endPaint();
+        if (paint.isPainting(button)) {
+            paint.endPaint();
             handled = true;
         }
         return handled;
-    }
-
-    static final class PhantomHandler implements IItemTransfer {
-        private final SlotData data;
-
-        PhantomHandler(SlotData data) {
-            this.data = data;
-        }
-
-        SlotData data() {
-            return data;
-        }
-
-        @Override
-        public int getSlots() {
-            return 1;
-        }
-
-        @Override
-        public ItemStack getStackInSlot(int index) {
-            return data.stack;
-        }
-
-        @Override
-        public ItemStack insertItem(int index, ItemStack stack, boolean simulate, boolean notifyChanges) {
-            if (simulate) {
-                return ItemStack.EMPTY;
-            }
-            data.setItemValue(stack);
-            return ItemStack.EMPTY;
-        }
-
-        @Override
-        public ItemStack extractItem(int index, int amount, boolean simulate, boolean notifyChanges) {
-            if (simulate) {
-                return data.stack.copy();
-            }
-            ItemStack extracted = data.stack;
-            data.setItemValue(ItemStack.EMPTY);
-            return extracted;
-        }
-
-        @Override
-        public int getSlotLimit(int index) {
-            return 64;
-        }
-
-        @Override
-        public boolean isItemValid(int index, ItemStack stack) {
-            return true;
-        }
-
-        @Override
-        public Object createSnapshot() {
-            return new Object[] {data.stack};
-        }
-
-        @Override
-        public void restoreFromSnapshot(Object snapshot) {
-            data.setItemValue((ItemStack) ((Object[]) snapshot)[0]);
-        }
     }
 }
