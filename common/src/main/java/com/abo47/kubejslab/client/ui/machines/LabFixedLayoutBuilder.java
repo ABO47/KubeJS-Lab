@@ -50,7 +50,7 @@ final class LabFixedLayoutBuilder {
         int outputBlockCols = minOutputCol == Integer.MAX_VALUE ? 0 : maxOutputCol - minOutputCol + 1;
 
         int gridH = maxRow + 1;
-        int ox = LabLayout.MACHINE_PAD;
+        int ox = 0;
         int outputOX = outputBlockCols == 0 ? ox : ox + (LabLayout.MACHINE_COLS - outputBlockCols) * 18;
         int oy = Math.max(LabLayout.MACHINE_PAD, (widget.getSizeHeight() - gridH * 18) / 2);
 
@@ -101,7 +101,7 @@ final class LabFixedLayoutBuilder {
                     itemInputIndex++;
                 }
             }
-            addFixedSlot(d, data, ox, oy);
+            addFixedSlot(d, data, ox + d.col() * 18, oy + d.row() * 18);
         }
 
         int itemOutputIndex = 0;
@@ -119,14 +119,14 @@ final class LabFixedLayoutBuilder {
                     itemOutputIndex++;
                 }
             }
-            addFixedSlot(d, data, outputOX, oy);
+            addFixedSlot(d, data, outputOX + (d.col() - minOutputCol) * 18, oy + d.row() * 18);
         }
         widget.notifyOutputsChanged();
     }
 
-    private void addFixedSlot(LabSlotDescriptor d, LabSlotData data, int ox, int oy) {
+    private void addFixedSlot(LabSlotDescriptor d, LabSlotData data, int x, int y) {
         Widget slot = createDescriptorWidget(d, data);
-        slot.setSelfPosition(ox + d.col() * 18, oy + d.row() * 18);
+        slot.setSelfPosition(x, y);
         widget.addWidget(slot);
         widget.addSlotPair(new LabSlotPair(data, null, d.input() ? RecipeIngredientRole.INPUT
                 : RecipeIngredientRole.OUTPUT, d.col(), d.row(), d.tint()));

@@ -34,7 +34,7 @@ final class LabGridLayoutBuilder {
     void build(Map<Long, LabSlotData> snapshot) {
         int w = widget.effectiveGridWidth();
         int h = widget.effectiveGridHeight();
-        int ox = LabLayout.MACHINE_PAD;
+        int ox = 0;
         int oy = Math.max(LabLayout.MACHINE_PAD, (widget.getSizeHeight() - h * 18) / 2);
 
         Recipe<?> original = widget.original();
