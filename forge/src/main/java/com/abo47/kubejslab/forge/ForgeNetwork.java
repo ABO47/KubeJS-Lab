@@ -7,6 +7,8 @@ import net.minecraft.server.level.ServerPlayer;
 import com.abo47.kubejslab.client.ui.LabClientUIFactory;
 import com.abo47.kubejslab.client.ui.LabUIFactory;
 import com.abo47.kubejslab.KubeJSLab;
+import com.abo47.kubejslab.network.item.C2SItemEditPacket;
+import com.abo47.kubejslab.network.item.S2CItemStatePacket;
 import com.abo47.kubejslab.network.recipe.C2SRecipeEditPacket;
 import com.abo47.kubejslab.network.recipe.S2CRecipeStatePacket;
 
@@ -68,6 +70,25 @@ public final class ForgeNetwork {
         CHANNEL.registerMessage(3, S2CRecipeStatePacket.class,
                 S2CRecipeStatePacket::write,
                 S2CRecipeStatePacket::read,
+                (packet, ctx) -> {
+                    ctx.get().enqueueWork(packet::handleClient);
+                    ctx.get().setPacketHandled(true);
+                });
+        CHANNEL.registerMessage(4, C2SItemEditPacket.class,
+                C2SItemEditPacket::write,
+                C2SItemEditPacket::read,
+                (packet, ctx) -> {
+                    ctx.get().enqueueWork(() -> {
+                        ServerPlayer player = ctx.get().getSender();
+                        if (player != null) {
+                            packet.handle(player);
+                        }
+                    });
+                    ctx.get().setPacketHandled(true);
+                });
+        CHANNEL.registerMessage(5, S2CItemStatePacket.class,
+                S2CItemStatePacket::write,
+                S2CItemStatePacket::read,
                 (packet, ctx) -> {
                     ctx.get().enqueueWork(packet::handleClient);
                     ctx.get().setPacketHandled(true);

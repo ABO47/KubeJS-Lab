@@ -20,6 +20,11 @@ import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.ItemStack;
 
 import com.abo47.kubejslab.KubeJSLab;
+import com.abo47.kubejslab.lab.LabPathResolver;
+import com.abo47.kubejslab.lab.LabScriptWriter;
+import com.abo47.kubejslab.lab.LabServerCommands;
+import com.abo47.kubejslab.lab.LabStateFile;
+import com.abo47.kubejslab.lab.LabUniqueNames;
 import com.abo47.kubejslab.network.ModNetwork;
 import com.abo47.kubejslab.network.recipe.S2CRecipeStatePacket;
 import com.abo47.kubejslab.recipe.LabRecipeMachine;
@@ -30,16 +35,9 @@ import com.abo47.kubejslab.recipe.model.LabRecipePayload;
 import com.abo47.kubejslab.recipe.model.LabRecipeStateEntry;
 import com.abo47.kubejslab.recipe.model.LabRecipeStatus;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import dev.architectury.platform.Platform;
-
 
 public final class LabRecipeService {
-    private static final String KUBEJS_NAMESPACE = "kubejs";
-    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
     private static final Map<ResourceLocation, LabRecipeStateEntry> STATE = new LinkedHashMap<>();
     private static final Set<ResourceLocation> SESSION_CREATED_IDS = new HashSet<>();
     private static boolean stateLoaded;
@@ -67,8 +65,7 @@ public final class LabRecipeService {
             if (action != LabRecipeEditAction.SAVE_NEW) {
                 writeDisabledScript();
             }
-            player.getServer().getCommands()
-                    .performPrefixedCommand(player.getServer().createCommandSourceStack(), "reload");
+            LabServerCommands.reload(player.getServer());
             KubeJSLab.LOGGER.info("[LabRecipeService] sent /reload after {}", action);
             ModNetwork.sendRecipeState(player, statePacket());
         } catch (IOException e) {
@@ -90,11 +87,11 @@ public final class LabRecipeService {
             return;
         }
         ResourceLocation id = generateId(output);
-        Path file = recipesDir(id).resolve(id.getPath() + ".json");
+        Path file = fileFor(id);
         int suffix = 2;
         while (Files.exists(file) || SESSION_CREATED_IDS.contains(id)) {
             id = new ResourceLocation(id.getNamespace(), id.getPath() + "_" + suffix);
-            file = recipesDir(id).resolve(id.getPath() + ".json");
+            file = fileFor(id);
             suffix++;
         }
         JsonObject json = buildJson(payload, null);
@@ -102,7 +99,7 @@ public final class LabRecipeService {
             return;
         }
         Files.createDirectories(file.getParent());
-        Files.writeString(file, GSON.toJson(json) + "\n");
+        Files.writeString(file, json.toString());
         KubeJSLab.LOGGER.info("[LabRecipeService] SAVE_NEW wrote {} with json={}", file, json);
         SESSION_CREATED_IDS.add(id);
     }
@@ -131,7 +128,7 @@ public final class LabRecipeService {
         if (json == null) {
             return;
         }
-        Files.writeString(file, GSON.toJson(json) + "\n");
+        Files.writeString(file, json.toString());
         KubeJSLab.LOGGER.info("[LabRecipeService] OVERRIDE wrote {} with json={}", file, json);
         ItemStack display = LabRecipeOutput.displayStack(payload.outputs());
         STATE.put(targetId,
@@ -199,9 +196,7 @@ public final class LabRecipeService {
                 .sorted()
                 .forEach(id -> sb.append("    event.remove({ id: '").append(id).append("' });\n"));
         sb.append("});\n");
-        Path dir = kubejsDir().resolve("server_scripts").resolve("lab");
-        Files.createDirectories(dir);
-        Files.writeString(dir.resolve("disabled.js"), sb.toString());
+        LabScriptWriter.write("server_scripts", "disabled.js", sb.toString());
     }
 
     private static JsonObject buildJson(LabRecipePayload payload, Recipe<?> original) {
@@ -217,27 +212,20 @@ public final class LabRecipeService {
 
     private static ResourceLocation generateId(ItemStack output) {
         String path = output.getItem().builtInRegistryHolder().key().location().getPath();
-        return new ResourceLocation(KUBEJS_NAMESPACE, "lab/" + path);
-    }
-
-    private static Path kubejsDir() {
-        return Platform.getGameFolder().resolve("kubejs");
-    }
-
-    private static Path recipesDir(ResourceLocation id) {
-        return kubejsDir().resolve("data").resolve(id.getNamespace()).resolve("recipes");
+        return LabUniqueNames.uniqueId(LabUniqueNames.labId(path),
+                taken -> Files.exists(fileFor(taken)) || SESSION_CREATED_IDS.contains(taken));
     }
 
     private static Path fileFor(ResourceLocation id) {
-        return recipesDir(id).resolve(id.getPath() + ".json");
+        return LabPathResolver.dataFile(id, "recipes");
     }
 
     private static Path backupFor(ResourceLocation id) {
-        return kubejsDir().resolve("lab").resolve("backups").resolve(id.getPath() + ".json");
+        return LabPathResolver.backupFile(id);
     }
 
     private static boolean isLabOwned(ResourceLocation id) {
-        return KUBEJS_NAMESPACE.equals(id.getNamespace()) && id.getPath().startsWith("lab/");
+        return LabPathResolver.isLabOwned(id);
     }
 
     private static void loadStateIfNeeded() {
@@ -245,13 +233,12 @@ public final class LabRecipeService {
             return;
         }
         stateLoaded = true;
-        try {
-            Path file = kubejsDir().resolve("lab").resolve("state.json");
-            if (!Files.exists(file)) {
-                return;
-            }
-            JsonObject root = JsonParser.parseString(Files.readString(file)).getAsJsonObject();
-            for (String key : root.keySet()) {
+        JsonObject root = LabStateFile.load(LabPathResolver.stateFile());
+        if (root == null) {
+            return;
+        }
+        for (String key : root.keySet()) {
+            try {
                 JsonObject obj = root.getAsJsonObject(key);
                 ResourceLocation id = new ResourceLocation(key);
                 LabRecipeStatus status = LabRecipeStatus.valueOf(obj.get("status").getAsString());
@@ -262,9 +249,9 @@ public final class LabRecipeService {
                         ? new ResourceLocation(obj.get("machineUid").getAsString())
                         : null;
                 STATE.put(id, new LabRecipeStateEntry(id, status, output, name, wasModified, machineUid));
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-        } catch (Exception e) {
-            e.printStackTrace();
         }
     }
 
@@ -285,9 +272,7 @@ public final class LabRecipeService {
             }
             root.add(entry.id().toString(), obj);
         }
-        Path file = kubejsDir().resolve("lab").resolve("state.json");
-        Files.createDirectories(file.getParent());
-        Files.writeString(file, GSON.toJson(root));
+        LabStateFile.save(LabPathResolver.stateFile(), root);
     }
 
     private static ItemStack decodeStack(JsonObject obj) {

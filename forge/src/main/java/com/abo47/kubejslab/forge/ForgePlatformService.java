@@ -11,6 +11,8 @@ import net.minecraft.world.item.ItemStack;
 
 import com.lowdragmc.lowdraglib.side.fluid.FluidStack;
 
+import com.abo47.kubejslab.network.item.C2SItemEditPacket;
+import com.abo47.kubejslab.network.item.S2CItemStatePacket;
 import com.abo47.kubejslab.network.recipe.C2SRecipeEditPacket;
 import com.abo47.kubejslab.network.recipe.S2CRecipeStatePacket;
 import com.abo47.kubejslab.platform.PlatformService;
@@ -46,6 +48,16 @@ public final class ForgePlatformService implements PlatformService {
 
     @Override
     public void sendRecipeState(ServerPlayer player, S2CRecipeStatePacket packet) {
+        ForgeNetwork.sendToClient(packet, player);
+    }
+
+    @Override
+    public void sendItemEdit(C2SItemEditPacket packet) {
+        ForgeNetwork.sendToServer(packet);
+    }
+
+    @Override
+    public void sendItemState(ServerPlayer player, S2CItemStatePacket packet) {
         ForgeNetwork.sendToClient(packet, player);
     }
 

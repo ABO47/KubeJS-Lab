@@ -17,6 +17,7 @@ import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.item.ItemStack;
 
 import com.abo47.kubejslab.KubeJSLab;
+import com.abo47.kubejslab.client.ui.picker.LabSearchNormalizer;
 import com.abo47.kubejslab.platform.Services;
 
 import com.lowdragmc.lowdraglib.side.fluid.FluidStack;
@@ -56,14 +57,7 @@ public final class LabRecipeIndex {
     }
 
     public static String normalizeUserSearch(String value) {
-        if (value == null) {
-            return "";
-        }
-        String normalized = value.replace('\n', ' ').replace('\r', ' ').toLowerCase(Locale.ROOT);
-        while (normalized.endsWith("_")) {
-            normalized = normalized.substring(0, normalized.length() - 1);
-        }
-        return normalized;
+        return LabSearchNormalizer.normalizeUserSearch(value);
     }
 
     public static Recipe<?> recipeById(ResourceLocation id) {

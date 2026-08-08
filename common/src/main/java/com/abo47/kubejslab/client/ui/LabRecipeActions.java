@@ -32,7 +32,7 @@ final class LabRecipeActions {
             actions.add(disable(rightPanel, entry));
             if (custom) actions.add(delete(rightPanel, entry));
         } else {
-            actions.add(new LabContextAction(I18n.get(LabGuiKeys.LAB_RECIPE_ENABLE), LabActionTone.SUCCESS,
+            actions.add(new LabContextAction(I18n.get(LabGuiKeys.LAB_RECIPE_ENABLE), "eye", LabActionTone.SUCCESS,
                     () -> send(rightPanel, LabRecipeEditAction.ENABLE, entry)));
             if (custom) actions.add(delete(rightPanel, entry));
         }
@@ -40,17 +40,17 @@ final class LabRecipeActions {
     }
 
     private static LabContextAction modify(LabScreen.LabPanelWidget rightPanel, LabRecipeIndex.LabRecipeEntry entry) {
-        return new LabContextAction(I18n.get(LabGuiKeys.LAB_RECIPE_MODIFY), LabActionTone.PRIMARY,
+        return new LabContextAction(I18n.get(LabGuiKeys.LAB_RECIPE_MODIFY), "editor", LabActionTone.PRIMARY,
                 () -> rightPanel.enterModifyMode(entry));
     }
 
     private static LabContextAction disable(LabScreen.LabPanelWidget rightPanel, LabRecipeIndex.LabRecipeEntry entry) {
-        return new LabContextAction(I18n.get(LabGuiKeys.LAB_RECIPE_DISABLE), LabActionTone.WARNING,
+        return new LabContextAction(I18n.get(LabGuiKeys.LAB_RECIPE_DISABLE), "eye-off", LabActionTone.WARNING,
                 () -> send(rightPanel, LabRecipeEditAction.DISABLE, entry));
     }
 
     private static LabContextAction reset(LabScreen.LabPanelWidget rightPanel, LabRecipeIndex.LabRecipeEntry entry) {
-        return new LabContextAction(I18n.get(LabGuiKeys.LAB_RECIPE_RESET), LabActionTone.SUCCESS,
+        return new LabContextAction(I18n.get(LabGuiKeys.LAB_RECIPE_RESET), "repeat", LabActionTone.SUCCESS,
                 () -> {
                     send(rightPanel, LabRecipeEditAction.RESET, entry);
                     rightPanel.exitModifyMode();
@@ -58,7 +58,7 @@ final class LabRecipeActions {
     }
 
     private static LabContextAction delete(LabScreen.LabPanelWidget rightPanel, LabRecipeIndex.LabRecipeEntry entry) {
-        return new LabContextAction(I18n.get(LabGuiKeys.LAB_RECIPE_DELETE), LabActionTone.DANGER,
+        return new LabContextAction(I18n.get(LabGuiKeys.LAB_RECIPE_DELETE), "delete", LabActionTone.DANGER,
                 () -> {
                     send(rightPanel, LabRecipeEditAction.DELETE, entry);
                     rightPanel.exitModifyModeIfTarget(entry);

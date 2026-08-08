@@ -8,6 +8,8 @@ import net.minecraft.server.level.ServerPlayer;
 
 import com.lowdragmc.lowdraglib.side.fluid.FluidStack;
 
+import com.abo47.kubejslab.network.item.C2SItemEditPacket;
+import com.abo47.kubejslab.network.item.S2CItemStatePacket;
 import com.abo47.kubejslab.network.recipe.C2SRecipeEditPacket;
 import com.abo47.kubejslab.network.recipe.S2CRecipeStatePacket;
 
@@ -47,6 +49,14 @@ public final class Services {
 
         @Override
         public void sendRecipeState(ServerPlayer player, S2CRecipeStatePacket packet) {
+        }
+
+        @Override
+        public void sendItemEdit(C2SItemEditPacket packet) {
+        }
+
+        @Override
+        public void sendItemState(ServerPlayer player, S2CItemStatePacket packet) {
         }
 
         @Override

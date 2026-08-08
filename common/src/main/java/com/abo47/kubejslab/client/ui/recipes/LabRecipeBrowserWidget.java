@@ -1,183 +1,74 @@
 package com.abo47.kubejslab.client.ui.recipes;
+
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.function.Consumer;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import javax.annotation.Nonnull;
+import java.util.function.Consumer;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-
-import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
 
-import com.lowdragmc.lowdraglib.gui.widget.Widget;
-import com.lowdragmc.lowdraglib.gui.widget.WidgetGroup;
-
-import com.abo47.kubejslab.client.ui.base.LabLayout;
-import com.abo47.kubejslab.client.ui.base.LabScrollBarWidget;
-import com.abo47.kubejslab.client.ui.base.LabScrollMath;
+import com.abo47.kubejslab.client.ui.base.LabCardBrowserWidget;
 
 
-public final class LabRecipeBrowserWidget extends WidgetGroup {
-    private String query;
-    private boolean kubejsOnly;
+public final class LabRecipeBrowserWidget extends LabCardBrowserWidget<LabRecipeCardWidget, LabRecipeIndex.LabRecipeEntry> {
     private Set<ResourceLocation> machineRecipeIds;
     private ResourceLocation machineUid;
-    private ResourceLocation selectedRecipeId;
-    private int scroll;
-    private int scrollMax;
-    private boolean dragging;
-    private Consumer<LabRecipeIndex.LabRecipeEntry> recipeClickListener;
-    private RecipeRightClick recipeRightClickListener;
-    private List<LabRecipeCardWidget> cards = List.of();
 
     public LabRecipeBrowserWidget(int x, int y, int w, int h) {
         super(x, y, w, h);
-        this.query = "";
     }
 
     public void setRecipeClickListener(Consumer<LabRecipeIndex.LabRecipeEntry> recipeClickListener) {
-        this.recipeClickListener = recipeClickListener;
+        setEntryClickListener(recipeClickListener);
     }
 
     public void setRecipeRightClickListener(RecipeRightClick recipeRightClickListener) {
-        this.recipeRightClickListener = recipeRightClickListener;
+        setEntryRightClickListener(recipeRightClickListener::onRightClick);
     }
 
     public void setSelectedRecipeId(ResourceLocation selectedRecipeId) {
-        this.selectedRecipeId = selectedRecipeId;
-        rebuild();
-    }
-
-    public void setQuery(String query) {
-        this.query = query == null ? "" : query;
-        scroll = 0;
-        rebuild();
-    }
-
-    public void setKubejsOnly(boolean kubejsOnly) {
-        this.kubejsOnly = kubejsOnly;
-        scroll = 0;
+        setSelectedId(selectedRecipeId);
     }
 
     public void setMachineFilter(Set<ResourceLocation> machineRecipeIds) {
         this.machineRecipeIds = machineRecipeIds;
-        scroll = 0;
+        resetScroll();
     }
 
     public void setMachineUid(ResourceLocation machineUid) {
         this.machineUid = machineUid;
-        scroll = 0;
+        resetScroll();
     }
 
-    public void rebuild() {
-        clearAllWidgets();
-        cards = new ArrayList<>();
+    @Override
+    protected List<LabRecipeIndex.LabRecipeEntry> entries() {
         List<LabRecipeIndex.LabRecipeEntry> entries =
-                new ArrayList<>(LabRecipeIndex.search(query, kubejsOnly, machineRecipeIds));
+                new ArrayList<>(LabRecipeIndex.search(query(), kubejsOnly(), machineRecipeIds));
         entries.addAll(LabRecipeStates.disabledEntries(machineUid).stream()
-                .filter(e -> kubejsOnly == e.kubejs())
-                .filter(e -> query.isBlank() || e.matches(query))
+                .filter(e -> kubejsOnly() == e.kubejs())
+                .filter(e -> query().isBlank() || e.matches(query()))
                 .toList());
         Set<ResourceLocation> seen = new HashSet<>();
         entries.removeIf(e -> !seen.add(e.id()));
         entries.sort(Comparator.comparing(LabRecipeIndex.LabRecipeEntry::name, String.CASE_INSENSITIVE_ORDER)
                 .thenComparing(LabRecipeIndex.LabRecipeEntry::id));
-        int listW = getSizeWidth();
-        int listH = getSizeHeight();
-        int rowStep = LabLayout.CARD_ROW_STEP;
-        int cardH = LabLayout.CARD_H;
-        int rows = entries.size();
-        int contentH = rows * cardH + Math.max(0, rows - 1) * LabLayout.CARD_GAP;
-        scrollMax = Math.max(0, contentH - listH);
-        scroll = LabScrollMath.clamp(scroll, scrollMax);
-        boolean showScrollBar = scrollMax > 0;
-
-        int trackX = LabLayout.recipeTrackX(listW);
-        int cardX = LabLayout.LIST_INSET;
-        int cardW = LabLayout.recipeCardWidth(listW);
-
-        for (int row = 0; row < rows; row++) {
-            int y = -scroll + row * rowStep;
-            LabRecipeIndex.LabRecipeEntry entry = entries.get(row);
-            LabRecipeCardWidget card = new LabRecipeCardWidget(cardX, y, cardW, cardH, entry,
-                    () -> {
-                        if (recipeClickListener != null) {
-                            recipeClickListener.accept(entry);
-                        }
-                    }, (mouseX, mouseY) -> {
-                        if (recipeRightClickListener != null) {
-                            recipeRightClickListener.onRightClick(entry, mouseX, mouseY);
-                        }
-                    });
-            card.setStatus(LabRecipeStates.statusOf(entry.id()));
-            card.setSelected(entry.id().equals(selectedRecipeId));
-            cards.add(card);
-            addWidget(card);
-        }
-
-        if (showScrollBar) {
-            int knobH = Math.max(LabLayout.KNOB_MIN_H,
-                    (int) ((float) listH * ((float) listH / (float) Math.max(listH, contentH))));
-            addWidget(new LabScrollBarWidget(
-                    trackX,
-                    0,
-                    LabScrollBarWidget.RESERVED_WIDTH,
-                    listH,
-                    () -> scroll,
-                    () -> scrollMax,
-                    () -> knobH,
-                    value -> scroll = value,
-                    () -> dragging,
-                    value -> dragging = value,
-                    this::repositionCards
-            ));
-        }
-    }
-
-    private void repositionCards() {
-        int rowStep = LabLayout.CARD_ROW_STEP;
-        for (int i = 0; i < cards.size(); i++) {
-            LabRecipeCardWidget card = cards.get(i);
-            card.setSelfPosition(LabLayout.LIST_INSET, -scroll + i * rowStep);
-        }
+        return entries;
     }
 
     @Override
-    public void drawInBackground(@Nonnull GuiGraphics g, int mx, int my, float pt) {
-        int x = getPositionX();
-        int y = getPositionY();
-        int w = getSizeWidth();
-        int h = getSizeHeight();
-        g.flush();
-        g.enableScissor(x, y, x + w, y + h);
-        for (Widget child : widgets) {
-            int cy = child.getPositionY();
-            if (cy + child.getSizeHeight() < y || cy > y + h) {
-                continue;
-            }
-            RenderSystem.enableBlend();
-            RenderSystem.setShaderColor(1, 1, 1, 1);
-            child.drawInBackground(g, mx, my, pt);
-        }
-        g.flush();
-        g.disableScissor();
+    protected LabRecipeCardWidget createCard(LabRecipeIndex.LabRecipeEntry entry, int x, int y, int w, int h) {
+        LabRecipeCardWidget card = new LabRecipeCardWidget(x, y, w, h, entry,
+                () -> fireEntryClick(entry),
+                (mouseX, mouseY) -> fireEntryRightClick(entry, mouseX, mouseY));
+        card.setStatus(LabRecipeStates.statusOf(entry.id()));
+        return card;
     }
 
     @Override
-    public boolean mouseWheelMove(double mouseX, double mouseY, double wheelDelta) {
-        if (!isMouseOverElement(mouseX, mouseY)) {
-            return super.mouseWheelMove(mouseX, mouseY, wheelDelta);
-        }
-        int step = Math.max(8, LabLayout.CARD_ROW_STEP / 3);
-        int next = LabScrollMath.wheel(scroll, scrollMax, step, wheelDelta);
-        if (next != scroll) {
-            scroll = next;
-            repositionCards();
-        }
-        return true;
+    protected ResourceLocation entryId(LabRecipeIndex.LabRecipeEntry entry) {
+        return entry.id();
     }
 
     @FunctionalInterface
