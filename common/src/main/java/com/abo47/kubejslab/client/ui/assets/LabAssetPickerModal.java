@@ -135,8 +135,9 @@ public final class LabAssetPickerModal {
         this.bodyH = panelH - bodyY - BODY_PAD;
 
         layer.clearAllWidgets();
+        layer.setVisible(true);
         layer.addWidget(new ButtonWidget(0, 0, LabLayout.ROOT_W, LabLayout.ROOT_H, IGuiTexture.EMPTY,
-                cd -> layer.clearAllWidgets()).setClientSideWidget());
+                cd -> layer.setVisible(false)).setClientSideWidget());
         this.panel = new WidgetGroup(MODAL_MARGIN, MODAL_MARGIN, panelW, panelH);
         panel.setBackground(LabColors.bordered(LabColors.SURFACE_BASE, LabColors.BORDER_BASE));
         layer.addWidget(panel);
@@ -154,7 +155,7 @@ public final class LabAssetPickerModal {
 
         int closeX = panelW - HEADER_PAD - HEADER_BUTTON_SIZE;
         int closeY = (HEADER_H - HEADER_BUTTON_SIZE) / 2;
-        addHeaderIcon(closeX, closeY, "close", cd -> layer.clearAllWidgets());
+        addHeaderIcon(closeX, closeY, "close", cd -> layer.setVisible(false));
 
         TextFieldWidget searchField = new TextFieldWidget(gridX, controlsY, gridW, SEARCH_H,
                 () -> state.query, value -> {
@@ -411,7 +412,7 @@ public final class LabAssetPickerModal {
                     refresh();
                 } else {
                     onApply.accept(entry.relativePath());
-                    layer.clearAllWidgets();
+                    layer.setVisible(false);
                 }
             } else {
                 state.lastClickMs = now;
@@ -469,7 +470,7 @@ public final class LabAssetPickerModal {
             actions.add(new LabContextAction(I18n.get(LabGuiKeys.LAB_ASSETS_USE), "icon", LabActionTone.PRIMARY,
                     () -> {
                         onApply.accept(entry.relativePath());
-                        layer.clearAllWidgets();
+                        layer.setVisible(false);
                     }));
         }
         actions.add(new LabContextAction(I18n.get(LabGuiKeys.LAB_ASSETS_RENAME), "rename", LabActionTone.NEUTRAL,

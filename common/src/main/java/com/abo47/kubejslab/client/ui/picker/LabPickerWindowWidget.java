@@ -60,7 +60,6 @@ public final class LabPickerWindowWidget extends WidgetGroup {
     private Consumer<LabPick> pickListener;
     private boolean minimized;
     private boolean dragging;
-    private boolean bringToFront;
     private double lastMouseX;
     private double lastMouseY;
     private int lastPositionX;
@@ -224,7 +223,6 @@ public final class LabPickerWindowWidget extends WidgetGroup {
             lastMouseY = mouseY;
             lastPositionX = getSelfPositionX();
             lastPositionY = getSelfPositionY();
-            bringToFront = true;
             return true;
         }
         return super.mouseClicked(mouseX, mouseY, button);
@@ -265,19 +263,6 @@ public final class LabPickerWindowWidget extends WidgetGroup {
             return true;
         }
         return super.mouseWheelMove(mouseX, mouseY, wheelDelta);
-    }
-
-    @Override
-    public void updateScreen() {
-        super.updateScreen();
-        if (bringToFront && gui != null) {
-            bringToFront = false;
-            WidgetGroup parent = gui.mainGroup;
-            if (parent != null && parent.getContainedWidgets(false).contains(this)) {
-                parent.removeWidget(this);
-                parent.addWidget(this);
-            }
-        }
     }
 
     @Override

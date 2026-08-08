@@ -290,7 +290,7 @@ public final class LabScreen {
 
             String[] keys = isLeft
                     ? new String[]{LabGuiKeys.TAB_BUILT_IN, LabGuiKeys.TAB_CUSTOM}
-                    : new String[]{LabGuiKeys.TAB_RECIPE, "", "", ""};
+                    : new String[]{LabGuiKeys.TAB_RECIPE, LabGuiKeys.TAB_ITEMS, "", ""};
             this.tabs = new LabTab[keys.length];
 
             int tabCount = keys.length;
