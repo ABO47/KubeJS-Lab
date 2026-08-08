@@ -32,7 +32,7 @@ import com.abo47.kubejslab.client.ui.base.LabRecipeTooltips;
 import com.abo47.kubejslab.client.ui.base.LabScrollBarWidget;
 import com.abo47.kubejslab.client.ui.base.LabScrollMath;
 import com.abo47.kubejslab.client.ui.base.LabToggleSwitchWidget;
-import com.abo47.kubejslab.recipe.model.ClocheRenderType;
+import com.abo47.kubejslab.client.ui.machines.LabSurfaceSlot;
 import com.abo47.kubejslab.recipe.model.HeatRequirement;
 import com.abo47.kubejslab.recipe.model.LabRecipeField;
 import com.abo47.kubejslab.recipe.model.LabRecipeFieldValues;
@@ -65,6 +65,7 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
     private final LabCommitFieldWidget blueprintCategoryCommitField;
     private LabOptionDropdownWidget.DropdownRightClick categoryContextRequester;
     private final LabOptionDropdownWidget clocheRenderTypeDropdown;
+    private final LabCommitFieldWidget clocheRenderTypeCommitField;
     private final LabBlockSafeSlotWidget clocheRenderBlockSlot;
     private final TextFieldWidget fluidInputAmountField;
     private final TextFieldWidget fluidOutputAmountField;
@@ -82,7 +83,9 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
     private final TextTexture creosoteAmountLabel;
     private final TextTexture moldLabel;
     private final TextTexture blueprintCategoryLabel;
+    private final TextTexture newCategoryLabel;
     private final TextTexture clocheRenderTypeLabel;
+    private final TextTexture customRenderTypeLabel;
     private final TextTexture clocheRenderBlockLabel;
     private final TextTexture fluidInputAmountLabel;
     private final TextTexture fluidOutputAmountLabel;
@@ -104,8 +107,9 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
     private String energyText = "0";
     private String creosoteAmountText = "0";
     private String moldText = "";
+    private LabOptionDropdownWidget.DropdownRightClick moldContextRequester;
     private String blueprintCategoryText = "";
-    private ClocheRenderType clocheRenderType = ClocheRenderType.GENERIC;
+    private String clocheRenderType = "generic";
     private String clocheRenderBlockText = "";
     private String fluidInputAmountText = "0";
     private String fluidOutputAmountText = "0";
@@ -113,6 +117,7 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
     private List<FieldRow> rows = List.of();
     private List<OutputRow> outputRows = List.of();
     private final List<TextFieldWidget> outputChanceFields = new ArrayList<>();
+    private final List<LabOptionDropdownWidget> popupDropdowns = new ArrayList<>();
     private int scrollOffset;
     private int scrollMax;
     private boolean dragging;
@@ -141,7 +146,9 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
         creosoteAmountLabel = rowLabel(LabGuiKeys.LAB_RECIPE_CREOSOTE_AMOUNT, labelW);
         moldLabel = rowLabel(LabGuiKeys.LAB_RECIPE_MOLD, labelW);
         blueprintCategoryLabel = rowLabel(LabGuiKeys.LAB_RECIPE_BLUEPRINT_CATEGORY, labelW);
+        newCategoryLabel = rowLabel(LabGuiKeys.LAB_RECIPE_NEW_CATEGORY, labelW);
         clocheRenderTypeLabel = rowLabel(LabGuiKeys.LAB_RECIPE_CLOCHE_RENDER_TYPE, labelW);
+        customRenderTypeLabel = rowLabel(LabGuiKeys.LAB_RECIPE_CUSTOM_RENDER_TYPE, labelW);
         clocheRenderBlockLabel = rowLabel(LabGuiKeys.LAB_RECIPE_CLOCHE_RENDER_BLOCK, labelW);
         fluidInputAmountLabel = rowLabel(LabGuiKeys.LAB_RECIPE_FLUID_INPUT_AMOUNT, labelW);
         fluidOutputAmountLabel = rowLabel(LabGuiKeys.LAB_RECIPE_FLUID_OUTPUT_AMOUNT, labelW);
@@ -211,7 +218,17 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
 
         moldDropdown = new LabOptionDropdownWidget(0, 0, CONTROL_W, FIELD_H);
         moldDropdown.setOnSelect(value -> moldText = value);
+        moldDropdown.setLabelMapper(mold -> {
+            int colon = mold.indexOf(':');
+            return colon >= 0 ? mold.substring(colon + 1) : mold;
+        });
+        moldDropdown.setOnItemRightClick((option, mx, my) -> {
+            if (LabOptionLibrary.isCustomMold(option) && moldContextRequester != null) {
+                moldContextRequester.onRightClick(option, mx, my);
+            }
+        });
         addWidget(moldDropdown);
+        popupDropdowns.add(moldDropdown);
         refreshMoldOptions();
 
         moldCommitField = new LabCommitFieldWidget(0, 0, CONTROL_W, FIELD_H, null, this::commitMold);
@@ -226,6 +243,7 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
             }
         });
         addWidget(blueprintCategoryDropdown);
+        popupDropdowns.add(blueprintCategoryDropdown);
         refreshBlueprintOptions();
 
         blueprintCategoryCommitField = new LabCommitFieldWidget(0, 0, CONTROL_W, FIELD_H,
@@ -234,9 +252,15 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
         addWidget(blueprintCategoryCommitField);
 
         clocheRenderTypeDropdown = new LabOptionDropdownWidget(0, 0, CONTROL_W, FIELD_H);
-        clocheRenderTypeDropdown.setOnSelect(value -> clocheRenderType = ClocheRenderType.byName(value));
-        clocheRenderTypeDropdown.setOptions(LabOptionLibrary.clocheRenderTypes());
+        clocheRenderTypeDropdown.setOnSelect(value -> clocheRenderType = value);
         addWidget(clocheRenderTypeDropdown);
+        popupDropdowns.add(clocheRenderTypeDropdown);
+        refreshClocheRenderOptions();
+
+        clocheRenderTypeCommitField = new LabCommitFieldWidget(0, 0, CONTROL_W, FIELD_H,
+                null, this::commitRenderType);
+        configureCommit(clocheRenderTypeCommitField);
+        addWidget(clocheRenderTypeCommitField);
 
         clocheRenderBlockSlot = new LabBlockSafeSlotWidget(0, 0, CONTROL_W, FIELD_H);
         clocheRenderBlockSlot.setOnChange(() -> clocheRenderBlockText = clocheRenderBlockSlot.getBlockId());
@@ -303,7 +327,7 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
             acceptMirrored = true;
         }
         if (!fields.contains(LabRecipeField.CLOCHE_RENDER_TYPE)) {
-            clocheRenderType = ClocheRenderType.GENERIC;
+            clocheRenderType = "generic";
             clocheRenderTypeDropdown.setSelected("generic");
         }
         shapelessToggle.setVisible(fields.contains(LabRecipeField.SHAPELESS));
@@ -323,6 +347,7 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
         blueprintCategoryDropdown.setVisible(fields.contains(LabRecipeField.BLUEPRINT_CATEGORY));
         blueprintCategoryCommitField.setVisible(fields.contains(LabRecipeField.BLUEPRINT_CATEGORY));
         clocheRenderTypeDropdown.setVisible(fields.contains(LabRecipeField.CLOCHE_RENDER_TYPE));
+        clocheRenderTypeCommitField.setVisible(fields.contains(LabRecipeField.CLOCHE_RENDER_TYPE));
         clocheRenderBlockSlot.setVisible(fields.contains(LabRecipeField.CLOCHE_RENDER_BLOCK));
         fluidInputAmountField.setVisible(fields.contains(LabRecipeField.FLUID_INPUT_AMOUNT));
         fluidOutputAmountField.setVisible(fields.contains(LabRecipeField.FLUID_OUTPUT_AMOUNT));
@@ -379,10 +404,28 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
             return;
         }
         moldText = value;
+        LabOptionLibrary.addCustomMold(value);
         if (!moldOptions.contains(value)) {
             moldOptions.add(value);
         }
         refreshMoldOptions();
+    }
+
+    private void refreshClocheRenderOptions() {
+        List<String> merged = new ArrayList<>(LabOptionLibrary.clocheRenderTypes());
+        if (!clocheRenderType.isBlank() && !merged.contains(clocheRenderType)) {
+            merged.add(clocheRenderType);
+        }
+        clocheRenderTypeDropdown.setOptions(merged);
+        clocheRenderTypeDropdown.setSelected(clocheRenderType);
+    }
+
+    private void commitRenderType(String value) {
+        if (value == null || value.isBlank()) {
+            return;
+        }
+        clocheRenderType = value;
+        refreshClocheRenderOptions();
     }
 
     private void commitBlueprintCategory(String value) {
@@ -401,6 +444,19 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
         this.categoryContextRequester = categoryContextRequester;
     }
 
+    public void setMoldContextRequester(LabOptionDropdownWidget.DropdownRightClick moldContextRequester) {
+        this.moldContextRequester = moldContextRequester;
+    }
+
+    public void deleteCustomMold(String mold) {
+        LabOptionLibrary.removeCustomMold(mold);
+        moldOptions.remove(mold);
+        if (moldText.equals(mold)) {
+            moldText = "";
+        }
+        refreshMoldOptions();
+    }
+
     public void deleteBlueprintCategory(String category) {
         LabBlueprintCategories.remove(category);
         blueprintOptions.remove(category);
@@ -408,6 +464,30 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
             blueprintCategoryText = "";
         }
         refreshBlueprintOptions();
+    }
+
+    public void consumeSurfaceSlots(List<LabSurfaceSlot> slots) {
+        for (LabSurfaceSlot slot : slots) {
+            if (slot.value().isBlank()) {
+                continue;
+            }
+            switch (slot.tint()) {
+                case BLUEPRINT -> {
+                    if (!slot.value().equals(blueprintCategoryText)) {
+                        blueprintCategoryText = slot.value();
+                        refreshBlueprintOptions();
+                    }
+                }
+                case MOLD -> {
+                    if (!slot.value().equals(moldText)) {
+                        moldText = slot.value();
+                        refreshMoldOptions();
+                    }
+                }
+                default -> {
+                }
+            }
+        }
     }
 
     public void setOutputRows(List<OutputRow> outputRows) {
@@ -489,7 +569,7 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
         heatCycleButton.setLabel(heatLabelText(heatRequirement));
         refreshMoldOptions();
         refreshBlueprintOptions();
-        clocheRenderTypeDropdown.setSelected(clocheRenderType.name().toLowerCase());
+        refreshClocheRenderOptions();
         clocheRenderBlockSlot.setBlockId(clocheRenderBlockText);
     }
 
@@ -567,7 +647,22 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
     }
 
     @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        for (LabOptionDropdownWidget dropdown : popupDropdowns) {
+            if (dropdown.isOpen() && dropdown.isPopupOver(mouseX, mouseY)) {
+                return dropdown.mouseClicked(mouseX, mouseY, button);
+            }
+        }
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
     public boolean mouseWheelMove(double mouseX, double mouseY, double wheelDelta) {
+        for (LabOptionDropdownWidget dropdown : popupDropdowns) {
+            if (dropdown.isOpen() && dropdown.isPopupOver(mouseX, mouseY)) {
+                return dropdown.mouseWheelMove(mouseX, mouseY, wheelDelta);
+            }
+        }
         if (super.mouseWheelMove(mouseX, mouseY, wheelDelta)) {
             return true;
         }
@@ -604,10 +699,12 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
                 }
                 case BLUEPRINT_CATEGORY -> {
                     built.add(new FieldRow(blueprintCategoryLabel, blueprintCategoryDropdown, null));
-                    built.add(new FieldRow(blueprintCategoryLabel, blueprintCategoryCommitField, null));
+                    built.add(new FieldRow(newCategoryLabel, blueprintCategoryCommitField, null));
                 }
-                case CLOCHE_RENDER_TYPE ->
-                        built.add(new FieldRow(clocheRenderTypeLabel, clocheRenderTypeDropdown, null));
+                case CLOCHE_RENDER_TYPE -> {
+                    built.add(new FieldRow(clocheRenderTypeLabel, clocheRenderTypeDropdown, null));
+                    built.add(new FieldRow(customRenderTypeLabel, clocheRenderTypeCommitField, null));
+                }
                 case CLOCHE_RENDER_BLOCK ->
                         built.add(new FieldRow(clocheRenderBlockLabel, clocheRenderBlockSlot, null));
                 case FLUID_INPUT_AMOUNT ->

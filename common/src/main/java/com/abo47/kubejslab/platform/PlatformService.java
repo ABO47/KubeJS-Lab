@@ -32,6 +32,10 @@ public interface PlatformService {
         return ItemStack.EMPTY;
     }
 
+    default FluidStack fluidOutputStack(Recipe<?> recipe) {
+        return FluidStack.empty();
+    }
+
     default String fluidOutputDisplayName(Recipe<?> recipe) {
         return "";
     }

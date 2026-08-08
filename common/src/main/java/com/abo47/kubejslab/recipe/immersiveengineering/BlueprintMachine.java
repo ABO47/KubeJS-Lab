@@ -11,6 +11,7 @@ import com.abo47.kubejslab.recipe.model.LabRecipeFieldValues;
 import com.abo47.kubejslab.recipe.model.LabRecipeOutput;
 import com.abo47.kubejslab.recipe.model.LabSlotDescriptor;
 import com.abo47.kubejslab.recipe.model.LabSlotKind;
+import com.abo47.kubejslab.recipe.model.LabSlotTint;
 
 import blusunrize.immersiveengineering.api.crafting.BlueprintCraftingRecipe;
 import com.google.gson.JsonArray;
@@ -24,11 +25,14 @@ public class BlueprintMachine extends ImmersiveEngineeringMachine {
 
     @Override
     public List<LabSlotDescriptor> inputSlots() {
-        List<LabSlotDescriptor> slots = new ArrayList<>();
-        for (int i = 0; i < 6; i++) {
-            slots.add(new LabSlotDescriptor(true, LabSlotKind.ITEM, i % 2, i / 2, true));
-        }
-        return slots;
+        return List.of(
+                new LabSlotDescriptor(true, LabSlotKind.ITEM, 0, 0, false, LabSlotTint.BLUEPRINT),
+                new LabSlotDescriptor(true, LabSlotKind.ITEM, 0, 1, true),
+                new LabSlotDescriptor(true, LabSlotKind.ITEM, 1, 1, true),
+                new LabSlotDescriptor(true, LabSlotKind.ITEM, 0, 2, true),
+                new LabSlotDescriptor(true, LabSlotKind.ITEM, 1, 2, true),
+                new LabSlotDescriptor(true, LabSlotKind.ITEM, 0, 3, true),
+                new LabSlotDescriptor(true, LabSlotKind.ITEM, 1, 3, true));
     }
 
     @Override

@@ -94,7 +94,11 @@ public class ProcessingRecipeMachine implements LabRecipeMachine {
         JsonArray ingredients = new JsonArray();
         for (LabIngredient ingredient : inputs) {
             if (!ingredient.isEmpty()) {
-                ingredients.add(LabRecipeJson.ingredientJson(ingredient));
+                if (ingredient instanceof LabIngredient.Fluid fluid) {
+                    ingredients.add(LabRecipeJson.fluidIngredientJson(fluid.fluid()));
+                } else {
+                    ingredients.add(LabRecipeJson.ingredientJson(ingredient));
+                }
             }
         }
         json.add("ingredients", ingredients);

@@ -12,6 +12,8 @@ import com.abo47.kubejslab.recipe.model.LabRecipeField;
 import com.abo47.kubejslab.recipe.model.LabRecipeFieldValues;
 import com.abo47.kubejslab.recipe.model.LabRecipeJson;
 import com.abo47.kubejslab.recipe.model.LabRecipeOutput;
+import com.abo47.kubejslab.recipe.model.LabSlotDescriptor;
+import com.abo47.kubejslab.recipe.model.LabSlotKind;
 
 import com.google.gson.JsonObject;
 
@@ -20,6 +22,19 @@ public final class SmithingMachine implements LabRecipeMachine {
     private static final ResourceLocation JEI_UID = new ResourceLocation("minecraft", "smithing");
     private static final String TRANSFORM_TYPE = "minecraft:smithing_transform";
     private static final String TRIM_TYPE = "minecraft:smithing_trim";
+
+    @Override
+    public List<LabSlotDescriptor> inputSlots() {
+        return List.of(
+                new LabSlotDescriptor(true, LabSlotKind.ITEM, 0, 0, false),
+                new LabSlotDescriptor(true, LabSlotKind.ITEM, 1, 0, false),
+                new LabSlotDescriptor(true, LabSlotKind.ITEM, 2, 0, false));
+    }
+
+    @Override
+    public List<LabSlotDescriptor> outputSlots() {
+        return List.of(new LabSlotDescriptor(false, LabSlotKind.ITEM, 0, 0, true));
+    }
 
     @Override
     public ResourceLocation jeiUid() {

@@ -75,10 +75,7 @@ final class LabPaintController {
         }
         ItemStack current = data.stack;
         if (current.isEmpty() || !ItemStack.isSameItem(current, carried)) {
-            data.setItemValue(carried.copyWithCount(1));
-        } else if (button == LabColors.MOUSE_BUTTON_RIGHT) {
-            int next = Math.max(1, current.getCount() - 1);
-            data.setItemValue(current.copyWithCount(next));
+            data.setItemValue(carried.copy());
         } else {
             data.setItemValue(current.copyWithCount(Math.min(current.getCount() + 1, current.getMaxStackSize())));
         }

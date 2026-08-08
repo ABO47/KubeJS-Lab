@@ -13,6 +13,8 @@ import com.abo47.kubejslab.recipe.model.LabRecipeField;
 import com.abo47.kubejslab.recipe.model.LabRecipeFieldValues;
 import com.abo47.kubejslab.recipe.model.LabRecipeJson;
 import com.abo47.kubejslab.recipe.model.LabRecipeOutput;
+import com.abo47.kubejslab.recipe.model.LabSlotDescriptor;
+import com.abo47.kubejslab.recipe.model.LabSlotLayouts;
 
 import com.google.gson.JsonObject;
 
@@ -29,6 +31,16 @@ public final class StonecutterMachine implements LabRecipeMachine {
     @Override
     public String jsonType() {
         return JSON_TYPE;
+    }
+
+    @Override
+    public List<LabSlotDescriptor> inputSlots() {
+        return LabSlotLayouts.oneInput();
+    }
+
+    @Override
+    public List<LabSlotDescriptor> outputSlots() {
+        return LabSlotLayouts.oneOutput();
     }
 
     @Override

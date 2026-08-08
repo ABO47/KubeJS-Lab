@@ -35,7 +35,9 @@ public final class LabGuiKeys {
     public static final String LAB_RECIPE_CREOSOTE_AMOUNT = "kubejslab.gui.lab_recipe_creosote_amount";
     public static final String LAB_RECIPE_MOLD = "kubejslab.gui.lab_recipe_mold";
     public static final String LAB_RECIPE_BLUEPRINT_CATEGORY = "kubejslab.gui.lab_recipe_blueprint_category";
+    public static final String LAB_RECIPE_NEW_CATEGORY = "kubejslab.gui.lab_recipe_new_category";
     public static final String LAB_RECIPE_CLOCHE_RENDER_TYPE = "kubejslab.gui.lab_recipe_cloche_render_type";
+    public static final String LAB_RECIPE_CUSTOM_RENDER_TYPE = "kubejslab.gui.lab_recipe_custom_render_type";
     public static final String LAB_RECIPE_CLOCHE_RENDER_BLOCK = "kubejslab.gui.lab_recipe_cloche_render_block";
     public static final String LAB_RECIPE_CLOCHE_CROP = "kubejslab.gui.lab_recipe_cloche_crop";
     public static final String LAB_RECIPE_CLOCHE_STACKING = "kubejslab.gui.lab_recipe_cloche_stacking";

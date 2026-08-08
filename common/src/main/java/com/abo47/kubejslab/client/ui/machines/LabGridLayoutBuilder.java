@@ -1,5 +1,6 @@
 package com.abo47.kubejslab.client.ui.machines;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -11,8 +12,8 @@ import net.minecraft.world.item.crafting.ShapedRecipe;
 import net.minecraft.world.item.ItemStack;
 
 import com.abo47.kubejslab.client.ui.base.LabLayout;
-import com.abo47.kubejslab.KubeJSLab;
 import com.abo47.kubejslab.platform.Services;
+import com.abo47.kubejslab.recipe.model.LabSlotTint;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -37,8 +38,6 @@ final class LabGridLayoutBuilder {
         int oy = Math.max(LabLayout.MACHINE_PAD, (widget.getSizeHeight() - h * 18) / 2);
 
         Recipe<?> original = widget.original();
-        KubeJSLab.LOGGER.info("[MechCrafting] rebuildGrid: grid {}x{}, snapshot cells={}, original={}", w, h,
-                snapshot.size(), original == null ? "null" : original.getId());
 
         for (int gy = 0; gy < h; gy++) {
             for (int gx = 0; gx < w; gx++) {
@@ -57,7 +56,6 @@ final class LabGridLayoutBuilder {
                                 data.setTagValue(new ResourceLocation(object.get("tag").getAsString()));
                             }
                         }
-                        KubeJSLab.LOGGER.info("[MechCrafting] cell ({},{}) loaded from original: {}", gy, gx, json);
                     }
                 }
                 LabPhantomHandler handler = new LabPhantomHandler(data);
@@ -67,7 +65,7 @@ final class LabGridLayoutBuilder {
                 slot.setDragOwner(widget);
                 slot.setRole(RecipeIngredientRole.INPUT);
                 widget.addWidget(slot);
-                widget.addSlotPair(new LabSlotPair(data, null, RecipeIngredientRole.INPUT, gx, gy));
+                widget.addSlotPair(new LabSlotPair(data, null, RecipeIngredientRole.INPUT, gx, gy, LabSlotTint.NORMAL));
             }
         }
 
@@ -76,6 +74,9 @@ final class LabGridLayoutBuilder {
             source = widget.sampleLayout();
         }
         if (source != null) {
+            List<IRecipeSlotView> outputViews = new ArrayList<>();
+            int minCol = Integer.MAX_VALUE;
+            int maxCol = -1;
             for (IRecipeSlotView view : source.getRecipeSlotsView().getSlotViews()) {
                 if (view.getRole() != RecipeIngredientRole.OUTPUT || !(view instanceof IRecipeSlotDrawable drawable)) {
                     continue;
@@ -86,11 +87,20 @@ final class LabGridLayoutBuilder {
                 } catch (RuntimeException | LinkageError ignored) {
                     continue;
                 }
+                outputViews.add(view);
+                int col = (rect.getX() - 1) / 18;
+                minCol = Math.min(minCol, col);
+                maxCol = Math.max(maxCol, col);
+            }
+            int blockCols = maxCol >= minCol ? Math.min(maxCol - minCol + 1, LabLayout.MACHINE_COLS) : 0;
+            int outputOX = ox + (LabLayout.MACHINE_COLS - blockCols) * 18;
+            for (IRecipeSlotView view : outputViews) {
+                Rect2i rect = ((IRecipeSlotDrawable) view).getRect();
+                int x = outputOX + ((rect.getX() - 1) / 18 - minCol) * 18;
                 LabSlotData data = new LabSlotData();
-                boolean fluidSlot = widget.entry() != null
-                        && Services.platform().readFluidIngredient(view).map(data::setFluidValue).orElse(false);
+                boolean fluidSlot = Services.platform().readFluidIngredient(view).map(data::setFluidValue).orElse(false);
                 if (fluidSlot) {
-                    LabPhantomFluidSlotWidget slot = new LabPhantomFluidSlotWidget(data, ox + rect.getX(), oy + rect.getY());
+                    LabPhantomFluidSlotWidget slot = new LabPhantomFluidSlotWidget(data, x, oy + rect.getY());
                     slot.setClientSideWidget();
                     slot.setDragOwner(widget);
                     slot.setRole(RecipeIngredientRole.OUTPUT);
@@ -105,7 +115,7 @@ final class LabGridLayoutBuilder {
                     }
                     data.setItemValue(stack);
                     LabPhantomHandler handler = new LabPhantomHandler(data);
-                    LabPhantomSlotWidget slot = new LabPhantomSlotWidget(handler, 0, ox + rect.getX(), oy + rect.getY());
+                    LabPhantomSlotWidget slot = new LabPhantomSlotWidget(handler, 0, x, oy + rect.getY());
                     slot.setClearSlotOnRightClick(true);
                     slot.setClientSideWidget();
                     slot.setDragOwner(widget);
@@ -113,7 +123,7 @@ final class LabGridLayoutBuilder {
                     widget.addWidget(slot);
                 }
                 widget.addSlotPair(new LabSlotPair(data, view, RecipeIngredientRole.OUTPUT, (rect.getX() - 1) / 18,
-                        (rect.getY() - 1) / 18));
+                        (rect.getY() - 1) / 18, LabSlotTint.NORMAL));
             }
         }
         widget.notifyOutputsChanged();
@@ -138,20 +148,10 @@ final class LabGridLayoutBuilder {
                 return Ingredient.EMPTY;
             }
             int index = row * width + col;
-            Ingredient result = index >= 0 && index < ingredients.size() ? ingredients.get(index) : Ingredient.EMPTY;
-            if (!result.isEmpty()) {
-                KubeJSLab.LOGGER.debug("[MechCrafting] gridIngredientAt({},{}): width={}, index={} -> {}", row, col, width,
-                        index, result.toJson());
-            }
-            return result;
+            return index >= 0 && index < ingredients.size() ? ingredients.get(index) : Ingredient.EMPTY;
         }
         int index = row * 3 + col;
-        Ingredient result = index >= 0 && index < ingredients.size() ? ingredients.get(index) : Ingredient.EMPTY;
-        if (!result.isEmpty()) {
-            KubeJSLab.LOGGER.debug("[MechCrafting] gridIngredientAt({},{}): flat index={} -> {} (from {})", row, col,
-                    index, result.toJson(), original.getClass().getSimpleName());
-        }
-        return result;
+        return index >= 0 && index < ingredients.size() ? ingredients.get(index) : Ingredient.EMPTY;
     }
 
     private static ItemStack firstIngredientStack(Ingredient ingredient) {

@@ -24,9 +24,15 @@ public final class FanProcessingMachine extends ProcessingRecipeMachine {
         return List.of(
                 new LabSlotDescriptor(false, LabSlotKind.ITEM, 1, 0, true),
                 new LabSlotDescriptor(false, LabSlotKind.ITEM, 2, 0, true),
+                new LabSlotDescriptor(false, LabSlotKind.ITEM, 3, 0, true),
                 new LabSlotDescriptor(false, LabSlotKind.ITEM, 1, 1, true),
                 new LabSlotDescriptor(false, LabSlotKind.ITEM, 2, 1, true),
+                new LabSlotDescriptor(false, LabSlotKind.ITEM, 3, 1, true),
                 new LabSlotDescriptor(false, LabSlotKind.ITEM, 1, 2, true),
-                new LabSlotDescriptor(false, LabSlotKind.ITEM, 2, 2, true));
+                new LabSlotDescriptor(false, LabSlotKind.ITEM, 2, 2, true),
+                new LabSlotDescriptor(false, LabSlotKind.ITEM, 3, 2, true),
+                new LabSlotDescriptor(false, LabSlotKind.ITEM, 1, 3, true),
+                new LabSlotDescriptor(false, LabSlotKind.ITEM, 2, 3, true),
+                new LabSlotDescriptor(false, LabSlotKind.ITEM, 3, 3, true));
     }
 }

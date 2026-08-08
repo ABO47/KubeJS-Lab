@@ -19,7 +19,7 @@ import net.minecraft.world.item.ItemStack;
 import com.abo47.kubejslab.KubeJSLab;
 import com.abo47.kubejslab.platform.Services;
 
-import blusunrize.immersiveengineering.api.crafting.IMultiblockRecipe;
+import com.lowdragmc.lowdraglib.side.fluid.FluidStack;
 
 
 public final class LabRecipeIndex {
@@ -106,27 +106,19 @@ public final class LabRecipeIndex {
         for (Recipe<?> recipe : manager.getRecipes()) {
             RECIPE_CACHE.put(recipe.getId(), recipe);
             ItemStack result = resultItem(recipe, registryAccess);
-            boolean hasFluid = hasFluidOutput(recipe);
-            if (result.isEmpty() && !hasFluid) {
+            FluidStack fluidOutput = Services.platform().fluidOutputStack(recipe);
+            if (result.isEmpty() && fluidOutput.isEmpty()) {
                 continue;
             }
-            if (result.isEmpty() && hasFluid) {
+            if (result.isEmpty()) {
                 result = Services.platform().fluidOutputDisplay(recipe);
             }
             built.add(LabRecipeEntry.of(recipe.getId(), result,
-                    fluidNameOrFallback(recipe, result, hasFluid)));
+                    fluidNameOrFallback(recipe, result, fluidOutput), fluidOutput));
         }
         built.sort(Comparator.comparing(LabRecipeEntry::name, String.CASE_INSENSITIVE_ORDER)
                 .thenComparing(LabRecipeEntry::id));
         return List.copyOf(built);
-    }
-
-    private static boolean hasFluidOutput(Recipe<?> recipe) {
-        if (recipe instanceof IMultiblockRecipe multiblock) {
-            List<?> outputs = multiblock.getFluidOutputs();
-            return outputs != null && !outputs.isEmpty();
-        }
-        return false;
     }
 
     private static ItemStack resultItem(Recipe<?> recipe, RegistryAccess registryAccess) {
@@ -137,7 +129,10 @@ public final class LabRecipeIndex {
         }
     }
 
-    private static String fluidNameOrFallback(Recipe<?> recipe, ItemStack result, boolean hasFluid) {
+    private static String fluidNameOrFallback(Recipe<?> recipe, ItemStack result, FluidStack fluidOutput) {
+        if (fluidOutput != null && !fluidOutput.isEmpty()) {
+            return fluidOutput.getDisplayName().getString();
+        }
         if (!result.isEmpty()) {
             return result.getHoverName().getString();
         }
@@ -158,11 +153,16 @@ public final class LabRecipeIndex {
             String name,
             boolean kubejs,
             String normalizedId,
-            String normalizedName
+            String normalizedName,
+            FluidStack fluidOutput
     ) {
         private static final String KUBEJS_NAMESPACE = "kubejs";
 
         static LabRecipeEntry of(ResourceLocation id, ItemStack output, String name) {
+            return of(id, output, name, null);
+        }
+
+        static LabRecipeEntry of(ResourceLocation id, ItemStack output, String name, FluidStack fluidOutput) {
             ItemStack copy = output.copy();
             copy.setCount(1);
             return new LabRecipeEntry(
@@ -171,7 +171,8 @@ public final class LabRecipeIndex {
                     name,
                     KUBEJS_NAMESPACE.equals(id.getNamespace()),
                     normalize(id.toString()),
-                    normalize(name)
+                    normalize(name),
+                    fluidOutput
             );
         }
 

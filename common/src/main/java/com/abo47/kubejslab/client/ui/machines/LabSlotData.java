@@ -15,11 +15,21 @@ import com.abo47.kubejslab.recipe.model.LabSlotKind;
 
 
 final class LabSlotData {
-    LabSlotKind kind = LabSlotKind.ITEM;
+    private final LabSlotKind initialKind;
+    LabSlotKind kind;
     ItemStack stack = ItemStack.EMPTY;
     ResourceLocation tag;
     FluidStack fluid = FluidStack.empty();
     float chance = 1f;
+
+    LabSlotData() {
+        this(false);
+    }
+
+    LabSlotData(boolean fluidSlot) {
+        this.initialKind = fluidSlot ? LabSlotKind.FLUID : LabSlotKind.ITEM;
+        this.kind = initialKind;
+    }
 
     void setChance(float chance) {
         this.chance = Math.max(0f, Math.min(1f, chance));
@@ -59,7 +69,7 @@ final class LabSlotData {
     }
 
     void clear() {
-        kind = LabSlotKind.ITEM;
+        kind = initialKind;
         stack = ItemStack.EMPTY;
         tag = null;
         fluid = FluidStack.empty();

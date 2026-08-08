@@ -13,6 +13,8 @@ import com.abo47.kubejslab.recipe.model.LabRecipeField;
 import com.abo47.kubejslab.recipe.model.LabRecipeFieldValues;
 import com.abo47.kubejslab.recipe.model.LabRecipeJson;
 import com.abo47.kubejslab.recipe.model.LabRecipeOutput;
+import com.abo47.kubejslab.recipe.model.LabSlotDescriptor;
+import com.abo47.kubejslab.recipe.model.LabSlotLayouts;
 
 import com.google.gson.JsonObject;
 import com.simibubi.create.compat.jei.category.BlockCuttingCategory.CondensedBlockCuttingRecipe;
@@ -25,6 +27,16 @@ public final class BlockCuttingMachine implements LabRecipeMachine {
     @Override
     public ResourceLocation jeiUid() {
         return JEI_UID;
+    }
+
+    @Override
+    public List<LabSlotDescriptor> inputSlots() {
+        return LabSlotLayouts.oneInput();
+    }
+
+    @Override
+    public List<LabSlotDescriptor> outputSlots() {
+        return LabSlotLayouts.oneOutput();
     }
 
     @Override

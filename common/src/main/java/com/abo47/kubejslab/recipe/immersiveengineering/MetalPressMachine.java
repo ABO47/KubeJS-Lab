@@ -10,6 +10,9 @@ import com.abo47.kubejslab.recipe.model.LabIngredient;
 import com.abo47.kubejslab.recipe.model.LabRecipeField;
 import com.abo47.kubejslab.recipe.model.LabRecipeFieldValues;
 import com.abo47.kubejslab.recipe.model.LabRecipeOutput;
+import com.abo47.kubejslab.recipe.model.LabSlotDescriptor;
+import com.abo47.kubejslab.recipe.model.LabSlotKind;
+import com.abo47.kubejslab.recipe.model.LabSlotTint;
 
 import blusunrize.immersiveengineering.api.crafting.MetalPressRecipe;
 import com.google.gson.JsonObject;
@@ -18,6 +21,18 @@ import com.google.gson.JsonObject;
 public class MetalPressMachine extends ImmersiveEngineeringMachine {
     public MetalPressMachine() {
         super("metal_press", LabRecipeField.ENERGY, LabRecipeField.MOLD);
+    }
+
+    @Override
+    public List<LabSlotDescriptor> inputSlots() {
+        return List.of(
+                new LabSlotDescriptor(true, LabSlotKind.ITEM, 0, 0, false),
+                new LabSlotDescriptor(true, LabSlotKind.ITEM, 1, 0, false, LabSlotTint.MOLD));
+    }
+
+    @Override
+    public List<LabSlotDescriptor> outputSlots() {
+        return List.of(new LabSlotDescriptor(false, LabSlotKind.ITEM, 2, 0, false));
     }
 
     @Override

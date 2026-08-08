@@ -28,6 +28,11 @@ public final class LabColors {
     public static final int TAG_GOLD = 0xffd9b84c;
     public static final int INPUT_TINT = 0x402E7CF6;
     public static final int OUTPUT_TINT = 0x40FF8C42;
+    public static final int FLUID_INPUT_TINT = 0x802E5BF6;
+    public static final int FLUID_OUTPUT_TINT = 0x80FF7A1A;
+    public static final int ADDITIVE_TINT = 0x8047B33D;
+    public static final int BLUEPRINT_TINT = 0x8000C8C8;
+    public static final int MOLD_TINT = 0x809933CC;
 
     public static final int MOUSE_BUTTON_LEFT = 0;
     public static final int MOUSE_BUTTON_RIGHT = 1;

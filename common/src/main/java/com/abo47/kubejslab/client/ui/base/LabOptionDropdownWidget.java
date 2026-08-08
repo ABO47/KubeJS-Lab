@@ -2,6 +2,7 @@ package com.abo47.kubejslab.client.ui.base;
 
 import java.util.ArrayList;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.List;
 import javax.annotation.Nonnull;
 
@@ -25,6 +26,7 @@ public final class LabOptionDropdownWidget extends WidgetGroup {
     private String selected;
     private Consumer<String> onSelect;
     private DropdownRightClick onItemRightClick;
+    private Function<String, String> labelMapper = Function.identity();
     private boolean open;
     private int scroll;
     private TextTexture selectedTex;
@@ -44,6 +46,11 @@ public final class LabOptionDropdownWidget extends WidgetGroup {
         this.onItemRightClick = onItemRightClick;
     }
 
+    public void setLabelMapper(Function<String, String> labelMapper) {
+        this.labelMapper = labelMapper == null ? Function.identity() : labelMapper;
+        this.selectedTex = null;
+    }
+
     public void setOptions(List<String> options) {
         this.options = List.copyOf(options.stream().filter(s -> s != null && !s.isBlank()).toList());
         this.scroll = 0;
@@ -52,6 +59,8 @@ public final class LabOptionDropdownWidget extends WidgetGroup {
 
     public void setSelected(String selected) {
         if (selected == null || selected.isBlank()) {
+            this.selected = null;
+            this.selectedTex = null;
             return;
         }
         this.selected = selected;
@@ -91,7 +100,7 @@ public final class LabOptionDropdownWidget extends WidgetGroup {
         int h = getSizeHeight();
         if (selected != null) {
             if (selectedTex == null) {
-                selectedTex = new TextTexture(selected, LabColors.TEXT_PRIMARY)
+                selectedTex = new TextTexture(labelMapper.apply(selected), LabColors.TEXT_PRIMARY)
                         .setWidth(w - 12)
                         .setType(TextTexture.TextType.LEFT_HIDE);
             }
@@ -116,7 +125,7 @@ public final class LabOptionDropdownWidget extends WidgetGroup {
             if (option.equals(selected)) {
                 SELECTED_FILL.draw(g, mx, my, x + 1, ry, w - 2, ROW_H - 1);
             }
-            TextTexture tex = new TextTexture(option, LabColors.TEXT_PRIMARY)
+            TextTexture tex = new TextTexture(labelMapper.apply(option), LabColors.TEXT_PRIMARY)
                     .setWidth(w - 8)
                     .setType(TextTexture.TextType.LEFT_HIDE);
             tex.draw(g, mx, my, x + 4, ry, w - 8, ROW_H);
@@ -141,13 +150,13 @@ public final class LabOptionDropdownWidget extends WidgetGroup {
             if (Widget.isMouseOver(x, popupY, w, popupH, mouseX, mouseY)) {
                 int row = (int) ((mouseY - popupY - 1) / ROW_H) + scroll;
                 if (row >= 0 && row < options.size()) {
+                    open = false;
                     if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT && onItemRightClick != null) {
                         onItemRightClick.onRightClick(options.get(row), mouseX, mouseY);
                     } else {
                         select(options.get(row));
                     }
                 }
-                open = false;
                 return true;
             }
             open = false;
@@ -171,6 +180,20 @@ public final class LabOptionDropdownWidget extends WidgetGroup {
             scroll = next;
         }
         return true;
+    }
+
+    public boolean isOpen() {
+        return open;
+    }
+
+    public boolean isPopupOver(double mouseX, double mouseY) {
+        if (!open) {
+            return false;
+        }
+        int visibleRows = Math.min(5, options.size());
+        int popupY = getPositionY() + getSizeHeight() + 1;
+        int popupH = visibleRows * ROW_H + 1;
+        return Widget.isMouseOver(getPositionX(), popupY, getSizeWidth(), popupH, mouseX, mouseY);
     }
 
     private void select(String option) {

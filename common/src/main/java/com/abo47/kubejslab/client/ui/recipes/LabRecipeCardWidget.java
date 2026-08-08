@@ -6,7 +6,9 @@ import net.minecraft.client.gui.GuiGraphics;
 import com.lowdragmc.lowdraglib.gui.texture.IGuiTexture;
 import com.lowdragmc.lowdraglib.gui.texture.ItemStackTexture;
 import com.lowdragmc.lowdraglib.gui.texture.TextTexture;
+import com.lowdragmc.lowdraglib.gui.util.DrawerHelper;
 import com.lowdragmc.lowdraglib.gui.widget.Widget;
+import com.lowdragmc.lowdraglib.side.fluid.FluidStack;
 
 import com.abo47.kubejslab.client.ui.base.LabColors;
 import com.abo47.kubejslab.client.ui.base.LabGlow;
@@ -33,6 +35,7 @@ public final class LabRecipeCardWidget extends Widget {
 
     private final LabRecipeIndex.LabRecipeEntry entry;
     private final ItemStackTexture iconTex;
+    private final FluidStack fluidOutput;
     private final TextTexture nameTex;
     private final TextTexture idTex;
     private final int textW;
@@ -49,6 +52,7 @@ public final class LabRecipeCardWidget extends Widget {
         this.onClick = onClick;
         this.onRightClick = onRightClick;
         this.iconTex = new ItemStackTexture(entry.output());
+        this.fluidOutput = entry.fluidOutput();
         this.textX = ICON_X + ICON_SIZE + TEXT_GAP;
         this.textW = w - textX;
         this.nameTex = new TextTexture(entry.name(), LabColors.TEXT_PRIMARY)
@@ -89,7 +93,12 @@ public final class LabRecipeCardWidget extends Widget {
             LabGlow.drawGlow(g, mx, my, x, y, w, h);
         }
 
-        iconTex.draw(g, mx, my, x + ICON_X, y + (h - ICON_SIZE) / 2, ICON_SIZE, ICON_SIZE);
+        if (fluidOutput != null && !fluidOutput.isEmpty()) {
+            DrawerHelper.drawFluidForGui(g, fluidOutput, Math.max(fluidOutput.getAmount(), 1000),
+                    x + ICON_X, y + (h - ICON_SIZE) / 2, ICON_SIZE, ICON_SIZE);
+        } else {
+            iconTex.draw(g, mx, my, x + ICON_X, y + (h - ICON_SIZE) / 2, ICON_SIZE, ICON_SIZE);
+        }
         nameTex.draw(g, mx, my, x + textX, y + TEXT_Y, textW, TEXT_LINE_H);
         idTex.draw(g, mx, my, x + textX, y + ID_Y, textW, ID_LINE_H);
     }

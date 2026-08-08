@@ -59,7 +59,7 @@ public record C2SRecipeEditPacket(LabRecipeEditAction action, @Nullable Resource
         buf.writeVarInt(values.creosoteAmount());
         buf.writeUtf(values.mold(), 32767);
         buf.writeUtf(values.blueprintCategory(), 32767);
-        buf.writeUtf(values.clocheRenderType().name(), 32767);
+        buf.writeUtf(values.clocheRenderType(), 32767);
         buf.writeUtf(values.clocheRenderBlock(), 32767);
         buf.writeVarInt(values.fluidInputAmount());
         buf.writeVarInt(values.fluidOutputAmount());
@@ -100,8 +100,7 @@ public record C2SRecipeEditPacket(LabRecipeEditAction action, @Nullable Resource
         int creosoteAmount = Math.max(0, Math.min(200000, buf.readVarInt()));
         String mold = buf.readUtf();
         String blueprintCategory = buf.readUtf();
-        com.abo47.kubejslab.recipe.model.ClocheRenderType clocheRenderType =
-                com.abo47.kubejslab.recipe.model.ClocheRenderType.byName(buf.readUtf());
+        String clocheRenderType = buf.readUtf(32767);
         String clocheRenderBlock = buf.readUtf();
         int fluidInputAmount = Math.max(0, Math.min(1000000, buf.readVarInt()));
         int fluidOutputAmount = Math.max(0, Math.min(1000000, buf.readVarInt()));

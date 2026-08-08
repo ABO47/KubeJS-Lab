@@ -9,6 +9,8 @@ import com.abo47.kubejslab.recipe.model.LabRecipeField;
 import com.abo47.kubejslab.recipe.model.LabRecipeFieldValues;
 import com.abo47.kubejslab.recipe.model.LabRecipeJson;
 import com.abo47.kubejslab.recipe.model.LabRecipeOutput;
+import com.abo47.kubejslab.recipe.model.LabSlotDescriptor;
+import com.abo47.kubejslab.recipe.model.LabSlotKind;
 
 import blusunrize.immersiveengineering.api.crafting.SawmillRecipe;
 import com.google.gson.JsonArray;
@@ -18,6 +20,19 @@ import com.google.gson.JsonObject;
 public class SawmillMachine extends ImmersiveEngineeringMachine {
     public SawmillMachine() {
         super("sawmill", LabRecipeField.ENERGY);
+    }
+
+    @Override
+    public List<LabSlotDescriptor> inputSlots() {
+        return List.of(new LabSlotDescriptor(true, LabSlotKind.ITEM, 0, 0, false));
+    }
+
+    @Override
+    public List<LabSlotDescriptor> outputSlots() {
+        return List.of(
+                new LabSlotDescriptor(false, LabSlotKind.ITEM, 0, 0, false),
+                new LabSlotDescriptor(false, LabSlotKind.ITEM, 1, 0, true),
+                new LabSlotDescriptor(false, LabSlotKind.ITEM, 0, 1, true));
     }
 
     @Override

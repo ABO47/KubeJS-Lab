@@ -90,6 +90,9 @@ public final class LabScreen {
         rightPanel.settingsWidget.setCategoryContextRequester((option, mx, my) -> root.openActionsMenu(
                 List.of(new LabContextAction(I18n.get(LabGuiKeys.LAB_RECIPE_DELETE), LabActionTone.DANGER,
                         () -> rightPanel.settingsWidget.deleteBlueprintCategory(option))), mx, my));
+        rightPanel.settingsWidget.setMoldContextRequester((option, mx, my) -> root.openActionsMenu(
+                List.of(new LabContextAction(I18n.get(LabGuiKeys.LAB_RECIPE_DELETE), LabActionTone.DANGER,
+                        () -> rightPanel.settingsWidget.deleteCustomMold(option))), mx, my));
 
         return new ModularUI(root, IUIHolder.EMPTY, player);
     }
@@ -331,8 +334,10 @@ public final class LabScreen {
                     columnW,
                     layoutH - LabLayout.MACHINE_PAD * 2);
             machineLayout.setClientSideWidget();
-            machineLayout.setOutputsChangedListener(
-                    () -> settingsWidget.setOutputRows(machineLayout.getOutputRows()));
+            machineLayout.setOutputsChangedListener(() -> {
+                settingsWidget.setOutputRows(machineLayout.getOutputRows());
+                settingsWidget.consumeSurfaceSlots(machineLayout.surfaceSlots());
+            });
             addWidget(machineLayout);
 
             int settingsX = LabLayout.PANEL_INSET + LabLayout.MACHINE_W + LabLayout.AREA_GAP;

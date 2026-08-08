@@ -10,6 +10,7 @@ import com.abo47.kubejslab.recipe.model.LabRecipeFieldValues;
 import com.abo47.kubejslab.recipe.model.LabRecipeOutput;
 import com.abo47.kubejslab.recipe.model.LabSlotDescriptor;
 import com.abo47.kubejslab.recipe.model.LabSlotKind;
+import com.abo47.kubejslab.recipe.model.LabSlotTint;
 
 import blusunrize.immersiveengineering.api.crafting.ArcFurnaceRecipe;
 import blusunrize.immersiveengineering.api.crafting.StackWithChance;
@@ -29,28 +30,24 @@ public class ArcFurnaceMachine extends ImmersiveEngineeringMachine {
 
     @Override
     public List<LabSlotDescriptor> inputSlots() {
-        List<LabSlotDescriptor> slots = new java.util.ArrayList<>(16);
-        for (int row = 0; row < 3; row++) {
-            for (int col = 0; col < 4; col++) {
-                slots.add(new LabSlotDescriptor(true, LabSlotKind.ITEM, col, row, true));
-            }
-        }
-        for (int col = 0; col < 4; col++) {
-            slots.add(new LabSlotDescriptor(true, LabSlotKind.ITEM, col, 3, true));
-        }
-        return slots;
+        return List.of(
+                new LabSlotDescriptor(true, LabSlotKind.ITEM, 0, 0, false),
+                new LabSlotDescriptor(true, LabSlotKind.ITEM, 0, 2, true, LabSlotTint.ADDITIVE),
+                new LabSlotDescriptor(true, LabSlotKind.ITEM, 1, 2, true, LabSlotTint.ADDITIVE),
+                new LabSlotDescriptor(true, LabSlotKind.ITEM, 2, 2, true, LabSlotTint.ADDITIVE),
+                new LabSlotDescriptor(true, LabSlotKind.ITEM, 3, 2, true, LabSlotTint.ADDITIVE));
     }
 
     @Override
     public List<LabSlotDescriptor> outputSlots() {
-        List<LabSlotDescriptor> slots = new java.util.ArrayList<>(7);
-        for (int row = 0; row < 3; row++) {
-            for (int col = 5; col <= 6; col++) {
-                slots.add(new LabSlotDescriptor(false, LabSlotKind.ITEM, col, row, true));
-            }
-        }
-        slots.add(new LabSlotDescriptor(false, LabSlotKind.ITEM, 7, 2, false));
-        return slots;
+        return List.of(
+                new LabSlotDescriptor(false, LabSlotKind.ITEM, 6, 0, true),
+                new LabSlotDescriptor(false, LabSlotKind.ITEM, 7, 0, true),
+                new LabSlotDescriptor(false, LabSlotKind.ITEM, 6, 1, true),
+                new LabSlotDescriptor(false, LabSlotKind.ITEM, 7, 1, true),
+                new LabSlotDescriptor(false, LabSlotKind.ITEM, 6, 2, true),
+                new LabSlotDescriptor(false, LabSlotKind.ITEM, 7, 2, true),
+                new LabSlotDescriptor(false, LabSlotKind.ITEM, 8, 2, false));
     }
 
     @Override

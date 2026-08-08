@@ -84,7 +84,7 @@ public final class LabPhantomFluidSlotWidget extends Widget {
         int y = getPositionY();
         SlotWidget.ITEM_SLOT_TEXTURE.draw(graphics, mouseX, mouseY, x, y, 18, 18);
         if (role != null) {
-            int color = role == RecipeIngredientRole.INPUT ? LabColors.INPUT_TINT : LabColors.OUTPUT_TINT;
+            int color = role == RecipeIngredientRole.INPUT ? LabColors.FLUID_INPUT_TINT : LabColors.FLUID_OUTPUT_TINT;
             graphics.fill(x, y, x + 18, y + 18, color);
         }
         if (!data.fluid.isEmpty()) {

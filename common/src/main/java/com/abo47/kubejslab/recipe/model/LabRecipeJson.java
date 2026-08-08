@@ -2,7 +2,9 @@ package com.abo47.kubejslab.recipe.model;
 
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.material.Fluid;
 
 import com.lowdragmc.lowdraglib.side.fluid.FluidStack;
 
@@ -72,6 +74,16 @@ public final class LabRecipeJson {
             obj.add("nbt", JsonParser.parseString(fluid.getTag().toString()));
         }
         return obj;
+    }
+
+    public static JsonObject fluidIngredientJson(FluidStack fluid) {
+        for (TagKey<Fluid> tag : fluid.getFluid().builtInRegistryHolder().tags().toList()) {
+            JsonObject obj = new JsonObject();
+            obj.addProperty("tag", tag.location().toString());
+            obj.addProperty("amount", fluid.getAmount());
+            return obj;
+        }
+        return fluidJson(fluid);
     }
 
     public static JsonObject ingredientJson(LabIngredient ingredient) {

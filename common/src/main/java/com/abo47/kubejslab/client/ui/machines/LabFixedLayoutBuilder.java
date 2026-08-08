@@ -47,14 +47,11 @@ final class LabFixedLayoutBuilder {
             maxOutputCol = Math.max(maxOutputCol, d.col());
             maxRow = Math.max(maxRow, d.row());
         }
-        int outputColOffset = minOutputCol == Integer.MAX_VALUE ? 0 : maxInputCol + 2 - minOutputCol;
+        int outputBlockCols = minOutputCol == Integer.MAX_VALUE ? 0 : maxOutputCol - minOutputCol + 1;
 
-        int gridW = maxInputCol + 1;
         int gridH = maxRow + 1;
-        if (minOutputCol != Integer.MAX_VALUE) {
-            gridW = Math.max(gridW, maxInputCol + 1 + 1 + (maxOutputCol - minOutputCol + 1));
-        }
-        int ox = (widget.getSizeWidth() - gridW * 18) / 2;
+        int ox = LabLayout.MACHINE_PAD;
+        int outputOX = outputBlockCols == 0 ? ox : ox + (LabLayout.MACHINE_COLS - outputBlockCols) * 18;
         int oy = Math.max(LabLayout.MACHINE_PAD, (widget.getSizeHeight() - gridH * 18) / 2);
 
         LabRecipeIndex.LabRecipeEntry entry = widget.entry();
@@ -89,11 +86,10 @@ final class LabFixedLayoutBuilder {
             }
         }
 
-        int outputOX = ox + outputColOffset * 18;
         int itemInputIndex = 0;
         int fluidInputIndex = 0;
         for (LabSlotDescriptor d : inputDesc) {
-            LabSlotData data = new LabSlotData();
+            LabSlotData data = d.kind() == LabSlotKind.FLUID ? new LabSlotData(true) : new LabSlotData();
             if (d.kind() == LabSlotKind.FLUID) {
                 if (fluidInputIndex < fluidInputs.size()) {
                     data.setFluidValue(fluidInputs.get(fluidInputIndex++));
@@ -111,7 +107,7 @@ final class LabFixedLayoutBuilder {
         int itemOutputIndex = 0;
         int fluidOutputIndex = 0;
         for (LabSlotDescriptor d : outputDesc) {
-            LabSlotData data = new LabSlotData();
+            LabSlotData data = d.kind() == LabSlotKind.FLUID ? new LabSlotData(true) : new LabSlotData();
             if (d.kind() == LabSlotKind.FLUID) {
                 if (fluidOutputIndex < fluidOutputs.size()) {
                     data.setFluidValue(fluidOutputs.get(fluidOutputIndex++));
@@ -133,7 +129,7 @@ final class LabFixedLayoutBuilder {
         slot.setSelfPosition(ox + d.col() * 18, oy + d.row() * 18);
         widget.addWidget(slot);
         widget.addSlotPair(new LabSlotPair(data, null, d.input() ? RecipeIngredientRole.INPUT
-                : RecipeIngredientRole.OUTPUT, d.col(), d.row()));
+                : RecipeIngredientRole.OUTPUT, d.col(), d.row(), d.tint()));
     }
 
     private Widget createDescriptorWidget(LabSlotDescriptor d, LabSlotData data) {
@@ -150,6 +146,7 @@ final class LabFixedLayoutBuilder {
         slot.setClientSideWidget();
         slot.setDragOwner(widget);
         slot.setRole(d.input() ? RecipeIngredientRole.INPUT : RecipeIngredientRole.OUTPUT);
+        slot.setTint(d.tint());
         return slot;
     }
 

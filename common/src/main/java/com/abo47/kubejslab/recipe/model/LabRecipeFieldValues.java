@@ -3,7 +3,7 @@ package com.abo47.kubejslab.recipe.model;
 public record LabRecipeFieldValues(boolean shapeless, float experience, int cookingTime, int count,
         int processingTime, HeatRequirement heatRequirement, boolean keepHeldItem, boolean acceptMirrored,
         int gridWidth, int gridHeight, int energy, int creosoteAmount, String mold, String blueprintCategory,
-        ClocheRenderType clocheRenderType, String clocheRenderBlock, int fluidInputAmount, int fluidOutputAmount) {
+        String clocheRenderType, String clocheRenderBlock, int fluidInputAmount, int fluidOutputAmount) {
 
     public LabRecipeFieldValues {
         experience = Math.max(0f, experience);
@@ -17,7 +17,7 @@ public record LabRecipeFieldValues(boolean shapeless, float experience, int cook
         creosoteAmount = Math.max(0, creosoteAmount);
         mold = mold == null ? "" : mold;
         blueprintCategory = blueprintCategory == null ? "" : blueprintCategory;
-        clocheRenderType = clocheRenderType == null ? ClocheRenderType.GENERIC : clocheRenderType;
+        clocheRenderType = clocheRenderType == null || clocheRenderType.isBlank() ? "generic" : clocheRenderType;
         clocheRenderBlock = clocheRenderBlock == null ? "" : clocheRenderBlock;
         fluidInputAmount = Math.max(0, fluidInputAmount);
         fluidOutputAmount = Math.max(0, fluidOutputAmount);
@@ -27,13 +27,13 @@ public record LabRecipeFieldValues(boolean shapeless, float experience, int cook
             int processingTime, HeatRequirement heatRequirement, boolean keepHeldItem, boolean acceptMirrored,
             int gridWidth, int gridHeight) {
         this(shapeless, experience, cookingTime, count, processingTime, heatRequirement, keepHeldItem,
-                acceptMirrored, gridWidth, gridHeight, 0, 0, "", "", ClocheRenderType.GENERIC, "", 0, 0);
+                acceptMirrored, gridWidth, gridHeight, 0, 0, "", "", "generic", "", 0, 0);
     }
 
     public LabRecipeFieldValues(boolean shapeless, float experience, int cookingTime, int count,
             int processingTime, HeatRequirement heatRequirement, boolean keepHeldItem, boolean acceptMirrored,
             int gridWidth, int gridHeight, int energy, int creosoteAmount, String mold, String blueprintCategory,
-            ClocheRenderType clocheRenderType, String clocheRenderBlock) {
+            String clocheRenderType, String clocheRenderBlock) {
         this(shapeless, experience, cookingTime, count, processingTime, heatRequirement, keepHeldItem,
                 acceptMirrored, gridWidth, gridHeight, energy, creosoteAmount, mold, blueprintCategory,
                 clocheRenderType, clocheRenderBlock, 0, 0);
@@ -41,6 +41,6 @@ public record LabRecipeFieldValues(boolean shapeless, float experience, int cook
 
     public static LabRecipeFieldValues defaults() {
         return new LabRecipeFieldValues(false, 0f, 200, 1, 100, HeatRequirement.NONE, false, true, 3, 3, 0, 0,
-                "", "", ClocheRenderType.GENERIC, "", 0, 0);
+                "", "", "generic", "", 0, 0);
     }
 }

@@ -6,7 +6,6 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.crafting.Recipe;
 
-import com.abo47.kubejslab.recipe.model.ClocheRenderType;
 import com.abo47.kubejslab.recipe.model.LabIngredient;
 import com.abo47.kubejslab.recipe.model.LabRecipeField;
 import com.abo47.kubejslab.recipe.model.LabRecipeFieldValues;
@@ -30,7 +29,7 @@ public class ClocheMachine extends ImmersiveEngineeringMachine {
     public List<LabSlotDescriptor> inputSlots() {
         return List.of(
                 new LabSlotDescriptor(true, LabSlotKind.ITEM, 0, 0, false),
-                new LabSlotDescriptor(true, LabSlotKind.ITEM, 1, 0, false));
+                new LabSlotDescriptor(true, LabSlotKind.ITEM, 0, 1, false));
     }
 
     @Override
@@ -58,21 +57,10 @@ public class ClocheMachine extends ImmersiveEngineeringMachine {
         json.add("results", results);
         json.addProperty("time", values.processingTime());
         JsonObject render = new JsonObject();
-        render.addProperty("type", renderTypeName(values.clocheRenderType()));
+        render.addProperty("type", values.clocheRenderType());
         render.addProperty("block", values.clocheRenderBlock());
         json.add("render", render);
         return json;
-    }
-
-    private static String renderTypeName(ClocheRenderType type) {
-        return switch (type) {
-            case CROP -> "crop";
-            case STACKING -> "stacking";
-            case STEM -> "stem";
-            case GENERIC -> "generic";
-            case HEMP -> "hemp";
-            case CHORUS -> "chorus";
-        };
     }
 
     @Override
@@ -83,7 +71,7 @@ public class ClocheMachine extends ImmersiveEngineeringMachine {
                     current.count(), cloche.time, current.heatRequirement(), current.keepHeldItem(),
                     current.acceptMirrored(), current.gridWidth(), current.gridHeight(),
                     current.energy(), current.creosoteAmount(), current.mold(), current.blueprintCategory(),
-                    ClocheRenderType.byName(cloche.renderReference.getType()),
+                    cloche.renderReference.getType(),
                     blockKey == null ? "" : blockKey.toString());
         }
         return current;

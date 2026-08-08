@@ -30,15 +30,15 @@ public class BottlingMachine extends ImmersiveEngineeringMachine {
         return List.of(
                 new LabSlotDescriptor(true, LabSlotKind.ITEM, 0, 0, true),
                 new LabSlotDescriptor(true, LabSlotKind.ITEM, 0, 1, true),
-                new LabSlotDescriptor(true, LabSlotKind.FLUID, 1, 0, false));
+                new LabSlotDescriptor(true, LabSlotKind.FLUID, 2, 0, false));
     }
 
     @Override
     public List<LabSlotDescriptor> outputSlots() {
         return List.of(
-                new LabSlotDescriptor(false, LabSlotKind.ITEM, 2, 0, false),
-                new LabSlotDescriptor(false, LabSlotKind.ITEM, 2, 1, true),
-                new LabSlotDescriptor(false, LabSlotKind.ITEM, 2, 2, true));
+                new LabSlotDescriptor(false, LabSlotKind.ITEM, 4, 0, false),
+                new LabSlotDescriptor(false, LabSlotKind.ITEM, 4, 1, true),
+                new LabSlotDescriptor(false, LabSlotKind.ITEM, 4, 2, true));
     }
 
     @Override

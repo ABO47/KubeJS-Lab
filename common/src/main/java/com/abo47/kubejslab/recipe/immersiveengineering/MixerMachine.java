@@ -41,7 +41,7 @@ public class MixerMachine extends ImmersiveEngineeringMachine {
                 new LabSlotDescriptor(true, LabSlotKind.ITEM, 0, 1, true),
                 new LabSlotDescriptor(true, LabSlotKind.ITEM, 1, 1, true),
                 new LabSlotDescriptor(true, LabSlotKind.ITEM, 2, 1, true),
-                new LabSlotDescriptor(true, LabSlotKind.FLUID, 1, 2, false));
+                new LabSlotDescriptor(true, LabSlotKind.FLUID, 2, 2, false));
     }
 
     @Override

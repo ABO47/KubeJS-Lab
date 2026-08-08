@@ -74,6 +74,30 @@ public final class ForgePlatformService implements PlatformService {
     }
 
     @Override
+    public FluidStack fluidOutputStack(Recipe<?> recipe) {
+        if (recipe instanceof IMultiblockRecipe multiblock) {
+            List<?> outputs = multiblock.getFluidOutputs();
+            if (outputs != null && !outputs.isEmpty()) {
+                net.minecraftforge.fluids.FluidStack fluid = (net.minecraftforge.fluids.FluidStack) outputs.get(0);
+                return fluid.getTag() == null
+                        ? FluidStack.create(fluid.getFluid(), fluid.getAmount())
+                        : FluidStack.create(fluid.getFluid(), fluid.getAmount(), fluid.getTag());
+            }
+        }
+        if (dev.architectury.platform.Platform.isModLoaded("create")
+                && recipe instanceof com.simibubi.create.content.processing.recipe.ProcessingRecipe<?> processing) {
+            List<net.minecraftforge.fluids.FluidStack> fluidResults = processing.getFluidResults();
+            if (!fluidResults.isEmpty()) {
+                net.minecraftforge.fluids.FluidStack fluid = fluidResults.get(0);
+                return fluid.getTag() == null
+                        ? FluidStack.create(fluid.getFluid(), fluid.getAmount())
+                        : FluidStack.create(fluid.getFluid(), fluid.getAmount(), fluid.getTag());
+            }
+        }
+        return FluidStack.empty();
+    }
+
+    @Override
     public String fluidOutputDisplayName(Recipe<?> recipe) {
         if (recipe instanceof IMultiblockRecipe multiblock) {
             List<?> outputs = multiblock.getFluidOutputs();
