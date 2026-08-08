@@ -292,7 +292,7 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
         addWidget(saveButton);
 
         scrollBar = new LabScrollBarWidget(
-                w - LabLayout.SCROLLBAR_W - 2, LabLayout.SETTINGS_PAD, LabLayout.SCROLLBAR_W, bottomY - LabLayout.SETTINGS_PAD,
+                w - LabLayout.SCROLLBAR_W - 2, 0, LabLayout.SCROLLBAR_W, bottomY,
                 () -> scrollOffset,
                 () -> scrollMax,
                 this::scrollKnobHeight,
@@ -617,7 +617,7 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
         int contentBottom = y + bottomY;
 
         g.flush();
-        g.enableScissor(x + 1, y + 1, x + w - 1, contentBottom);
+        g.enableScissor(x + 1, y, x + w - 1, contentBottom);
         for (int i = 0; i < rows.size(); i++) {
             FieldRow row = rows.get(i);
             int rowY = rowY(i) - scrollOffset;
@@ -725,8 +725,8 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
     private void recomputeScrollMax() {
         int pad = LabLayout.SETTINGS_PAD;
         int bottomY = getSizeHeight() - pad - LabLayout.SETTINGS_BTN_H;
-        int viewport = Math.max(1, bottomY - pad);
-        int contentH = pad + rows.size() * ROW_STRIDE;
+        int viewport = Math.max(1, bottomY);
+        int contentH = rows.size() * ROW_STRIDE;
         scrollMax = Math.max(0, contentH - viewport);
         scrollOffset = Math.min(scrollOffset, scrollMax);
         scrollBar.setVisible(scrollMax > 0);
@@ -735,8 +735,8 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
     private int scrollKnobHeight() {
         int pad = LabLayout.SETTINGS_PAD;
         int bottomY = getSizeHeight() - pad - LabLayout.SETTINGS_BTN_H;
-        int viewport = Math.max(1, bottomY - pad);
-        int contentH = Math.max(1, pad + rows.size() * ROW_STRIDE);
+        int viewport = Math.max(1, bottomY);
+        int contentH = Math.max(1, rows.size() * ROW_STRIDE);
         return Math.max(LabLayout.KNOB_MIN_H, viewport * viewport / contentH);
     }
 
@@ -774,7 +774,7 @@ public final class LabRecipeSettingsWidget extends WidgetGroup {
     }
 
     private static int rowY(int row) {
-        return LabLayout.SETTINGS_PAD + row * ROW_STRIDE;
+        return row * ROW_STRIDE;
     }
 
     private static TextTexture rowLabel(String key, int width) {
