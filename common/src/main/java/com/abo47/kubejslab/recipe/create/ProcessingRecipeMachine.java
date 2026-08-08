@@ -93,12 +93,17 @@ public class ProcessingRecipeMachine implements LabRecipeMachine {
         json.addProperty("type", jsonType);
         JsonArray ingredients = new JsonArray();
         for (LabIngredient ingredient : inputs) {
-            if (!ingredient.isEmpty()) {
-                if (ingredient instanceof LabIngredient.Fluid fluid) {
-                    ingredients.add(LabRecipeJson.fluidIngredientJson(fluid.fluid()));
-                } else {
-                    ingredients.add(LabRecipeJson.ingredientJson(ingredient));
+            if (ingredient.isEmpty()) {
+                continue;
+            }
+            if (ingredient instanceof LabIngredient.Fluid fluid) {
+                ingredients.add(LabRecipeJson.fluidIngredientJson(fluid.fluid()));
+            } else if (ingredient instanceof LabIngredient.Item item) {
+                for (int i = 0; i < Math.min(item.stack().getCount(), 9); i++) {
+                    ingredients.add(LabRecipeJson.itemIngredientJson(item.stack().copyWithCount(1)));
                 }
+            } else {
+                ingredients.add(LabRecipeJson.ingredientJson(ingredient));
             }
         }
         json.add("ingredients", ingredients);

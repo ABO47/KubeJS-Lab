@@ -23,6 +23,11 @@ public class MixingMachine extends ProcessingRecipeMachine {
 
     @Override
     public List<LabSlotDescriptor> outputSlots() {
-        return List.of(new LabSlotDescriptor(false, LabSlotKind.FLUID, 3, 1, false));
+        return List.of(
+                new LabSlotDescriptor(false, LabSlotKind.ITEM, 0, 0, true),
+                new LabSlotDescriptor(false, LabSlotKind.ITEM, 1, 0, true),
+                new LabSlotDescriptor(false, LabSlotKind.ITEM, 0, 1, true),
+                new LabSlotDescriptor(false, LabSlotKind.ITEM, 1, 1, true),
+                new LabSlotDescriptor(false, LabSlotKind.FLUID, 0, 2, false));
     }
 }

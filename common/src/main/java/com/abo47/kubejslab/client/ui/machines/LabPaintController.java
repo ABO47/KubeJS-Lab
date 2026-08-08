@@ -58,6 +58,7 @@ final class LabPaintController {
         }
         if (pendingPick != null) {
             applyPick(data, pendingPick);
+            pendingPick = null;
             return;
         }
         if (carried.isEmpty()) {
@@ -102,7 +103,7 @@ final class LabPaintController {
     private static void applyPick(LabSlotData data, LabPick pick) {
         if (pick instanceof LabPick.Item item) {
             if (data.kind != LabSlotKind.FLUID) {
-                data.setItemValue(item.stack().copyWithCount(1));
+                data.setItemValue(item.stack().copy());
             }
             return;
         }
