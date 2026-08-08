@@ -43,7 +43,7 @@ public final class LabScreen {
     private static final IGuiTexture INNER_TEXTURE =
             LabColors.bordered(LabColors.SURFACE_BASE, LabColors.BORDER_BASE);
     private static final ColorRectTexture DIVIDER_TEX = new ColorRectTexture(LabColors.BORDER_BASE);
-    private static final ColorRectTexture DIVIDER_FILL_TEX = new ColorRectTexture(LabColors.SURFACE_PANEL);
+    private static final ColorRectTexture DIVIDER_FILL_TEX = new ColorRectTexture(LabColors.BORDER_BASE);
     private static final ColorRectTexture TAB_ERASE_TEX = new ColorRectTexture(LabColors.SURFACE_BASE);
 
     private static int lastLeftTab;
