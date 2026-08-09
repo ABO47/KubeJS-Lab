@@ -1,3 +1,18 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect x="64" y="64" width="384" height="384" rx="64" fill="#4f8df7"/>
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect width="512" height="512" rx="96" fill="#1D2730"/>
+
+    <ellipse cx="256" cy="420" rx="155" ry="22" fill="#0C1116" opacity="0.45"/>
+
+    <g transform="translate(10 0)">
+        <g transform="translate(8 8)" fill="#111820">
+            <path d="M76 82H116V202L202 82H248L154 216L248 350H202L116 232V350H76V82Z"/>
+            <path d="M260 82H300V314H416V350H260V82Z"/>
+        </g>
+
+        <path d="M76 82H116V202L202 82H248L154 216L248 350H202L116 232V350H76V82Z"
+              fill="#D5E2EB"/>
+
+        <path d="M260 82H300V314H416V350H260V82Z"
+              fill="#D5E2EB"/>
+    </g>
 </svg>
