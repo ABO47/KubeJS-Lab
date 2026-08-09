@@ -117,11 +117,13 @@ public final class LabOptionLibrary {
     public static List<String> moldOptions() {
         Set<String> options = new LinkedHashSet<>(customMolds());
         options.addAll(DEFAULT_MOLDS);
-        RecipeManager manager = currentManager();
-        if (manager != null) {
-            for (Recipe<?> recipe : manager.getRecipes()) {
-                if (recipe instanceof MetalPressRecipe press) {
-                    options.add(BuiltInRegistries.ITEM.getKey(press.mold).toString());
+        if (Platform.isModLoaded("immersiveengineering")) {
+            RecipeManager manager = currentManager();
+            if (manager != null) {
+                for (Recipe<?> recipe : manager.getRecipes()) {
+                    if (recipe instanceof MetalPressRecipe press) {
+                        options.add(BuiltInRegistries.ITEM.getKey(press.mold).toString());
+                    }
                 }
             }
         }
@@ -130,14 +132,16 @@ public final class LabOptionLibrary {
 
     public static List<String> blueprintCategoryOptions() {
         Set<String> options = new LinkedHashSet<>(LabBlueprintCategories.custom());
-        if (Minecraft.getInstance().level != null) {
-            options.addAll(BlueprintCraftingRecipe.getCategoriesWithRecipes(Minecraft.getInstance().level));
-        }
-        RecipeManager manager = currentManager();
-        if (manager != null) {
-            for (Recipe<?> recipe : manager.getRecipes()) {
-                if (recipe instanceof BlueprintCraftingRecipe blueprint) {
-                    options.add(blueprint.blueprintCategory);
+        if (Platform.isModLoaded("immersiveengineering")) {
+            if (Minecraft.getInstance().level != null) {
+                options.addAll(BlueprintCraftingRecipe.getCategoriesWithRecipes(Minecraft.getInstance().level));
+            }
+            RecipeManager manager = currentManager();
+            if (manager != null) {
+                for (Recipe<?> recipe : manager.getRecipes()) {
+                    if (recipe instanceof BlueprintCraftingRecipe blueprint) {
+                        options.add(blueprint.blueprintCategory);
+                    }
                 }
             }
         }
