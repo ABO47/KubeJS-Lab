@@ -1,6 +1,4 @@
 package com.abo47.kubejslab.client.ui.machines;
-import com.abo47.kubejslab.client.ui.recipes.LabRecipeIndex;
-
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -14,12 +12,15 @@ import java.util.stream.Stream;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 
-import mezz.jei.api.recipe.IRecipeManager;
+import com.abo47.kubejslab.client.jei.LabJeiPlugin;
+import com.abo47.kubejslab.client.ui.recipes.LabRecipeIndex;
+import com.abo47.kubejslab.recipe.LabRecipeMachine;
+import com.abo47.kubejslab.recipe.LabRecipeMachines;
+
 import mezz.jei.api.recipe.category.IRecipeCategory;
+import mezz.jei.api.recipe.IRecipeManager;
 import mezz.jei.api.runtime.IJeiRuntime;
 
-import com.abo47.kubejslab.client.jei.LabJeiPlugin;
-import com.abo47.kubejslab.recipe.LabRecipeMachines;
 
 public final class LabMachineCatalog {
     private static IJeiRuntime cachedRuntime;
@@ -58,6 +59,15 @@ public final class LabMachineCatalog {
         return ids;
     }
 
+    public static LabMachine machineFor(ResourceLocation recipeId) {
+        for (LabMachine machine : machines()) {
+            if (recipeIds(machine).contains(recipeId)) {
+                return machine;
+            }
+        }
+        return null;
+    }
+
     private static List<LabMachine> build(IJeiRuntime runtime) {
         IRecipeManager manager = runtime.getRecipeManager();
         List<LabMachine> built = new ArrayList<>();
@@ -87,10 +97,36 @@ public final class LabMachineCatalog {
             } catch (RuntimeException | LinkageError ignored) {
             }
         }
+        Map<String, List<LabMachine>> byName = new HashMap<>();
+        for (LabMachine machine : built) {
+            byName.computeIfAbsent(machine.name(), key -> new ArrayList<>()).add(machine);
+        }
+        List<LabMachine> disambiguated = new ArrayList<>();
+        for (List<LabMachine> group : byName.values()) {
+            if (group.size() == 1) {
+                disambiguated.add(group.get(0));
+                continue;
+            }
+            for (LabMachine machine : group) {
+                ResourceLocation uid = machine.recipeTypeUid();
+                LabRecipeMachine support = LabRecipeMachines.get(uid);
+                String label = support != null && support.displayLabel() != null
+                        ? support.displayLabel()
+                        : (support != null ? labelFor(support.jsonType()) : uid.getPath());
+                disambiguated.add(new LabMachine(machine.category(), machine.icon(),
+                        machine.name() + " (" + label + ")", machine.supported()));
+            }
+        }
+        built = disambiguated;
         built.sort(Comparator.comparing(LabMachine::supported, Comparator.reverseOrder())
                 .thenComparing(LabMachine::name, String.CASE_INSENSITIVE_ORDER)
                 .thenComparing(machine -> machine.recipeTypeUid().toString()));
         return List.copyOf(built);
+    }
+
+    private static String labelFor(String jsonType) {
+        int colon = jsonType.indexOf(':');
+        return colon >= 0 ? jsonType.substring(colon + 1) : jsonType;
     }
 
     private static Set<ResourceLocation> computeRecipeIds(LabMachine machine) {
@@ -98,7 +134,19 @@ public final class LabMachineCatalog {
         if (runtime == null) {
             return Set.of();
         }
-        return computeIds(runtime.getRecipeManager(), machine.category());
+        IRecipeManager manager = runtime.getRecipeManager();
+        LabRecipeMachine support = LabRecipeMachines.get(machine.recipeTypeUid());
+        IRecipeCategory<?> category = machine.category();
+        if (support != null && support.recipeIdSourceUid() != null) {
+            ResourceLocation source = support.recipeIdSourceUid();
+            try (Stream<IRecipeCategory<?>> stream = manager.createRecipeCategoryLookup().get()) {
+                category = stream
+                        .filter(c -> source.equals(c.getRecipeType().getUid()))
+                        .findFirst()
+                        .orElse(category);
+            }
+        }
+        return computeIds(manager, category);
     }
 
     private static <R> Set<ResourceLocation> computeIds(IRecipeManager manager, IRecipeCategory<R> category) {

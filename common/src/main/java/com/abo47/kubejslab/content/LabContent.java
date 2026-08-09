@@ -1,10 +1,11 @@
 package com.abo47.kubejslab.content;
 
-import java.util.Objects;
 import java.util.function.Supplier;
+import java.util.Objects;
 
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
+
 
 public final class LabContent {
     private static Supplier<Block> labTable = unregistered("lab_table");

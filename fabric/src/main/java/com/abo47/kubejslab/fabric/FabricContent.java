@@ -1,7 +1,7 @@
 package com.abo47.kubejslab.fabric;
 
-import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.Registry;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.BlockItem;
@@ -10,10 +10,11 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 
-import com.abo47.kubejslab.KubeJSLab;
 import com.abo47.kubejslab.block.LabTable;
 import com.abo47.kubejslab.content.LabContent;
 import com.abo47.kubejslab.item.LabTabletItem;
+import com.abo47.kubejslab.KubeJSLab;
+
 
 public final class FabricContent {
     public static Block LAB_TABLE;

@@ -22,6 +22,12 @@ dependencies {
     modImplementation("mezz.jei:jei-${minecraft_version}-common-api:${jei_version}") {
         transitive = false
     }
+    modCompileOnly("maven.modrinth:create:${create_forge_version}") {
+        transitive = false
+    }
+    modCompileOnly("maven.modrinth:immersiveengineering:${ie_forge_version}") {
+        transitive = false
+    }
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
 }
 

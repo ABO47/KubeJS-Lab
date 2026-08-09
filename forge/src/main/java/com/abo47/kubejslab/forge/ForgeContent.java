@@ -9,15 +9,16 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 
-import com.abo47.kubejslab.KubeJSLab;
 import com.abo47.kubejslab.block.LabTable;
 import com.abo47.kubejslab.content.LabContent;
 import com.abo47.kubejslab.item.LabTabletItem;
+import com.abo47.kubejslab.KubeJSLab;
 
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
+
 
 public final class ForgeContent {
     public static final DeferredRegister<Block> BLOCKS = DeferredRegister.create(ForgeRegistries.BLOCKS, KubeJSLab.MOD_ID);

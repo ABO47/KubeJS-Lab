@@ -4,13 +4,13 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
 import java.util.function.IntSupplier;
-
 import javax.annotation.Nonnull;
 
 import net.minecraft.client.gui.GuiGraphics;
 
 import com.lowdragmc.lowdraglib.gui.texture.ColorRectTexture;
 import com.lowdragmc.lowdraglib.gui.widget.Widget;
+
 
 public final class LabScrollBarWidget extends Widget {
     public static final int RESERVED_WIDTH = LabLayout.SCROLLBAR_W;
@@ -60,13 +60,16 @@ public final class LabScrollBarWidget extends Widget {
         int h = getSizeHeight();
 
         int railX = x + Math.max(0, (w - RAIL_WIDTH) / 2);
+        int max = Math.max(0, maxSupplier.getAsInt());
+        if (max <= 0) {
+            return;
+        }
         RAIL_TEX.draw(g, mx, my, railX, y, RAIL_WIDTH, h);
 
         int knobH = knobHeight();
-        int max = Math.max(0, maxSupplier.getAsInt());
         int current = LabScrollMath.clamp(valueSupplier.getAsInt(), max);
         int span = Math.max(0, h - knobH);
-        int knobY = y + (max <= 0 || span <= 0 ? 0 : Math.round((float) span * ((float) current / (float) max)));
+        int knobY = y + (span <= 0 ? 0 : Math.round((float) span * ((float) current / (float) max)));
         boolean hovered = isMouseOverElement(mx, my);
         ColorRectTexture thumb = draggingSupplier.getAsBoolean() || hovered ? THUMB_ACTIVE_TEX : THUMB_TEX;
         thumb.draw(g, mx, my, x, knobY, w, knobH);

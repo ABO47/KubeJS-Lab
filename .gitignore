@@ -30,6 +30,7 @@ crash-reports/
 hs_err_pid*
 replay_pid*
 local.properties
+gradle-local.properties
 .env
 .env.*
 .DS_Store

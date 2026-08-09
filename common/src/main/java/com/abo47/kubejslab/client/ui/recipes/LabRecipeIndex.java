@@ -2,19 +2,29 @@ package com.abo47.kubejslab.client.ui.recipes;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeManager;
+import net.minecraft.world.item.ItemStack;
+
+import com.abo47.kubejslab.KubeJSLab;
+import com.abo47.kubejslab.client.ui.picker.LabSearchNormalizer;
+import com.abo47.kubejslab.platform.Services;
+
+import com.lowdragmc.lowdraglib.side.fluid.FluidStack;
+
 
 public final class LabRecipeIndex {
+    private static final Map<ResourceLocation, Recipe<?>> RECIPE_CACHE = new HashMap<>();
     private static RecipeManager cachedManager;
     private static int cachedCount = -1;
     private static List<LabRecipeEntry> entries = List.of();
@@ -47,19 +57,18 @@ public final class LabRecipeIndex {
     }
 
     public static String normalizeUserSearch(String value) {
-        if (value == null) {
-            return "";
-        }
-        String normalized = value.replace('\n', ' ').replace('\r', ' ').toLowerCase(Locale.ROOT);
-        while (normalized.endsWith("_")) {
-            normalized = normalized.substring(0, normalized.length() - 1);
-        }
-        return normalized;
+        return LabSearchNormalizer.normalizeUserSearch(value);
     }
 
     public static Recipe<?> recipeById(ResourceLocation id) {
         entries();
-        return cachedManager == null ? null : cachedManager.byKey(id).orElse(null);
+        if (cachedManager != null) {
+            Recipe<?> recipe = cachedManager.byKey(id).orElse(null);
+            if (recipe != null) {
+                return recipe;
+            }
+        }
+        return RECIPE_CACHE.get(id);
     }
 
     private static List<LabRecipeEntry> entries() {
@@ -74,8 +83,14 @@ public final class LabRecipeIndex {
         if (manager != cachedManager || manager.getRecipes().size() != cachedCount) {
             cachedManager = manager;
             cachedCount = manager.getRecipes().size();
-            entries = build(manager, connection.registryAccess());
-            version++;
+            try {
+                entries = build(manager, connection.registryAccess());
+                version++;
+            } catch (RuntimeException e) {
+                cachedManager = null;
+                cachedCount = -1;
+                KubeJSLab.LOGGER.warn("[Index] failed to build recipe index, will retry", e);
+            }
         }
         return entries;
     }
@@ -83,11 +98,17 @@ public final class LabRecipeIndex {
     private static List<LabRecipeEntry> build(RecipeManager manager, RegistryAccess registryAccess) {
         List<LabRecipeEntry> built = new ArrayList<>();
         for (Recipe<?> recipe : manager.getRecipes()) {
+            RECIPE_CACHE.put(recipe.getId(), recipe);
             ItemStack result = resultItem(recipe, registryAccess);
-            if (result.isEmpty()) {
+            FluidStack fluidOutput = Services.platform().fluidOutputStack(recipe);
+            if (result.isEmpty() && fluidOutput.isEmpty()) {
                 continue;
             }
-            built.add(LabRecipeEntry.of(recipe.getId(), result, displayName(result, recipe.getId())));
+            if (result.isEmpty()) {
+                result = Services.platform().fluidOutputDisplay(recipe);
+            }
+            built.add(LabRecipeEntry.of(recipe.getId(), result,
+                    fluidNameOrFallback(recipe, result, fluidOutput), fluidOutput));
         }
         built.sort(Comparator.comparing(LabRecipeEntry::name, String.CASE_INSENSITIVE_ORDER)
                 .thenComparing(LabRecipeEntry::id));
@@ -102,12 +123,18 @@ public final class LabRecipeIndex {
         }
     }
 
-    private static String displayName(ItemStack stack, ResourceLocation id) {
-        String name = stack.getHoverName().getString();
-        if (name.isBlank()) {
-            name = id.getPath();
+    private static String fluidNameOrFallback(Recipe<?> recipe, ItemStack result, FluidStack fluidOutput) {
+        if (fluidOutput != null && !fluidOutput.isEmpty()) {
+            return fluidOutput.getDisplayName().getString();
         }
-        return name;
+        if (!result.isEmpty()) {
+            return result.getHoverName().getString();
+        }
+        String name = Services.platform().fluidOutputDisplayName(recipe);
+        if (!name.isBlank()) {
+            return name;
+        }
+        return recipe.getId().getPath();
     }
 
     private static String normalize(String value) {
@@ -120,11 +147,16 @@ public final class LabRecipeIndex {
             String name,
             boolean kubejs,
             String normalizedId,
-            String normalizedName
+            String normalizedName,
+            FluidStack fluidOutput
     ) {
         private static final String KUBEJS_NAMESPACE = "kubejs";
 
         static LabRecipeEntry of(ResourceLocation id, ItemStack output, String name) {
+            return of(id, output, name, null);
+        }
+
+        static LabRecipeEntry of(ResourceLocation id, ItemStack output, String name, FluidStack fluidOutput) {
             ItemStack copy = output.copy();
             copy.setCount(1);
             return new LabRecipeEntry(
@@ -133,7 +165,8 @@ public final class LabRecipeIndex {
                     name,
                     KUBEJS_NAMESPACE.equals(id.getNamespace()),
                     normalize(id.toString()),
-                    normalize(name)
+                    normalize(name),
+                    fluidOutput
             );
         }
 

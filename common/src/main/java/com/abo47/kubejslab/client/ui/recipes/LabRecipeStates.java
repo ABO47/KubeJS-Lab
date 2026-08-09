@@ -10,6 +10,7 @@ import net.minecraft.resources.ResourceLocation;
 import com.abo47.kubejslab.recipe.model.LabRecipeStateEntry;
 import com.abo47.kubejslab.recipe.model.LabRecipeStatus;
 
+
 public final class LabRecipeStates {
     private static final Map<ResourceLocation, LabRecipeStateEntry> STATES = new LinkedHashMap<>();
 
@@ -24,6 +25,11 @@ public final class LabRecipeStates {
     public static LabRecipeStatus statusOf(ResourceLocation id) {
         LabRecipeStateEntry entry = STATES.get(id);
         return entry == null ? LabRecipeStatus.NORMAL : entry.status();
+    }
+
+    public static ResourceLocation machineUidOf(ResourceLocation id) {
+        LabRecipeStateEntry entry = STATES.get(id);
+        return entry == null ? null : entry.machineUid();
     }
 
     public static List<LabRecipeIndex.LabRecipeEntry> disabledEntries(ResourceLocation machineUid) {

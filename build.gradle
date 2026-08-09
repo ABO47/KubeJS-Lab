@@ -60,6 +60,15 @@ allprojects {
                 includeGroup 'dev.latvian.mods'
             }
         }
+        maven {
+            name = 'Create Mod'
+            url = 'https://maven.createmod.net'
+            content {
+                includeGroup 'dev.engine-room.flywheel'
+                includeGroup 'net.createmod.ponder'
+                includeGroup 'net.createmod.catnip'
+            }
+        }
     }
 
     tasks.withType(JavaCompile).configureEach {
@@ -246,4 +255,42 @@ project(':kubejslab-common') {
         dependsOn rootProject.tasks.named('generateUiTexturePngs')
         dependsOn rootProject.tasks.named('generateModLogoPng')
     }
+}
+
+tasks.register('deployJars') {
+    group = 'distribution'
+    description = 'Builds both loader jars and copies them into the Prism Launcher mods folders (paths from gradle-local.properties).'
+    dependsOn project(':kubejslab-forge').tasks.named('remapJar')
+    dependsOn project(':kubejslab-fabric').tasks.named('remapJar')
+
+    doLast {
+        def localProps = new Properties()
+        def localPropsFile = file('gradle-local.properties')
+        if (!localPropsFile.exists()) {
+            throw new GradleException("gradle-local.properties not found. Create it with forgeModsDir=... and fabricModsDir=...")
+        }
+        localPropsFile.withInputStream { localProps.load(it) }
+
+        deployTo('forge', localProps.getProperty('forgeModsDir'))
+        deployTo('fabric', localProps.getProperty('fabricModsDir'))
+    }
+}
+
+def deployTo(String loader, String modsDirPath) {
+    if (modsDirPath == null || modsDirPath.isEmpty()) {
+        throw new GradleException("gradle-local.properties is missing ${loader}ModsDir=")
+    }
+    def modsDir = new File(modsDirPath)
+    if (!modsDir.isDirectory()) {
+        throw new GradleException("Mods dir not found: ${modsDir}")
+    }
+    def jar = project(":kubejslab-${loader}").tasks.named('remapJar').get().archiveFile.get().asFile
+    if (!jar.exists()) {
+        throw new GradleException("Built jar not found: ${jar}")
+    }
+    def stale = fileTree(modsDir) { include 'kubejslab-*.jar' }.files
+    stale.each { it.delete() }
+    java.nio.file.Files.copy(jar.toPath(), new File(modsDir, jar.name).toPath(),
+            java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+    logger.lifecycle("Deployed ${jar.name} to ${modsDir} (removed ${stale.size()} old jar(s))")
 }

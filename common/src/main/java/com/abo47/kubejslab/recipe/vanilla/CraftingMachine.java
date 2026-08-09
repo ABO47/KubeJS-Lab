@@ -4,18 +4,21 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.ShapelessRecipe;
+import net.minecraft.world.item.ItemStack;
 
 import com.abo47.kubejslab.recipe.LabRecipeMachine;
+import com.abo47.kubejslab.recipe.model.LabIngredient;
 import com.abo47.kubejslab.recipe.model.LabRecipeField;
 import com.abo47.kubejslab.recipe.model.LabRecipeFieldValues;
 import com.abo47.kubejslab.recipe.model.LabRecipeJson;
+import com.abo47.kubejslab.recipe.model.LabRecipeOutput;
+
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+
 
 public final class CraftingMachine implements LabRecipeMachine {
     @Override
@@ -39,14 +42,15 @@ public final class CraftingMachine implements LabRecipeMachine {
     }
 
     @Override
-    public JsonObject buildJson(String jsonType, List<ItemStack> inputs, ItemStack output, LabRecipeFieldValues values) {
+    public JsonObject buildJson(String jsonType, List<LabIngredient> inputs, List<LabRecipeOutput> outputs,
+            LabRecipeFieldValues values) {
         JsonObject json = new JsonObject();
         if (values.shapeless()) {
             json.addProperty("type", "kubejs:shapeless");
             JsonArray ingredients = new JsonArray();
-            for (ItemStack stack : inputs) {
-                if (!stack.isEmpty()) {
-                    ingredients.add(LabRecipeJson.itemJson(stack));
+            for (LabIngredient ingredient : inputs) {
+                if (!ingredient.isEmpty()) {
+                    ingredients.add(LabRecipeJson.ingredientJson(ingredient));
                 }
             }
             json.add("ingredients", ingredients);
@@ -54,38 +58,50 @@ public final class CraftingMachine implements LabRecipeMachine {
             json.addProperty("type", "kubejs:shaped");
             JsonArray pattern = new JsonArray();
             JsonObject key = new JsonObject();
-            Map<String, Character> charByItem = new LinkedHashMap<>();
+            Map<String, Character> charByKey = new LinkedHashMap<>();
             char nextChar = 'A';
             for (int row = 0; row < 3; row++) {
                 StringBuilder rowStr = new StringBuilder();
                 for (int col = 0; col < 3; col++) {
-                    ItemStack stack = row * 3 + col < inputs.size() ? inputs.get(row * 3 + col) : ItemStack.EMPTY;
-                    if (stack.isEmpty()) {
+                    LabIngredient ingredient = row * 3 + col < inputs.size() ? inputs.get(row * 3 + col)
+                            : new LabIngredient.Item(ItemStack.EMPTY);
+                    if (ingredient.isEmpty()) {
                         rowStr.append(' ');
                         continue;
                     }
-                    String itemKey = stack.getItem().builtInRegistryHolder().key().location().toString()
-                            + (stack.hasTag() ? "|" + stack.getTag() : "");
-                    Character c = charByItem.get(itemKey);
+                    String entryKey = ingredientKey(ingredient);
+                    Character c = charByKey.get(entryKey);
                     if (c == null) {
                         c = nextChar++;
-                        charByItem.put(itemKey, c);
+                        charByKey.put(entryKey, c);
                     }
                     rowStr.append((char) c);
-                    key.add(String.valueOf((char) c), LabRecipeJson.itemJson(stack));
+                    key.add(String.valueOf((char) c), LabRecipeJson.ingredientJson(ingredient));
                 }
                 pattern.add(rowStr.toString());
             }
             json.add("pattern", pattern);
             json.add("key", key);
         }
-        json.add("result", LabRecipeJson.itemWithCount(output));
+        json.add("result", LabRecipeJson.itemWithCount(LabRecipeOutput.firstItem(outputs)));
         return json;
+    }
+
+    private static String ingredientKey(LabIngredient ingredient) {
+        if (ingredient instanceof LabIngredient.Item item) {
+            return "i:" + item.stack().getItem().builtInRegistryHolder().key().location()
+                    + (item.stack().hasTag() ? "|" + item.stack().getTag() : "");
+        }
+        if (ingredient instanceof LabIngredient.Tag tag) {
+            return "t:" + tag.tag();
+        }
+        return "f:" + ingredient;
     }
 
     @Override
     public LabRecipeFieldValues prefill(LabRecipeFieldValues current, Recipe<?> original) {
         return new LabRecipeFieldValues(original instanceof ShapelessRecipe, current.experience(),
-                current.cookingTime(), current.count());
+                current.cookingTime(), current.count(), current.processingTime(), current.heatRequirement(),
+                current.keepHeldItem(), current.acceptMirrored(), current.gridWidth(), current.gridHeight());
     }
 }

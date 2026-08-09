@@ -4,17 +4,19 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 
-import io.netty.buffer.Unpooled;
-
-import dev.architectury.platform.Platform;
-
 import com.lowdragmc.lowdraglib.core.mixins.accessor.ServerPlayerAccessor;
 import com.lowdragmc.lowdraglib.gui.modular.ModularUI;
 import com.lowdragmc.lowdraglib.gui.modular.ModularUIContainer;
 import com.lowdragmc.lowdraglib.side.ForgeEventHooks;
 
+import com.abo47.kubejslab.KubeJSLab;
+import com.abo47.kubejslab.item.runtime.LabItemService;
 import com.abo47.kubejslab.network.ModNetwork;
 import com.abo47.kubejslab.recipe.runtime.LabRecipeService;
+
+import dev.architectury.platform.Platform;
+import io.netty.buffer.Unpooled;
+
 
 public final class LabUIFactory {
     private LabUIFactory() {
@@ -36,11 +38,16 @@ public final class LabUIFactory {
 
         FriendlyByteBuf serializedHolder = new FriendlyByteBuf(Unpooled.buffer());
         serializedHolder.writeBlockPos(holder);
-        ui.mainGroup.writeInitialData(serializedHolder);
+        KubeJSLab.LOGGER.info("[LabUI] open for {}: OpenScreen payload is {} bytes (blockPos only)", player.getName().getString(),
+                serializedHolder.readableBytes());
+        if (serializedHolder.readableBytes() > 512) {
+            KubeJSLab.LOGGER.warn("OpenScreen payload is large: {} bytes", serializedHolder.readableBytes());
+        }
 
         ModularUIContainer container = new ModularUIContainer(ui, windowId);
         ModNetwork.sendOpenScreen(player, serializedHolder, windowId);
         ModNetwork.sendRecipeState(player, LabRecipeService.statePacket());
+        ModNetwork.sendItemState(player, LabItemService.statePacket());
 
         accessor.callInitMenu(container);
         player.containerMenu = container;

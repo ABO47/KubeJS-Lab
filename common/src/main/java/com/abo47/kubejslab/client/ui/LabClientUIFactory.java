@@ -7,6 +7,7 @@ import net.minecraft.world.entity.player.Player;
 
 import com.lowdragmc.lowdraglib.gui.modular.ModularUI;
 
+
 public final class LabClientUIFactory {
     private LabClientUIFactory() {
     }
@@ -21,7 +22,6 @@ public final class LabClientUIFactory {
         ModularUI ui = LabScreen.createUI(holder, player);
         ui.initWidgets();
         LabGuiContainer gui = new LabGuiContainer(ui, windowId);
-        ui.mainGroup.readInitialData(buf);
         LabScreen.activateClient(ui);
         minecraft.setScreen(gui);
         minecraft.player.containerMenu = gui.getMenu();

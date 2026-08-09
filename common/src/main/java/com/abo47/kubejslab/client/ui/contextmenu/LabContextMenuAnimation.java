@@ -4,6 +4,7 @@ import java.util.function.LongSupplier;
 
 import com.lowdragmc.lowdraglib.gui.widget.WidgetGroup;
 
+
 public final class LabContextMenuAnimation {
     private LabContextMenuAnimation() {
     }

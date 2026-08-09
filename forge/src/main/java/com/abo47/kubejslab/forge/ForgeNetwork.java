@@ -4,21 +4,22 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 
-import com.abo47.kubejslab.KubeJSLab;
-
 import com.abo47.kubejslab.client.ui.LabClientUIFactory;
 import com.abo47.kubejslab.client.ui.LabUIFactory;
+import com.abo47.kubejslab.KubeJSLab;
+import com.abo47.kubejslab.network.item.C2SItemEditPacket;
+import com.abo47.kubejslab.network.item.S2CItemStatePacket;
 import com.abo47.kubejslab.network.recipe.C2SRecipeEditPacket;
 import com.abo47.kubejslab.network.recipe.S2CRecipeStatePacket;
 
+import io.netty.buffer.Unpooled;
 import net.minecraftforge.network.NetworkDirection;
 import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.simple.SimpleChannel;
 
-import io.netty.buffer.Unpooled;
 
 public final class ForgeNetwork {
-    private static final String PROTOCOL = "2";
+    private static final String PROTOCOL = "3";
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(KubeJSLab.MOD_ID, "main"),
             () -> PROTOCOL,
@@ -73,6 +74,25 @@ public final class ForgeNetwork {
                     ctx.get().enqueueWork(packet::handleClient);
                     ctx.get().setPacketHandled(true);
                 });
+        CHANNEL.registerMessage(4, C2SItemEditPacket.class,
+                C2SItemEditPacket::write,
+                C2SItemEditPacket::read,
+                (packet, ctx) -> {
+                    ctx.get().enqueueWork(() -> {
+                        ServerPlayer player = ctx.get().getSender();
+                        if (player != null) {
+                            packet.handle(player);
+                        }
+                    });
+                    ctx.get().setPacketHandled(true);
+                });
+        CHANNEL.registerMessage(5, S2CItemStatePacket.class,
+                S2CItemStatePacket::write,
+                S2CItemStatePacket::read,
+                (packet, ctx) -> {
+                    ctx.get().enqueueWork(packet::handleClient);
+                    ctx.get().setPacketHandled(true);
+                });
     }
 
     public static void sendToClient(Object packet, ServerPlayer player) {
@@ -80,7 +100,12 @@ public final class ForgeNetwork {
     }
 
     public static void sendToServer(Object packet) {
-        CHANNEL.sendToServer(packet);
+        try {
+            CHANNEL.sendToServer(packet);
+        } catch (Throwable t) {
+            KubeJSLab.LOGGER.error("[Net] Failed to send packet {} to server", packet.getClass().getSimpleName(), t);
+            throw t;
+        }
     }
 
     public record OpenScreenPacket(int windowId, byte[] payload) {

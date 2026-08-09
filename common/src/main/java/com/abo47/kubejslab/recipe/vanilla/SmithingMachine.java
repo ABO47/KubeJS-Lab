@@ -2,22 +2,39 @@ package com.abo47.kubejslab.recipe.vanilla;
 
 import java.util.List;
 
-import com.google.gson.JsonObject;
-
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.SmithingTrimRecipe;
 
 import com.abo47.kubejslab.recipe.LabRecipeMachine;
+import com.abo47.kubejslab.recipe.model.LabIngredient;
 import com.abo47.kubejslab.recipe.model.LabRecipeField;
 import com.abo47.kubejslab.recipe.model.LabRecipeFieldValues;
 import com.abo47.kubejslab.recipe.model.LabRecipeJson;
+import com.abo47.kubejslab.recipe.model.LabRecipeOutput;
+import com.abo47.kubejslab.recipe.model.LabSlotDescriptor;
+import com.abo47.kubejslab.recipe.model.LabSlotKind;
+
+import com.google.gson.JsonObject;
+
 
 public final class SmithingMachine implements LabRecipeMachine {
     private static final ResourceLocation JEI_UID = new ResourceLocation("minecraft", "smithing");
     private static final String TRANSFORM_TYPE = "minecraft:smithing_transform";
     private static final String TRIM_TYPE = "minecraft:smithing_trim";
+
+    @Override
+    public List<LabSlotDescriptor> inputSlots() {
+        return List.of(
+                new LabSlotDescriptor(true, LabSlotKind.ITEM, 0, 0, false),
+                new LabSlotDescriptor(true, LabSlotKind.ITEM, 1, 0, false),
+                new LabSlotDescriptor(true, LabSlotKind.ITEM, 2, 0, false));
+    }
+
+    @Override
+    public List<LabSlotDescriptor> outputSlots() {
+        return List.of(new LabSlotDescriptor(false, LabSlotKind.ITEM, 0, 0, true));
+    }
 
     @Override
     public ResourceLocation jeiUid() {
@@ -45,18 +62,18 @@ public final class SmithingMachine implements LabRecipeMachine {
     }
 
     @Override
-    public JsonObject buildJson(String jsonType, List<ItemStack> inputs, ItemStack output,
+    public JsonObject buildJson(String jsonType, List<LabIngredient> inputs, List<LabRecipeOutput> outputs,
             LabRecipeFieldValues values) {
         if (inputs.size() < 3) {
             return null;
         }
         JsonObject json = new JsonObject();
         json.addProperty("type", jsonType);
-        json.add("template", LabRecipeJson.itemJson(inputs.get(0)));
-        json.add("base", LabRecipeJson.itemJson(inputs.get(1)));
-        json.add("addition", LabRecipeJson.itemJson(inputs.get(2)));
+        json.add("template", LabRecipeJson.ingredientJson(inputs.get(0)));
+        json.add("base", LabRecipeJson.ingredientJson(inputs.get(1)));
+        json.add("addition", LabRecipeJson.ingredientJson(inputs.get(2)));
         if (!TRIM_TYPE.equals(jsonType)) {
-            json.add("result", LabRecipeJson.itemWithCount(output));
+            json.add("result", LabRecipeJson.itemWithCount(LabRecipeOutput.firstItem(outputs)));
         }
         return json;
     }

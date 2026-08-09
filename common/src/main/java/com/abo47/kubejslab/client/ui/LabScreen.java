@@ -1,32 +1,17 @@
 package com.abo47.kubejslab.client.ui;
-import com.abo47.kubejslab.client.ui.base.*;
-import com.abo47.kubejslab.client.ui.machines.*;
-import com.abo47.kubejslab.client.ui.recipes.*;
-import com.abo47.kubejslab.client.ui.contextmenu.*;
-
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-
 import javax.annotation.Nonnull;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Recipe;
+import net.minecraft.world.item.ItemStack;
 
-import com.abo47.kubejslab.network.ModNetwork;
-import com.abo47.kubejslab.network.recipe.C2SRecipeEditPacket;
-import com.abo47.kubejslab.recipe.LabRecipeMachine;
-import com.abo47.kubejslab.recipe.LabRecipeMachines;
-import com.abo47.kubejslab.recipe.model.LabRecipeEditAction;
-import com.abo47.kubejslab.recipe.model.LabRecipeFieldValues;
-import com.abo47.kubejslab.recipe.model.LabRecipePayload;
-import com.abo47.kubejslab.recipe.model.LabRecipeStatus;
 import com.lowdragmc.lowdraglib.gui.modular.IUIHolder;
 import com.lowdragmc.lowdraglib.gui.modular.ModularUI;
 import com.lowdragmc.lowdraglib.gui.texture.ColorRectTexture;
@@ -37,6 +22,26 @@ import com.lowdragmc.lowdraglib.gui.widget.TextFieldWidget;
 import com.lowdragmc.lowdraglib.gui.widget.WidgetGroup;
 import com.lowdragmc.lowdraglib.utils.Position;
 
+import com.abo47.kubejslab.client.ui.base.*;
+import com.abo47.kubejslab.client.ui.assets.LabAssetPickerModal;
+import com.abo47.kubejslab.client.ui.contextmenu.*;
+import com.abo47.kubejslab.client.ui.items.*;
+import com.abo47.kubejslab.client.ui.machines.*;
+import com.abo47.kubejslab.client.ui.picker.*;
+import com.abo47.kubejslab.client.ui.recipes.*;
+import com.abo47.kubejslab.item.model.LabItemEditAction;
+import com.abo47.kubejslab.item.model.LabItemField;
+import com.abo47.kubejslab.item.model.LabItemFieldValues;
+import com.abo47.kubejslab.item.model.LabItemState;
+import com.abo47.kubejslab.lab.LabPathResolver;
+import com.abo47.kubejslab.recipe.LabRecipeMachine;
+import com.abo47.kubejslab.recipe.LabRecipeMachines;
+import com.abo47.kubejslab.recipe.model.LabRecipeEditAction;
+import com.abo47.kubejslab.recipe.model.LabRecipeFieldValues;
+import com.abo47.kubejslab.recipe.model.LabRecipeOutput;
+import com.abo47.kubejslab.recipe.model.LabRecipePayload;
+
+
 public final class LabScreen {
     private static final IGuiTexture ROOT_TEXTURE =
             LabColors.bordered(LabColors.SURFACE_BASE, LabColors.BORDER_BASE);
@@ -45,7 +50,7 @@ public final class LabScreen {
     private static final IGuiTexture INNER_TEXTURE =
             LabColors.bordered(LabColors.SURFACE_BASE, LabColors.BORDER_BASE);
     private static final ColorRectTexture DIVIDER_TEX = new ColorRectTexture(LabColors.BORDER_BASE);
-    private static final ColorRectTexture DIVIDER_FILL_TEX = new ColorRectTexture(LabColors.SURFACE_PANEL);
+    private static final ColorRectTexture DIVIDER_FILL_TEX = new ColorRectTexture(LabColors.BORDER_BASE);
     private static final ColorRectTexture TAB_ERASE_TEX = new ColorRectTexture(LabColors.SURFACE_BASE);
 
     private static int lastLeftTab;
@@ -56,8 +61,9 @@ public final class LabScreen {
     private LabScreen() {
     }
 
-    private static LabRecipePayload emptyPayload(LabRecipeIndex.LabRecipeEntry entry, ResourceLocation machineUid) {
-        return new LabRecipePayload(machineUid, List.of(), entry.output(), entry.name(),
+    static LabRecipePayload emptyPayload(LabRecipeIndex.LabRecipeEntry entry, ResourceLocation machineUid) {
+        return new LabRecipePayload(machineUid, List.of(),
+                List.of(new LabRecipeOutput.Item(entry.output(), 1f)), entry.name(),
                 LabRecipeFieldValues.defaults());
     }
 
@@ -70,6 +76,9 @@ public final class LabScreen {
         root.addWidget(leftPanel);
         root.addWidget(rightPanel);
         root.attachMenuLayer();
+        LabPickerWindowWidget picker = LabPickerWindowWidget.create();
+        picker.setPickListener(pick -> rightPanel.machineLayout.setPendingPick(pick));
+        root.addWidget(picker);
 
         leftPanel.setRightPanel(rightPanel);
         Runnable updateViews = () -> {
@@ -85,6 +94,31 @@ public final class LabScreen {
         leftPanel.getRecipeBrowser().setRecipeRightClickListener(
                 (entry, mouseX, mouseY) -> root.openContextMenu(entry, mouseX, mouseY));
         rightPanel.setMachineChangedListener(updateViews);
+        rightPanel.settingsWidget.setCategoryContextRequester((option, mx, my) -> root.openActionsMenu(
+                List.of(new LabContextAction(I18n.get(LabGuiKeys.LAB_RECIPE_DELETE), "delete", LabActionTone.DANGER,
+                        () -> rightPanel.settingsWidget.deleteBlueprintCategory(option))), mx, my));
+        rightPanel.settingsWidget.setMoldContextRequester((option, mx, my) -> root.openActionsMenu(
+                List.of(new LabContextAction(I18n.get(LabGuiKeys.LAB_RECIPE_DELETE), "delete", LabActionTone.DANGER,
+                        () -> rightPanel.settingsWidget.deleteCustomMold(option))), mx, my));
+
+        WidgetGroup assetLayer = new WidgetGroup(0, 0, LabLayout.ROOT_W, LabLayout.ROOT_H);
+        root.addWidget(assetLayer);
+        rightPanel.itemSettings.setOnTexturePick(() -> {
+            rightPanel.itemSettings.closeAllPopups();
+            LabAssetPickerModal.open(assetLayer,
+                    LabPathResolver.kubejsDir().resolve("assets").resolve("kubejs").resolve("textures"),
+                    I18n.get(LabGuiKeys.LAB_ITEM_TEXTURE),
+                    path -> {
+                        rightPanel.itemSettings.setTextureValue(path);
+                        rightPanel.refreshItemPreview();
+                    });
+        });
+        leftPanel.getItemBrowser().setItemClickListener(entry -> {
+            leftPanel.selectItem(entry);
+            rightPanel.showItemSettings(entry);
+        });
+        leftPanel.getItemBrowser().setItemRightClickListener(
+                (entry, mouseX, mouseY) -> root.openItemContextMenu(entry, mouseX, mouseY));
 
         return new ModularUI(root, IUIHolder.EMPTY, player);
     }
@@ -157,27 +191,35 @@ public final class LabScreen {
             if (menuOpen && !menuHits(mouseX, mouseY)) {
                 closeMenu();
             }
-            return super.mouseClicked(mouseX, mouseY, button);
+            boolean handled = super.mouseClicked(mouseX, mouseY, button);
+            if (!handled && gui != null) {
+                gui.getModularUIContainer().setCarried(ItemStack.EMPTY);
+                return true;
+            }
+            return handled;
         }
 
         void openContextMenu(LabRecipeIndex.LabRecipeEntry entry, double mx, double my) {
-            LabRecipeStatus status = LabRecipeStates.statusOf(entry.id());
-            boolean custom = entry.kubejs();
             leftPanel.selectRecipe(entry);
-            List<LabContextAction> actions = new ArrayList<>();
-            if (status == LabRecipeStatus.NORMAL) {
-                actions.add(modifyAction(entry));
-                actions.add(disableAction(entry));
-                if (custom) actions.add(deleteAction(entry));
-            } else if (status == LabRecipeStatus.MODIFIED) {
-                actions.add(resetAction(entry));
-                actions.add(disableAction(entry));
-                if (custom) actions.add(deleteAction(entry));
-            } else {
-                actions.add(new LabContextAction(I18n.get(LabGuiKeys.LAB_RECIPE_ENABLE), LabActionTone.SUCCESS,
-                        () -> sendEdit(LabRecipeEditAction.ENABLE, entry)));
-                if (custom) actions.add(deleteAction(entry));
-            }
+            openActionsMenu(LabRecipeActions.forEntry(rightPanel, entry), mx, my);
+        }
+
+        void openItemContextMenu(LabItemIndex.LabItemEntry entry, double mx, double my) {
+            rightPanel.selectItem(entry);
+            openActionsMenu(LabItemActions.forEntry(entry, new LabItemActions.ItemActionCallbacks() {
+                @Override
+                public void openModify(LabItemIndex.LabItemEntry target) {
+                    rightPanel.enterItemModifyMode(target);
+                }
+
+                @Override
+                public void send(LabItemEditAction action, @Nonnull ResourceLocation targetId) {
+                    rightPanel.itemSaver.send(action, targetId);
+                }
+            }), mx, my);
+        }
+
+        void openActionsMenu(List<LabContextAction> actions, double mx, double my) {
             menuActions = actions;
             menuW = LabContextMenuPanel.menuWidth(actions);
             menuH = LabContextMenuPanel.menuHeight(actions);
@@ -186,36 +228,6 @@ public final class LabScreen {
             menuOpen = true;
             menuAnimStartMs = System.currentTimeMillis();
             rebuildMenuLayer();
-        }
-
-        private LabContextAction modifyAction(LabRecipeIndex.LabRecipeEntry entry) {
-            return new LabContextAction(I18n.get(LabGuiKeys.LAB_RECIPE_MODIFY), LabActionTone.PRIMARY,
-                    () -> rightPanel.enterModifyMode(entry));
-        }
-
-        private LabContextAction disableAction(LabRecipeIndex.LabRecipeEntry entry) {
-            return new LabContextAction(I18n.get(LabGuiKeys.LAB_RECIPE_DISABLE), LabActionTone.WARNING,
-                    () -> sendEdit(LabRecipeEditAction.DISABLE, entry));
-        }
-
-        private LabContextAction resetAction(LabRecipeIndex.LabRecipeEntry entry) {
-            return new LabContextAction(I18n.get(LabGuiKeys.LAB_RECIPE_RESET), LabActionTone.SUCCESS,
-                    () -> {
-                        sendEdit(LabRecipeEditAction.RESET, entry);
-                        rightPanel.exitModifyMode();
-                    });
-        }
-
-        private LabContextAction deleteAction(LabRecipeIndex.LabRecipeEntry entry) {
-            return new LabContextAction(I18n.get(LabGuiKeys.LAB_RECIPE_DELETE), LabActionTone.DANGER,
-                    () -> {
-                        sendEdit(LabRecipeEditAction.DELETE, entry);
-                        rightPanel.exitModifyModeIfTarget(entry);
-                    });
-        }
-
-        private void sendEdit(LabRecipeEditAction action, LabRecipeIndex.LabRecipeEntry entry) {
-            rightPanel.sendRecipeEdit(action, entry.id(), emptyPayload(entry, rightPanel.getSelectedMachineUid()));
         }
 
         private boolean menuHits(double mouseX, double mouseY) {
@@ -240,7 +252,7 @@ public final class LabScreen {
     }
 
     public static final class LabPanelWidget extends WidgetGroup {
-        private enum EditMode {
+        enum EditMode {
             NEW, MODIFY
         }
 
@@ -251,13 +263,23 @@ public final class LabScreen {
         private Runnable machineChangedListener;
         private TextFieldWidget searchField;
         private LabRecipeBrowserWidget recipeBrowser;
-        private LabMachineDropdownWidget machineDropdown;
-        private LabMachineLayoutWidget machineLayout;
-        private LabRecipeSettingsWidget settingsWidget;
+        private LabItemBrowserWidget itemBrowser;
+        LabMachineDropdownWidget machineDropdown;
+        LabMachineLayoutWidget machineLayout;
+        LabRecipeSettingsWidget settingsWidget;
+        LabItemSettingsWidget itemSettings;
+        LabOptionDropdownWidget itemTypeDropdown;
+        LabItemPreviewWidget itemPreview;
+        final LabRecipeSaver saver;
+        final LabItemSaver itemSaver;
         private PlayerInventoryWidget inventory;
-        private EditMode mode = EditMode.NEW;
-        private LabRecipeIndex.LabRecipeEntry modifyTarget;
+        EditMode mode = EditMode.NEW;
+        EditMode itemMode = EditMode.NEW;
+        LabRecipeIndex.LabRecipeEntry modifyTarget;
+        LabItemIndex.LabItemEntry itemModifyTarget;
+        LabItemIndex.LabItemEntry itemSelection;
         private TextTexture modeLabel;
+        private TextTexture itemModeLabel;
         private int columnX;
         private int columnW;
         private int modeLabelY;
@@ -276,7 +298,7 @@ public final class LabScreen {
 
             String[] keys = isLeft
                     ? new String[]{LabGuiKeys.TAB_BUILT_IN, LabGuiKeys.TAB_CUSTOM}
-                    : new String[]{LabGuiKeys.TAB_RECIPE, "", "", ""};
+                    : new String[]{LabGuiKeys.TAB_RECIPE, LabGuiKeys.TAB_ITEMS, "", ""};
             this.tabs = new LabTab[keys.length];
 
             int tabCount = keys.length;
@@ -299,6 +321,8 @@ public final class LabScreen {
             } else {
                 buildRightContent();
             }
+            this.saver = new LabRecipeSaver(this);
+            this.itemSaver = new LabItemSaver(this);
         }
 
         private void buildLeftContent() {
@@ -327,6 +351,9 @@ public final class LabScreen {
             recipeBrowser = new LabRecipeBrowserWidget(LabLayout.PANEL_INSET, browserY, innerW, browserH);
             recipeBrowser.setVisible(false);
             addWidget(recipeBrowser);
+            itemBrowser = new LabItemBrowserWidget(LabLayout.PANEL_INSET, browserY, innerW, browserH);
+            itemBrowser.setVisible(false);
+            addWidget(itemBrowser);
         }
 
         private void buildRightContent() {
@@ -361,6 +388,10 @@ public final class LabScreen {
                     columnW,
                     layoutH - LabLayout.MACHINE_PAD * 2);
             machineLayout.setClientSideWidget();
+            machineLayout.setOutputsChangedListener(() -> {
+                settingsWidget.setOutputRows(machineLayout.getOutputRows());
+                settingsWidget.consumeSurfaceSlots(machineLayout.surfaceSlots());
+            });
             addWidget(machineLayout);
 
             int settingsX = LabLayout.PANEL_INSET + LabLayout.MACHINE_W + LabLayout.AREA_GAP;
@@ -375,16 +406,62 @@ public final class LabScreen {
                 machineLayout.clearPhantoms();
                 if (mode != EditMode.MODIFY || modifyTarget == null) return;
                 LabRecipeIndex.LabRecipeEntry target = modifyTarget;
-                sendRecipeEdit(LabRecipeEditAction.RESET, target.id(), emptyPayload(target, getSelectedMachineUid()));
+                saver.sendRecipeEdit(LabRecipeEditAction.RESET, target.id(),
+                        emptyPayload(target, getSelectedMachineUid()));
                 exitModifyMode();
                 showRecipe(target);
             });
-            settingsWidget.setOnSave(this::saveRecipe);
+            settingsWidget.setOnSave(() -> saver.saveRecipe());
+            settingsWidget.setGridSizeListener(() -> machineLayout
+                    .setGridSize(settingsWidget.gridWidthValue(), settingsWidget.gridHeightValue()));
             addWidget(settingsWidget);
 
             inventory = new PlayerInventoryWidget();
             inventory.setSelfPosition(new Position(LabLayout.PANEL_INSET + (leftAreaW - LabLayout.INV_W) / 2, invY));
             addWidget(inventory);
+
+            itemTypeDropdown = new LabOptionDropdownWidget(columnX, searchY, columnW, LabLayout.SEARCH_H);
+            itemTypeDropdown.setClientSideWidget();
+            itemTypeDropdown.setOptions(LabItemSettingsWidget.types());
+            itemTypeDropdown.setOnSelect(value -> {
+                itemSettings.setType(value);
+                refreshItemPreview();
+            });
+            itemTypeDropdown.setVisible(false);
+            addWidget(itemTypeDropdown);
+
+            itemModeLabel = new TextTexture(
+                    () -> I18n.get(itemMode == EditMode.MODIFY ? LabGuiKeys.LAB_MODE_MODIFY : LabGuiKeys.LAB_MODE_NEW))
+                    .setType(TextTexture.TextType.LEFT_HIDE)
+                    .setWidth(columnW)
+                    .setColor(LabColors.TEXT_MUTED);
+
+            itemPreview = new LabItemPreviewWidget(
+                    columnX,
+                    layoutY,
+                    columnW,
+                    invY - layoutY - LabLayout.MACHINE_GAP - LabLayout.MACHINE_PAD);
+            itemPreview.setVisible(false);
+            addWidget(itemPreview);
+
+            itemSettings = new LabItemSettingsWidget(settingsX, searchY, LabLayout.MACHINE_W, settingsH);
+            itemSettings.setClientSideWidget();
+            itemSettings.setOnClear(() -> {
+                if (itemMode == EditMode.MODIFY && itemModifyTarget != null) {
+                    LabItemIndex.LabItemEntry target = itemModifyTarget;
+                    itemSaver.send(LabItemEditAction.RESET, target.id());
+                    exitItemModifyMode();
+                }
+                itemSettings.applyValues(LabItemFieldValues.defaults());
+                itemSettings.applyTags(List.of());
+                itemSettings.applyActions(List.of());
+                itemSettings.setType("basic");
+                itemTypeDropdown.setSelected("basic");
+                refreshItemPreview();
+            });
+            itemSettings.setOnSave(() -> itemSaver.saveItem());
+            itemSettings.setVisible(false);
+            addWidget(itemSettings);
         }
 
         @Override
@@ -426,6 +503,10 @@ public final class LabScreen {
 
             if (!isLeft && modeLabel != null && machineDropdown.isVisible()) {
                 modeLabel.draw(g, mx, my, getPositionX() + columnX, getPositionY() + modeLabelY,
+                        columnW, LabLayout.MODE_LABEL_H);
+            }
+            if (!isLeft && itemModeLabel != null && itemTypeDropdown.isVisible()) {
+                itemModeLabel.draw(g, mx, my, getPositionX() + columnX, getPositionY() + modeLabelY,
                         columnW, LabLayout.MODE_LABEL_H);
             }
         }
@@ -516,7 +597,14 @@ public final class LabScreen {
             mode = EditMode.MODIFY;
             modifyTarget = entry;
             refreshModeLabel();
+            ResourceLocation uid = saver.resolveModifyUid(entry);
+            if (uid != null) {
+                machineDropdown.selectMachineByUid(uid);
+            }
             showRecipe(entry);
+            if (uid == null) {
+                settingsWidget.setFields(List.of());
+            }
         }
 
         void exitModifyMode() {
@@ -540,13 +628,19 @@ public final class LabScreen {
         private void updateRecipeView() {
             if (isLeft) {
                 boolean showRecipeView = rightPanel != null && rightPanel.getSelectedTabIndex() == 0;
-                searchField.setVisible(showRecipeView);
+                boolean showItemView = rightPanel != null && rightPanel.getSelectedTabIndex() == 1;
+                searchField.setVisible(showRecipeView || showItemView);
                 recipeBrowser.setVisible(showRecipeView);
+                itemBrowser.setVisible(showItemView);
                 if (showRecipeView) {
                     recipeBrowser.setKubejsOnly(getSelectedTabIndex() == 1);
                     recipeBrowser.setMachineFilter(rightPanel.getMachineRecipeIds());
                     recipeBrowser.setMachineUid(rightPanel.getSelectedMachineUid());
                     recipeBrowser.rebuild();
+                }
+                if (showItemView) {
+                    itemBrowser.setKubejsOnly(getSelectedTabIndex() == 1);
+                    itemBrowser.rebuild();
                 }
             } else {
                 boolean recipeTabActive = getSelectedTabIndex() == 0;
@@ -558,6 +652,16 @@ public final class LabScreen {
                     machineLayout.setMachine(machine);
                     LabRecipeMachine support = machine == null ? null : LabRecipeMachines.get(machine.recipeTypeUid());
                     settingsWidget.setFields(support == null ? List.of() : support.fields());
+                }
+                boolean itemTabActive = !recipeTabActive;
+                itemTypeDropdown.setVisible(itemTabActive);
+                itemPreview.setVisible(itemTabActive);
+                itemSettings.setVisible(itemTabActive);
+                if (itemTabActive) {
+                    List<LabItemField> fields = itemModifyTarget == null
+                            ? itemSettings.fullFields()
+                            : (itemModifyTarget.kubejs() ? itemSettings.fullFields() : itemSettings.builtInFields());
+                    itemSettings.setFields(fields);
                 }
             }
         }
@@ -576,6 +680,75 @@ public final class LabScreen {
             return machine == null ? null : machine.recipeTypeUid();
         }
 
+        LabMachine getSelectedMachine() {
+            return machineDropdown.getSelectedMachine();
+        }
+
+        void selectItem(LabItemIndex.LabItemEntry entry) {
+            if (itemBrowser == null) {
+                return;
+            }
+            itemBrowser.setSelectedItemId(entry.id());
+        }
+
+        void enterItemModifyMode(LabItemIndex.LabItemEntry entry) {
+            itemMode = EditMode.MODIFY;
+            itemModifyTarget = entry;
+            showItemSettings(entry);
+        }
+
+        void exitItemModifyMode() {
+            if (itemMode != EditMode.MODIFY) return;
+            itemMode = EditMode.NEW;
+            itemModifyTarget = null;
+            refreshItemModeLabel();
+        }
+
+        void exitItemModifyModeIfTarget(LabItemIndex.LabItemEntry entry) {
+            if (itemModifyTarget != null && itemModifyTarget.id().equals(entry.id())) {
+                exitItemModifyMode();
+            }
+        }
+
+        void showItemSettings(LabItemIndex.LabItemEntry entry) {
+            itemSelection = entry;
+            List<LabItemField> fields = entry.kubejs()
+                    ? itemSettings.fullFields()
+                    : itemSettings.builtInFields();
+            itemSettings.setFields(fields);
+            LabItemState state = LabItemStates.stateOf(entry.id());
+            String type = state != null && state.type() != null && !state.type().isBlank()
+                    ? state.type()
+                    : LabItemIndex.typeOf(entry.id());
+            itemSettings.setType(type);
+            itemTypeDropdown.setSelected(type);
+            if (state != null) {
+                itemSettings.applyValues(state.values());
+                itemSettings.applyTags(state.tags());
+                itemSettings.applyActions(state.actions());
+            } else {
+                itemSettings.applyValues(LabItemIndex.prefillValues(entry.id()));
+                itemSettings.applyTags(List.of());
+                itemSettings.applyActions(List.of());
+            }
+            refreshItemModeLabel();
+            refreshItemPreview();
+        }
+
+        private void refreshItemModeLabel() {
+            if (itemModeLabel == null) return;
+            itemModeLabel.setColor(itemMode == EditMode.MODIFY ? LabColors.INTERACTIVE : LabColors.TEXT_MUTED);
+        }
+
+        private void refreshItemPreview() {
+            if (itemSettings == null || itemPreview == null) {
+                return;
+            }
+            ItemStack previewStack = itemSelection != null ? itemSelection.stack() : ItemStack.EMPTY;
+            itemPreview.setItem(itemSettings.getType(), previewStack);
+            itemPreview.setTexture(itemSettings.getTexture());
+        }
+
         private void showRecipe(LabRecipeIndex.LabRecipeEntry entry) {
             machineLayout.showRecipe(entry);
             LabMachine machine = machineDropdown.getSelectedMachine();
@@ -586,49 +759,30 @@ public final class LabScreen {
             if (support != null) {
                 Recipe<?> original = LabRecipeIndex.recipeById(entry.id());
                 settingsWidget.applyValues(support.prefill(settingsWidget.getValues(), original));
-            }
-        }
-
-        private void saveRecipe() {
-            LabMachine machine = machineDropdown.getSelectedMachine();
-            if (machine == null) {
-                return;
-            }
-            LabRecipeMachine support = LabRecipeMachines.get(machine.recipeTypeUid());
-            if (support == null) {
-                return;
-            }
-            List<ItemStack> inputs = machineLayout.getInputs();
-            boolean hasInput = false;
-            for (ItemStack input : inputs) {
-                hasInput = !input.isEmpty();
-                if (hasInput) {
-                    break;
+                machineLayout.setGridSize(settingsWidget.gridWidthValue(), settingsWidget.gridHeightValue());
+                if (support.supportsFluidOutputAmount()) {
+                    int amount = 0;
+                    for (LabRecipeOutput output : machineLayout.getOutputs()) {
+                        if (output instanceof LabRecipeOutput.Fluid fluid) {
+                            amount = (int) fluid.fluid().getAmount();
+                            break;
+                        }
+                    }
+                    settingsWidget.setFluidOutputAmount(amount);
                 }
             }
-            if (!hasInput) {
-                return;
-            }
-            ItemStack output = machineLayout.getOutput();
-            boolean overriding = mode == EditMode.MODIFY && modifyTarget != null;
-            Recipe<?> original = overriding ? LabRecipeIndex.recipeById(modifyTarget.id()) : null;
-            if (output.isEmpty() && (original == null || !support.allowsEmptyResult(original))) {
-                return;
-            }
-            sendRecipeEdit(
-                    overriding ? LabRecipeEditAction.OVERRIDE : LabRecipeEditAction.SAVE_NEW,
-                    overriding ? modifyTarget.id() : null,
-                    new LabRecipePayload(machine.recipeTypeUid(), inputs, output,
-                            output.getHoverName().getString(), settingsWidget.getValues()));
-        }
-
-        private void sendRecipeEdit(LabRecipeEditAction action, ResourceLocation targetId, LabRecipePayload payload) {
-            ModNetwork.sendRecipeEdit(new C2SRecipeEditPacket(action, targetId, payload));
         }
 
         private void onSearchChanged(String value) {
             lastQuery = value == null ? "" : value;
             recipeBrowser.setQuery(value);
+            if (itemBrowser != null) {
+                itemBrowser.setQuery(value);
+            }
+        }
+
+        LabItemBrowserWidget getItemBrowser() {
+            return itemBrowser;
         }
     }
 }

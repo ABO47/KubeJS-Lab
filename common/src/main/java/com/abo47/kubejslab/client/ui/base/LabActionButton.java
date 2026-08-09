@@ -8,6 +8,7 @@ import com.lowdragmc.lowdraglib.gui.texture.IGuiTexture;
 import com.lowdragmc.lowdraglib.gui.texture.TextTexture;
 import com.lowdragmc.lowdraglib.gui.widget.ButtonWidget;
 
+
 public final class LabActionButton extends ButtonWidget {
     private final TextTexture label;
 
@@ -16,7 +17,11 @@ public final class LabActionButton extends ButtonWidget {
         setClientSideWidget();
         setBackground(LabColors.bordered(LabColors.SURFACE_PANEL_ALT, LabColors.BORDER_BASE));
         setClickedTexture(LabColors.bordered(LabColors.pressedFill(LabColors.INTERACTIVE), LabColors.INTERACTIVE));
-        this.label = new TextTexture(label, LabColors.TEXT_PRIMARY).setWidth(w).setType(TextTexture.TextType.NORMAL);
+        this.label = new TextTexture(label, LabColors.TEXT_PRIMARY).setWidth(w).setType(TextTexture.TextType.ROLL);
+    }
+
+    public void setLabel(String label) {
+        this.label.updateText(label);
     }
 
     @Override
