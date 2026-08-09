@@ -6,7 +6,7 @@
 [![Fabric](https://img.shields.io/badge/fabric-0.15.11-yellow)](https://modrinth.com/mod/fabric-api/version/0.92.2+1.20.1)
 [![License](https://img.shields.io/badge/license-MIT-brightgreen)](LICENSE)
 
-KubeJS Lab is an addon for KubeJS that gives KubeJS a face. It started because I got sick of writing the same JSON files over and over again, so I built an in-game GUI for the things.No scripts and no manual JSON editing.
+KubeJS Lab is an addon for KubeJS that gives KubeJS a face. It started because I got sick of writing the same JSON or JS files over and over again, so I built an in-game GUI for the things.No scripts and no manual JSON or JS editing.
 
 ## Screenshots
 
@@ -18,11 +18,11 @@ KubeJS Lab is an addon for KubeJS that gives KubeJS a face. It started because I
 
 ### Recipe Tab
 The recipe editor for vanilla and modded machines.
-- Create, modify, disable, and delete recipes without touching a single JSON file
+- Create, modify, disable, and delete recipes without touching a single JSON or JS file
 - Tune everything from a game UI: experience, cooking and processing times, energy (FE), fluid amounts (mB), heat requirements, chances, mirrored patterns, and grid sizes
 
 ### Item Tab
-Create, change, and remove items without touching JSON.
+Create, change, and remove items without touching JSON or JS.
 - Create brand-new items: basic items, tools, armor, and music discs
 - Modify any existing item — display name, texture, rarity, stack size, durability, fuel value, fire resistance, tooltip lines, tags, and more
 - Full food properties: hunger, saturation, meat, fast eating, and effects with durations, amplifiers, and chances
