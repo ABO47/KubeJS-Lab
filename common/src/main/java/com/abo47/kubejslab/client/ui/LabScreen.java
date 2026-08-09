@@ -33,7 +33,7 @@ import com.abo47.kubejslab.item.model.LabItemEditAction;
 import com.abo47.kubejslab.item.model.LabItemField;
 import com.abo47.kubejslab.item.model.LabItemFieldValues;
 import com.abo47.kubejslab.item.model.LabItemState;
-import com.abo47.kubejslab.lab.LabUniqueNames;
+import com.abo47.kubejslab.lab.LabPathResolver;
 import com.abo47.kubejslab.recipe.LabRecipeMachine;
 import com.abo47.kubejslab.recipe.LabRecipeMachines;
 import com.abo47.kubejslab.recipe.model.LabRecipeEditAction;
@@ -103,9 +103,16 @@ public final class LabScreen {
 
         WidgetGroup assetLayer = new WidgetGroup(0, 0, LabLayout.ROOT_W, LabLayout.ROOT_H);
         root.addWidget(assetLayer);
-        rightPanel.itemSettings.setOnTexturePick(() -> LabAssetPickerModal.open(assetLayer,
-                I18n.get(LabGuiKeys.LAB_ITEM_TEXTURE),
-                path -> rightPanel.itemSettings.setTextureValue(path)));
+        rightPanel.itemSettings.setOnTexturePick(() -> {
+            rightPanel.itemSettings.closeAllPopups();
+            LabAssetPickerModal.open(assetLayer,
+                    LabPathResolver.kubejsDir().resolve("assets").resolve("kubejs").resolve("textures"),
+                    I18n.get(LabGuiKeys.LAB_ITEM_TEXTURE),
+                    path -> {
+                        rightPanel.itemSettings.setTextureValue(path);
+                        rightPanel.refreshItemPreview();
+                    });
+        });
         leftPanel.getItemBrowser().setItemClickListener(entry -> {
             leftPanel.selectItem(entry);
             rightPanel.showItemSettings(entry);
@@ -270,6 +277,7 @@ public final class LabScreen {
         EditMode itemMode = EditMode.NEW;
         LabRecipeIndex.LabRecipeEntry modifyTarget;
         LabItemIndex.LabItemEntry itemModifyTarget;
+        LabItemIndex.LabItemEntry itemSelection;
         private TextTexture modeLabel;
         private TextTexture itemModeLabel;
         private int columnX;
@@ -430,9 +438,9 @@ public final class LabScreen {
 
             itemPreview = new LabItemPreviewWidget(
                     columnX,
-                    layoutY + LabLayout.MACHINE_PAD,
+                    layoutY,
                     columnW,
-                    layoutH - LabLayout.MACHINE_PAD * 2);
+                    invY - layoutY - LabLayout.MACHINE_GAP - LabLayout.MACHINE_PAD);
             itemPreview.setVisible(false);
             addWidget(itemPreview);
 
@@ -703,6 +711,7 @@ public final class LabScreen {
         }
 
         void showItemSettings(LabItemIndex.LabItemEntry entry) {
+            itemSelection = entry;
             List<LabItemField> fields = entry.kubejs()
                     ? itemSettings.fullFields()
                     : itemSettings.builtInFields();
@@ -717,6 +726,10 @@ public final class LabScreen {
                 itemSettings.applyValues(state.values());
                 itemSettings.applyTags(state.tags());
                 itemSettings.applyActions(state.actions());
+            } else {
+                itemSettings.applyValues(LabItemIndex.prefillValues(entry.id()));
+                itemSettings.applyTags(List.of());
+                itemSettings.applyActions(List.of());
             }
             refreshItemModeLabel();
             refreshItemPreview();
@@ -731,11 +744,9 @@ public final class LabScreen {
             if (itemSettings == null || itemPreview == null) {
                 return;
             }
-            LabItemFieldValues values = itemSettings.getValues();
-            String type = itemSettings.getType();
-            String name = values.displayName();
-            String slug = LabUniqueNames.slugify(name.isBlank() ? type : name);
-            itemPreview.setItem(type, name, LabUniqueNames.labId(slug).toString());
+            ItemStack previewStack = itemSelection != null ? itemSelection.stack() : ItemStack.EMPTY;
+            itemPreview.setItem(itemSettings.getType(), previewStack);
+            itemPreview.setTexture(itemSettings.getTexture());
         }
 
         private void showRecipe(LabRecipeIndex.LabRecipeEntry entry) {

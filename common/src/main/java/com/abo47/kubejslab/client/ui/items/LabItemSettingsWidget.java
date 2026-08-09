@@ -4,17 +4,19 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 
 import com.lowdragmc.lowdraglib.gui.texture.TextTexture;
 import com.lowdragmc.lowdraglib.gui.widget.TextFieldWidget;
-import com.lowdragmc.lowdraglib.gui.widget.Widget;
 
 import com.abo47.kubejslab.client.ui.base.LabActionButton;
 import com.abo47.kubejslab.client.ui.base.LabCommitFieldWidget;
 import com.abo47.kubejslab.client.ui.base.LabGuiKeys;
 import com.abo47.kubejslab.client.ui.base.LabOptionDropdownWidget;
 import com.abo47.kubejslab.client.ui.base.LabRowCardSettingsWidget;
+import com.abo47.kubejslab.client.ui.base.LabSearchDropdownWidget;
 import com.abo47.kubejslab.client.ui.base.LabToggleSwitchWidget;
 import com.abo47.kubejslab.item.model.LabItemAction;
 import com.abo47.kubejslab.item.model.LabItemField;
@@ -32,7 +34,6 @@ public final class LabItemSettingsWidget extends LabRowCardSettingsWidget {
 
     private final LabOptionDropdownWidget typeDropdown;
     private final TextFieldWidget nameField;
-    private final TextFieldWidget textureField;
     private final LabActionButton texturePickButton;
     private final LabOptionDropdownWidget rarityDropdown;
     private final TextFieldWidget maxStackField;
@@ -43,12 +44,12 @@ public final class LabItemSettingsWidget extends LabRowCardSettingsWidget {
     private final TextFieldWidget containerItemField;
     private final TextFieldWidget tooltipField;
     private final TextFieldWidget tagsField;
+    private final LabSearchDropdownWidget foodEffectDropdown;
     private final TextFieldWidget foodHungerField;
     private final TextFieldWidget foodSaturationField;
     private final LabToggleSwitchWidget foodMeatToggle;
     private final LabToggleSwitchWidget foodFastToEatToggle;
     private final LabToggleSwitchWidget foodAlwaysEdibleToggle;
-    private final TextFieldWidget foodEffectField;
     private final TextFieldWidget foodEffectDurationField;
     private final TextFieldWidget foodEffectAmplifierField;
     private final TextFieldWidget foodEffectChanceField;
@@ -85,7 +86,6 @@ public final class LabItemSettingsWidget extends LabRowCardSettingsWidget {
     private final TextTexture typeLabel;
     private final TextTexture nameLabel;
     private final TextTexture textureLabel;
-    private final TextTexture texturePickLabel;
     private final TextTexture rarityLabel;
     private final TextTexture maxStackLabel;
     private final TextTexture maxDamageLabel;
@@ -196,7 +196,6 @@ public final class LabItemSettingsWidget extends LabRowCardSettingsWidget {
         typeLabel = rowLabel(LabGuiKeys.LAB_ITEM_TYPE, labelW);
         nameLabel = rowLabel(LabGuiKeys.LAB_ITEM_NAME, labelW);
         textureLabel = rowLabel(LabGuiKeys.LAB_ITEM_TEXTURE, labelW);
-        texturePickLabel = rowLabel(LabGuiKeys.LAB_ITEM_TEXTURE_PICK, labelW);
         rarityLabel = rowLabel(LabGuiKeys.LAB_ITEM_RARITY, labelW);
         maxStackLabel = rowLabel(LabGuiKeys.LAB_ITEM_MAX_STACK, labelW);
         maxDamageLabel = rowLabel(LabGuiKeys.LAB_ITEM_MAX_DAMAGE, labelW);
@@ -254,9 +253,6 @@ public final class LabItemSettingsWidget extends LabRowCardSettingsWidget {
         nameField = commitField(this::commitName);
         addWidget(nameField);
 
-        textureField = commitField(this::commitTexture);
-        addWidget(textureField);
-
         texturePickButton = new LabActionButton(0, 0, CONTROL_W, FIELD_H,
                 Component.translatable(LabGuiKeys.LAB_ITEM_TEXTURE_PICK).getString(), () -> {
             if (onTexturePick != null) onTexturePick.run();
@@ -309,8 +305,11 @@ public final class LabItemSettingsWidget extends LabRowCardSettingsWidget {
         foodAlwaysEdibleToggle = new LabToggleSwitchWidget(0, 0, () -> foodAlwaysEdible, value -> foodAlwaysEdible = value, null);
         addWidget(foodAlwaysEdibleToggle);
 
-        foodEffectField = commitField(this::commitFoodEffect);
-        addWidget(foodEffectField);
+        foodEffectDropdown = new LabSearchDropdownWidget(0, 0, CONTROL_W, FIELD_H);
+        foodEffectDropdown.setOptions(BuiltInRegistries.MOB_EFFECT.keySet().stream()
+                .map(ResourceLocation::toString).sorted(String.CASE_INSENSITIVE_ORDER).toList());
+        addWidget(foodEffectDropdown);
+        addPopupDropdown(foodEffectDropdown);
 
         foodEffectDurationField = numberField(0, 0, () -> foodEffectDurationText, value -> foodEffectDurationText = value,
                 foodEffectDurationText);
@@ -446,10 +445,6 @@ public final class LabItemSettingsWidget extends LabRowCardSettingsWidget {
         if (value != null) name = value;
     }
 
-    private void commitTexture(String value) {
-        if (value != null) texture = value;
-    }
-
     private void commitContainerItem(String value) {
         if (value != null) containerItem = value;
     }
@@ -460,10 +455,6 @@ public final class LabItemSettingsWidget extends LabRowCardSettingsWidget {
 
     private void commitTags(String value) {
         if (value != null) tags = value;
-    }
-
-    private void commitFoodEffect(String value) {
-        if (value != null) foodEffect = value;
     }
 
     private void commitTierRepairIngredient(String value) {
@@ -534,7 +525,6 @@ public final class LabItemSettingsWidget extends LabRowCardSettingsWidget {
         this.fields = fields;
         typeDropdown.setVisible(fields.contains(LabItemField.TYPE));
         nameField.setVisible(fields.contains(LabItemField.DISPLAY_NAME));
-        textureField.setVisible(fields.contains(LabItemField.TEXTURE));
         texturePickButton.setVisible(fields.contains(LabItemField.TEXTURE));
         rarityDropdown.setVisible(fields.contains(LabItemField.RARITY));
         maxStackField.setVisible(fields.contains(LabItemField.MAX_STACK));
@@ -550,7 +540,7 @@ public final class LabItemSettingsWidget extends LabRowCardSettingsWidget {
         foodMeatToggle.setVisible(fields.contains(LabItemField.FOOD_MEAT));
         foodFastToEatToggle.setVisible(fields.contains(LabItemField.FOOD_FAST_TO_EAT));
         foodAlwaysEdibleToggle.setVisible(fields.contains(LabItemField.FOOD_ALWAYS_EDIBLE));
-        foodEffectField.setVisible(fields.contains(LabItemField.FOOD_EFFECT));
+        foodEffectDropdown.setVisible(fields.contains(LabItemField.FOOD_EFFECT));
         foodEffectDurationField.setVisible(fields.contains(LabItemField.FOOD_EFFECT_DURATION));
         foodEffectAmplifierField.setVisible(fields.contains(LabItemField.FOOD_EFFECT_AMPLIFIER));
         foodEffectChanceField.setVisible(fields.contains(LabItemField.FOOD_EFFECT_CHANCE));
@@ -634,7 +624,14 @@ public final class LabItemSettingsWidget extends LabRowCardSettingsWidget {
     private void rebuildRows() {
         List<FieldRow> rows = new ArrayList<>();
         for (LabItemField field : fields) {
-            if (isVisible(field)) rows.add(fieldRow(field));
+            if (!isVisible(field)) {
+                continue;
+            }
+            FieldRow row = fieldRow(field);
+            if (row.control() != null) {
+                row.control().setHoverTooltips(List.of(Component.translatable(LabItemTooltips.key(field))));
+            }
+            rows.add(row);
         }
         setRows(rows);
     }
@@ -656,7 +653,7 @@ public final class LabItemSettingsWidget extends LabRowCardSettingsWidget {
         return switch (field) {
             case TYPE -> new FieldRow(typeLabel, typeDropdown, null);
             case DISPLAY_NAME -> new FieldRow(nameLabel, nameField, null);
-            case TEXTURE -> new FieldRow(textureLabel, textureField, null);
+            case TEXTURE -> new FieldRow(textureLabel, texturePickButton, null);
             case RARITY -> new FieldRow(rarityLabel, rarityDropdown, null);
             case MAX_STACK -> new FieldRow(maxStackLabel, maxStackField, null);
             case MAX_DAMAGE -> new FieldRow(maxDamageLabel, maxDamageField, null);
@@ -671,7 +668,7 @@ public final class LabItemSettingsWidget extends LabRowCardSettingsWidget {
             case FOOD_MEAT -> new FieldRow(foodMeatLabel, foodMeatToggle, null);
             case FOOD_FAST_TO_EAT -> new FieldRow(foodFastToEatLabel, foodFastToEatToggle, null);
             case FOOD_ALWAYS_EDIBLE -> new FieldRow(foodAlwaysEdibleLabel, foodAlwaysEdibleToggle, null);
-            case FOOD_EFFECT -> new FieldRow(foodEffectLabel, foodEffectField, null);
+            case FOOD_EFFECT -> new FieldRow(foodEffectLabel, foodEffectDropdown, null);
             case FOOD_EFFECT_DURATION -> new FieldRow(foodEffectDurationLabel, foodEffectDurationField, null);
             case FOOD_EFFECT_AMPLIFIER -> new FieldRow(foodEffectAmplifierLabel, foodEffectAmplifierField, null);
             case FOOD_EFFECT_CHANCE -> new FieldRow(foodEffectChanceLabel, foodEffectChanceField, null);
@@ -726,7 +723,7 @@ public final class LabItemSettingsWidget extends LabRowCardSettingsWidget {
                 foodMeat,
                 foodFastToEat,
                 foodAlwaysEdible,
-                foodEffect,
+                foodEffectDropdown.getSelected(),
                 parseInt(foodEffectDurationText, 0),
                 parseInt(foodEffectAmplifierText, 0),
                 clampChance(parseFloat(foodEffectChanceText, 0f) / 100f),
@@ -776,6 +773,7 @@ public final class LabItemSettingsWidget extends LabRowCardSettingsWidget {
         foodFastToEat = values.foodFastToEat();
         foodAlwaysEdible = values.foodAlwaysEdible();
         foodEffect = values.foodEffect();
+        foodEffectDropdown.setSelected(values.foodEffect());
         foodEffectDurationText = Integer.toString(values.foodEffectDuration());
         foodEffectAmplifierText = Integer.toString(values.foodEffectAmplifier());
         foodEffectChanceText = formatFloat(values.foodEffectChance() * 100f);
@@ -806,11 +804,10 @@ public final class LabItemSettingsWidget extends LabRowCardSettingsWidget {
         behaviorDamageText = Integer.toString(values.behaviorDamage());
 
         nameField.setCurrentString(name);
-        textureField.setCurrentString(texture);
         containerItemField.setCurrentString(containerItem);
         tooltipField.setCurrentString(tooltip);
         tagsField.setCurrentString(tags);
-        foodEffectField.setCurrentString(foodEffect);
+        foodEffectDurationField.setCurrentString(foodEffectDurationText);
         tierRepairIngredientField.setCurrentString(tierRepairIngredient);
         tierProtectionsField.setCurrentString(tierProtections);
         tierEquipSoundField.setCurrentString(tierEquipSound);
@@ -868,7 +865,16 @@ public final class LabItemSettingsWidget extends LabRowCardSettingsWidget {
             return;
         }
         texture = relativePath;
-        textureField.setCurrentString(relativePath);
+        texturePickButton.setLabel(fileName(relativePath));
+    }
+
+    public String getTexture() {
+        return texture;
+    }
+
+    private static String fileName(String relativePath) {
+        int slash = relativePath.lastIndexOf('/');
+        return slash < 0 ? relativePath : relativePath.substring(slash + 1);
     }
 
     public void applyActions(List<LabItemAction> actions) {
@@ -895,18 +901,6 @@ public final class LabItemSettingsWidget extends LabRowCardSettingsWidget {
     }
 
     public List<LabItemField> builtInFields() {
-        return List.of(
-                LabItemField.MAX_STACK, LabItemField.MAX_DAMAGE, LabItemField.BURN_TIME, LabItemField.RARITY,
-                LabItemField.FIRE_RESISTANT, LabItemField.CONTAINER_ITEM,
-                LabItemField.FOOD_HUNGER, LabItemField.FOOD_SATURATION, LabItemField.FOOD_MEAT,
-                LabItemField.FOOD_FAST_TO_EAT, LabItemField.FOOD_ALWAYS_EDIBLE,
-                LabItemField.FOOD_EFFECT, LabItemField.FOOD_EFFECT_DURATION, LabItemField.FOOD_EFFECT_AMPLIFIER,
-                LabItemField.FOOD_EFFECT_CHANCE,
-                LabItemField.ATTACK_DAMAGE_BASELINE, LabItemField.SPEED_BASELINE, LabItemField.DIG_SPEED,
-                LabItemField.ARMOR_PROTECTION, LabItemField.ARMOR_TOUGHNESS, LabItemField.ARMOR_KNOCKBACK,
-                LabItemField.TIER_USES, LabItemField.TIER_SPEED, LabItemField.TIER_ATTACK_DAMAGE_BONUS,
-                LabItemField.TIER_LEVEL, LabItemField.TIER_ENCHANT_VALUE, LabItemField.TIER_REPAIR_INGREDIENT,
-                LabItemField.BEHAVIOR, LabItemField.BEHAVIOR_ITEM, LabItemField.BEHAVIOR_DAMAGE,
-                LabItemField.DISABLE_CREATIVE_HIDE, LabItemField.DISABLE_RECIPE_REMOVAL, LabItemField.DISABLE_VIEWER_HIDE);
+        return fullFields();
     }
 }

@@ -12,6 +12,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 
 import com.lowdragmc.lowdraglib.gui.texture.IGuiTexture;
+import com.lowdragmc.lowdraglib.gui.texture.ResourceTexture;
 import com.lowdragmc.lowdraglib.gui.texture.TextTexture;
 import com.lowdragmc.lowdraglib.gui.widget.TextFieldWidget;
 import com.lowdragmc.lowdraglib.gui.widget.Widget;
@@ -21,9 +22,11 @@ import com.abo47.kubejslab.client.ui.base.LabActionButton;
 import com.abo47.kubejslab.client.ui.base.LabColors;
 import com.abo47.kubejslab.client.ui.base.LabGlow;
 import com.abo47.kubejslab.client.ui.base.LabGuiKeys;
+import com.abo47.kubejslab.client.ui.base.LabIconAtlas;
 import com.abo47.kubejslab.client.ui.base.LabLayout;
 import com.abo47.kubejslab.client.ui.base.LabScrollBarWidget;
 import com.abo47.kubejslab.client.ui.base.LabScrollMath;
+import com.abo47.kubejslab.client.ui.contextmenu.LabActionTone;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -289,8 +292,7 @@ public final class LabPickerWindowWidget extends WidgetGroup {
     }
 
     private final class ModeButton extends Widget {
-        private final TextTexture letterTex =
-                new TextTexture("I", LabColors.TEXT_PRIMARY).setWidth(MODE_W).setType(TextTexture.TextType.NORMAL);
+        private ResourceTexture iconTex = LabIconAtlas.iconTexture(iconKey(mode), LabActionTone.NEUTRAL);
 
         private ModeButton(int x, int y, int w, int h, Mode mode) {
             super(x, y, w, h);
@@ -306,11 +308,11 @@ public final class LabPickerWindowWidget extends WidgetGroup {
             };
         }
 
-        private String modeLetter(Mode mode) {
+        private static String iconKey(Mode mode) {
             return switch (mode) {
-                case ITEMS -> "I";
-                case TAGS -> "T";
-                case FLUIDS -> "F";
+                case ITEMS -> "box";
+                case TAGS -> "name_tag";
+                case FLUIDS -> "droplet";
             };
         }
 
@@ -325,7 +327,7 @@ public final class LabPickerWindowWidget extends WidgetGroup {
             LabPickerWindowWidget.this.mode = next;
             LabPickerWindowWidget.this.scroll = 0;
             setHoverTooltips(List.of(Component.translatable(modeLabelKey(next))));
-            letterTex.updateText(modeLetter(next));
+            iconTex = LabIconAtlas.iconTexture(iconKey(next), LabActionTone.NEUTRAL);
             rebuildBody();
             return true;
         }
@@ -335,7 +337,10 @@ public final class LabPickerWindowWidget extends WidgetGroup {
             int x = getPositionX();
             int y = getPositionY();
             HEADER_BTN_TEX.draw(graphics, mouseX, mouseY, x, y, getSizeWidth(), getSizeHeight());
-            letterTex.draw(graphics, mouseX, mouseY, x, y, getSizeWidth(), getSizeHeight());
+            if (iconTex != null) {
+                iconTex.draw(graphics, mouseX, mouseY, x + (getSizeWidth() - 14) / 2, y + (getSizeHeight() - 14) / 2,
+                        14, 14);
+            }
             if (isMouseOverElement(mouseX, mouseY)) {
                 LabGlow.drawGlow(graphics, mouseX, mouseY, x, y, getSizeWidth(), getSizeHeight());
             }

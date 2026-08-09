@@ -32,33 +32,45 @@ import com.abo47.kubejslab.client.ui.contextmenu.LabContextMenuAnimation;
 import com.abo47.kubejslab.client.ui.contextmenu.LabContextMenuPanel;
 import com.abo47.kubejslab.client.ui.picker.LabSearchFilter;
 
-import dev.architectury.platform.Platform;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.resources.language.I18n;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-
 
 public final class LabAssetPickerModal {
-    private static final int MODAL_MARGIN = 20;
-    private static final int HEADER_H = 22;
-    private static final int HEADER_PAD = 6;
-    private static final int HEADER_BUTTON_SIZE = 18;
+    private static final int MODAL_W = 432;
+    private static final int MODAL_H = 260;
+    private static final int HEADER_BUTTON_SIZE = 16;
+    private static final int HEADER_BUTTON_Y = 3;
     private static final int HEADER_GAP = 3;
-    private static final int CONTROLS_GAP = 4;
+    private static final int HEADER_TITLE_Y = 6;
+    private static final int SEARCH_Y = 3;
+    private static final int PREVIEW_X = 8;
+    private static final int PREVIEW_W = 150;
+    private static final int GRID_X = 166;
+    private static final int BODY_Y = 22;
+    private static final int BODY_BOTTOM_PAD = 26;
     private static final int SEARCH_H = 16;
-    private static final int PREVIEW_W = 140;
-    private static final int BODY_PAD = 6;
-    private static final int TILE_W = 56;
-    private static final int TILE_H = 52;
-    private static final int TILE_GAP = 6;
+    private static final int TILE_MIN = 44;
+    private static final int TILE_MAX = 96;
+    private static final int TILE_GAP = 8;
+    private static final int TILE_PAD = 8;
     private static final int TILE_LABEL_H = 14;
-    private static final int TILE_PAD = 2;
     private static final int PREVIEW_LABEL_X = 8;
     private static final int PREVIEW_LABEL_LINE = 12;
     private static final int PREVIEW_IMAGE_Y = 44;
     private static final int PREVIEW_LABEL_MAX = 22;
-    private static final long DOUBLE_CLICK_MS = 300;
+    private static final long DOUBLE_CLICK_MS = 350;
+
+    private static final int HEADER_CLOSE_X = MODAL_W - 25;
+    private static final int DIM_COLOR = LabColors.withAlpha(LabColors.SURFACE_BASE, 140);
+    private static final int PANEL_FILL = LabColors.withAlpha(LabColors.SURFACE_BASE, 252);
+    private static final int ELEVATED_FILL = mix(LabColors.SURFACE_PANEL_ALT, LabColors.TEXT_PRIMARY, 10);
+    private static final int SUBTLE_BORDER = mix(LabColors.BORDER_BASE, LabColors.SURFACE_BASE, 28);
+    private static final IGuiTexture PANEL_TEXTURE = LabColors.bordered(PANEL_FILL, LabColors.BORDER_ACCENT);
+    private static final IGuiTexture GRID_TEXTURE = LabColors.bordered(LabColors.withAlpha(ELEVATED_FILL, 190), SUBTLE_BORDER);
+    private static final IGuiTexture HEADER_BUTTON_TEXTURE = LabColors.bordered(ELEVATED_FILL, LabColors.BORDER_BASE);
+    private static final ColorRectTexture SHADOW_DEEP = new ColorRectTexture(LabColors.withAlpha(LabColors.SURFACE_BASE, 82));
+    private static final ColorRectTexture SHADOW_NEAR = new ColorRectTexture(LabColors.withAlpha(LabColors.SURFACE_BASE, 120));
 
     private final WidgetGroup layer;
     private final WidgetGroup panel;
@@ -73,6 +85,7 @@ public final class LabAssetPickerModal {
     private final int gridW;
     private final int bodyY;
     private final int bodyH;
+    private final int tileSize;
 
     private final String noneSelectedText = I18n.get(LabGuiKeys.LAB_ASSETS_NONE_SELECTED);
     private final String noAssetsText = I18n.get(LabGuiKeys.LAB_ASSETS_NO_ASSETS);
@@ -95,8 +108,8 @@ public final class LabAssetPickerModal {
     private int previewImageW;
     private int previewImageH;
 
-    private WidgetGroup backIcon;
-    private ButtonWidget backHit;
+    private ButtonWidget backButton;
+    private TextFieldWidget searchField;
     private WidgetGroup contextMenu;
     private ButtonWidget contextDismiss;
     private int contextMenuX;
@@ -121,31 +134,60 @@ public final class LabAssetPickerModal {
         long contextMenuMs;
     }
 
-    private LabAssetPickerModal(WidgetGroup layer, String title, Consumer<String> onApply) {
+    private LabAssetPickerModal(WidgetGroup layer, Path root, String title, Consumer<String> onApply) {
         this.layer = layer;
         this.onApply = onApply;
-        this.root = Platform.getConfigFolder().resolve("kubejslab").resolve("assets");
+        this.root = root;
         LabAssetLibrary.ensureAssetsDirs(root);
-        this.panelW = LabLayout.ROOT_W - MODAL_MARGIN * 2;
-        this.panelH = LabLayout.ROOT_H - MODAL_MARGIN * 2;
-        this.gridX = BODY_PAD * 2 + PREVIEW_W;
-        this.gridW = panelW - gridX - BODY_PAD;
-        int controlsY = HEADER_H + CONTROLS_GAP;
-        this.bodyY = controlsY + SEARCH_H + CONTROLS_GAP;
-        this.bodyH = panelH - bodyY - BODY_PAD;
+        this.panelW = MODAL_W;
+        this.panelH = MODAL_H;
+        this.gridX = GRID_X;
+        this.gridW = panelW - GRID_X - PREVIEW_X;
+        this.bodyY = BODY_Y;
+        this.bodyH = panelH - BODY_Y - BODY_BOTTOM_PAD;
+        int assetGridW = Math.max(1, gridW - TILE_PAD * 2 - LabScrollBarWidget.RESERVED_WIDTH - TILE_GAP);
+        int cols = Math.max(3, (assetGridW + TILE_GAP) / (TILE_MIN + TILE_GAP));
+        this.tileSize = Math.min(TILE_MAX, Math.max(TILE_MIN, (assetGridW - (cols - 1) * TILE_GAP) / cols));
+        int panelX = (LabLayout.ROOT_W - panelW) / 2;
+        int panelY = (LabLayout.ROOT_H - panelH) / 2;
 
         layer.clearAllWidgets();
         layer.setVisible(true);
-        layer.addWidget(new ButtonWidget(0, 0, LabLayout.ROOT_W, LabLayout.ROOT_H, IGuiTexture.EMPTY,
-                cd -> layer.setVisible(false)).setClientSideWidget());
-        this.panel = new WidgetGroup(MODAL_MARGIN, MODAL_MARGIN, panelW, panelH);
-        panel.setBackground(LabColors.bordered(LabColors.SURFACE_BASE, LabColors.BORDER_BASE));
+        layer.addWidget(new ButtonWidget(0, 0, LabLayout.ROOT_W, LabLayout.ROOT_H,
+                new ColorRectTexture(DIM_COLOR), cd -> close()).setClientSideWidget());
+        this.panel = new WidgetGroup(panelX, panelY, panelW, panelH) {
+            @Override
+            public void drawInBackground(GuiGraphics g, int mx, int my, float pt) {
+            }
+
+            @Override
+            public void drawInForeground(GuiGraphics g, int mx, int my, float pt) {
+                int x = getPositionX();
+                int y = getPositionY();
+                SHADOW_DEEP.draw(g, mx, my, x + 5, y + 5, panelW, panelH);
+                SHADOW_NEAR.draw(g, mx, my, x + 3, y + 3, panelW, panelH);
+                PANEL_TEXTURE.draw(g, mx, my, x, y, panelW, panelH);
+                g.pose().pushPose();
+                g.pose().translate(0, 0, 300);
+                for (Widget child : widgets) {
+                    child.drawInBackground(g, mx, my, pt);
+                    child.drawInForeground(g, mx, my, pt);
+                }
+                g.pose().popPose();
+            }
+
+            @Override
+            public boolean mouseClicked(double mx, double my, int button) {
+                super.mouseClicked(mx, my, button);
+                return isMouseOverElement(mx, my);
+            }
+        };
         layer.addWidget(panel);
 
-        panel.addWidget(new WidgetGroup(HEADER_PAD, (HEADER_H - 9) / 2, panelW - HEADER_PAD * 2, HEADER_H) {
+        panel.addWidget(new WidgetGroup(PREVIEW_X, HEADER_TITLE_Y, panelW - PREVIEW_X * 2, 9) {
             private final TextTexture titleTex = new TextTexture(title, LabColors.TEXT_PRIMARY)
                     .setType(TextTexture.TextType.LEFT_HIDE)
-                    .setWidth(panelW - HEADER_PAD * 2 - HEADER_BUTTON_SIZE * 2 - HEADER_GAP);
+                    .setWidth(panelW - PREVIEW_X * 2);
 
             @Override
             public void drawInBackground(GuiGraphics g, int mx, int my, float pt) {
@@ -153,27 +195,15 @@ public final class LabAssetPickerModal {
             }
         });
 
-        int closeX = panelW - HEADER_PAD - HEADER_BUTTON_SIZE;
-        int closeY = (HEADER_H - HEADER_BUTTON_SIZE) / 2;
-        addHeaderIcon(closeX, closeY, "close", cd -> layer.setVisible(false));
-
-        TextFieldWidget searchField = new TextFieldWidget(gridX, controlsY, gridW, SEARCH_H,
-                () -> state.query, value -> {
-                    state.query = value;
-                    state.scroll = 0;
-                    refresh();
-                });
-        searchField.setClientSideWidget();
-        searchField.setMaxStringLength(Integer.MAX_VALUE);
-        searchField.setValidator(LabSearchFilter::normalize);
-        searchField.setBordered(false);
-        searchField.setBackground(LabColors.bordered(LabColors.SURFACE_BASE, LabColors.BORDER_BASE));
-        searchField.setTextColor(LabColors.TEXT_PRIMARY);
+        addHeaderButton(HEADER_CLOSE_X, HEADER_BUTTON_Y, "close", LabColors.ERROR, cd -> close());
+        searchField = buildSearchField();
         panel.addWidget(searchField);
 
-        panel.addWidget(new WidgetGroup(BODY_PAD, bodyY, PREVIEW_W, bodyH) {
+        WidgetGroup previewGroup = new WidgetGroup(PREVIEW_X, bodyY, PREVIEW_W, bodyH) {
             @Override
             public void drawInBackground(GuiGraphics g, int mx, int my, float pt) {
+                LabColors.bordered(LabColors.withAlpha(LabColors.SURFACE_PANEL_ALT, 120), LabColors.BORDER_BASE)
+                        .draw(g, mx, my, getPositionX(), getPositionY(), getSizeWidth(), getSizeHeight());
                 dirTex.draw(g, mx, my, getPositionX() + PREVIEW_LABEL_X, getPositionY() + 8,
                         getSizeWidth() - PREVIEW_LABEL_X * 2, PREVIEW_LABEL_LINE);
                 selectedTex.draw(g, mx, my, getPositionX() + PREVIEW_LABEL_X, getPositionY() + 8 + PREVIEW_LABEL_LINE,
@@ -185,39 +215,39 @@ public final class LabAssetPickerModal {
                             previewImageW, previewImageH);
                 }
             }
-        });
+        };
+        panel.addWidget(previewGroup);
 
-        this.surface = new WidgetGroup(gridX, bodyY, gridW, bodyH) {
+        this.surface = new WidgetGroup(GRID_X, bodyY, gridW, bodyH) {
             @Override
             public void drawInBackground(GuiGraphics g, int mx, int my, float pt) {
                 int x = getPositionX();
                 int y = getPositionY();
                 int w = getSizeWidth();
                 int h = getSizeHeight();
+                GRID_TEXTURE.draw(g, mx, my, x, y, w, h);
                 g.flush();
-                RenderSystem.enableScissor(x, y, x + w, y + h);
+                g.enableScissor(x, y, x + w, y + h);
                 for (Widget child : widgets) {
                     int cy = child.getPositionY();
                     if (cy + child.getSizeHeight() < y || cy > y + h) {
                         continue;
                     }
-                    RenderSystem.enableBlend();
-                    RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
                     child.drawInBackground(g, mx, my, pt);
                 }
                 if (entries.isEmpty()) {
-                    emptyTex.draw(g, mx, my, x, y + (h - 9) / 2, w, 9);
+                    emptyTex.draw(g, mx, my, x + TILE_PAD, y + TILE_PAD, w - TILE_PAD * 2, 9);
                 }
                 for (int i = layout.scrollStart(); i < layout.visibleEnd(); i++) {
                     int vi = i - layout.scrollStart();
                     int tx = x + layout.tileX(vi);
                     int ty = y + layout.tileY(vi);
-                    if (mx >= tx && my >= ty && mx < tx + TILE_W && my < ty + TILE_H) {
-                        LabGlow.drawGlow(g, mx, my, tx, ty, TILE_W, TILE_H);
+                    if (mx >= tx && my >= ty && mx < tx + tileSize && my < ty + tileSize) {
+                        LabGlow.drawGlow(g, mx, my, tx, ty, tileSize, tileSize);
                     }
                 }
                 g.flush();
-                RenderSystem.disableScissor();
+                g.disableScissor();
             }
 
             @Override
@@ -253,40 +283,46 @@ public final class LabAssetPickerModal {
         refresh();
     }
 
-    public static void open(WidgetGroup layer, String title, Consumer<String> onApply) {
-        new LabAssetPickerModal(layer, title, onApply);
+    public static void open(WidgetGroup layer, Path root, String title, Consumer<String> onApply) {
+        new LabAssetPickerModal(layer, root, title, onApply);
+    }
+
+    private void close() {
+        layer.setVisible(false);
     }
 
     private void refresh() {
         closeContext();
         entries = LabAssetLibrary.searchAssetEntries(root, state.dir, state.query);
-        layout = TileGridLayout.calculate(gridW, bodyH, TILE_W, TILE_H, TILE_GAP, TILE_PAD, TILE_PAD,
+        layout = TileGridLayout.calculate(gridW, bodyH, tileSize, tileSize, TILE_GAP, TILE_PAD, TILE_PAD,
                 entries.size(), state.scroll);
         state.maxStart = layout.maxStart();
         state.knobH = layout.knobH();
         state.showScroll = layout.showScroll();
         scrollBar.setVisible(state.showScroll);
 
-        if (backIcon != null) {
-            panel.removeWidget(backIcon);
+        if (backButton != null) {
+            panel.removeWidget(backButton);
+            backButton = null;
         }
-        if (backHit != null) {
-            panel.removeWidget(backHit);
+        int searchW = firstHeaderX() - GRID_X - HEADER_GAP;
+        if (searchField.getSizeWidth() != searchW) {
+            boolean focused = searchField.isFocus();
+            String text = searchField.getCurrentString();
+            panel.removeWidget(searchField);
+            searchField = buildSearchField();
+            searchField.setCurrentString(text);
+            panel.addWidget(searchField);
+            if (focused) {
+                searchField.setFocus(true);
+            }
         }
-        backIcon = null;
-        backHit = null;
         if (!state.dir.isBlank()) {
-            int backX = panelW - HEADER_PAD - HEADER_BUTTON_SIZE - HEADER_GAP - HEADER_BUTTON_SIZE;
-            int backY = (HEADER_H - HEADER_BUTTON_SIZE) / 2;
-            backIcon = addHeaderIcon(backX, backY, "back", null);
-            backHit = new ButtonWidget(backX, backY, HEADER_BUTTON_SIZE, HEADER_BUTTON_SIZE, IGuiTexture.EMPTY,
-                    cd -> {
-                        state.dir = LabAssetPathResolver.parentRelative(state.dir);
-                        state.scroll = 0;
-                        refresh();
-                    });
-            backHit.setClientSideWidget();
-            panel.addWidget(backHit);
+            backButton = addHeaderButton(backButtonX(), HEADER_BUTTON_Y, "back", LabColors.TEXT_SECONDARY, cd -> {
+                state.dir = LabAssetPathResolver.parentRelative(state.dir);
+                state.scroll = 0;
+                refresh();
+            });
         }
 
         refreshPreview();
@@ -326,56 +362,112 @@ public final class LabAssetPickerModal {
         previewImageY = PREVIEW_IMAGE_Y + (areaH - previewImageH) / 2;
     }
 
-    private WidgetGroup addHeaderIcon(int x, int y, String iconKey, Consumer<ClickData> onClick) {
-        WidgetGroup icon = new WidgetGroup(x, y, HEADER_BUTTON_SIZE, HEADER_BUTTON_SIZE) {
-            private final ResourceTexture iconTex = LabIconAtlas.iconTexture(iconKey, LabActionTone.NEUTRAL);
-
+    private ButtonWidget addHeaderButton(int x, int y, String iconKey, int accent, Consumer<ClickData> onClick) {
+        ResourceTexture iconTex = LabIconAtlas.iconTexture(iconKey, accent);
+        IGuiTexture face = new IGuiTexture() {
             @Override
-            public void drawInBackground(GuiGraphics g, int mx, int my, float pt) {
-                iconTex.draw(g, mx, my, getPositionX(), getPositionY(), getSizeWidth(), getSizeHeight());
-                if (isMouseOverElement(mx, my)) {
-                    LabGlow.drawGlow(g, mx, my, getPositionX(), getPositionY(), getSizeWidth(), getSizeHeight());
+            public void draw(GuiGraphics g, int mx, int my, float x0, float y0, int w0, int h0) {
+                HEADER_BUTTON_TEXTURE.draw(g, mx, my, x0, y0, w0, h0);
+                if (iconTex != null) {
+                    iconTex.draw(g, mx, my, x0 + 2, y0 + 2, w0 - 4, h0 - 4);
                 }
             }
         };
-        panel.addWidget(icon);
-        if (onClick != null) {
-            panel.addWidget(new ButtonWidget(x, y, HEADER_BUTTON_SIZE, HEADER_BUTTON_SIZE, IGuiTexture.EMPTY,
-                    onClick).setClientSideWidget());
-        }
-        return icon;
+        ButtonWidget button = new ButtonWidget(x, y, HEADER_BUTTON_SIZE, HEADER_BUTTON_SIZE, face, onClick);
+        button.setClientSideWidget();
+        button.setHoverTexture((g, mx, my, x0, y0, w0, h0) ->
+                LabGlow.drawGlow(g, mx, my, (int) x0, (int) y0, (int) w0, (int) h0, accent));
+        button.setClickedTexture(new IGuiTexture() {
+            @Override
+            public void draw(GuiGraphics g, int mx, int my, float x0, float y0, int w0, int h0) {
+                LabColors.bordered(LabColors.pressedFill(accent), accent)
+                        .draw(g, mx, my, x0, y0, w0, h0);
+                if (iconTex != null) {
+                    iconTex.draw(g, mx, my, x0 + 2, y0 + 2, w0 - 4, h0 - 4);
+                }
+            }
+        });
+        panel.addWidget(button);
+        return button;
+    }
+
+    private TextFieldWidget buildSearchField() {
+        int searchW = firstHeaderX() - GRID_X - HEADER_GAP;
+        TextFieldWidget field = new TextFieldWidget(GRID_X, SEARCH_Y, searchW, SEARCH_H,
+                () -> state.query, value -> {
+                    state.query = value;
+                    state.scroll = 0;
+                    refresh();
+                });
+        field.setClientSideWidget();
+        field.setMaxStringLength(80);
+        field.setValidator(LabSearchFilter::normalize);
+        field.setBordered(false);
+        field.setBackground(LabColors.bordered(LabColors.SURFACE_BASE, LabColors.BORDER_BASE));
+        field.setTextColor(LabColors.TEXT_PRIMARY);
+        return field;
+    }
+
+    private int firstHeaderX() {
+        return state.dir.isBlank() ? HEADER_CLOSE_X : backButtonX();
+    }
+
+    private static int backButtonX() {
+        return HEADER_CLOSE_X - HEADER_BUTTON_SIZE - HEADER_GAP;
+    }
+
+    private static int mix(int a, int b, int percent) {
+        int inverse = 100 - percent;
+        return (Math.max(0, ((a >>> 24) * inverse + (b >>> 24) * percent) / 100) << 24)
+                | (Math.max(0, ((a >>> 16 & 0xFF) * inverse + (b >>> 16 & 0xFF) * percent) / 100) << 16)
+                | (Math.max(0, ((a >>> 8 & 0xFF) * inverse + (b >>> 8 & 0xFF) * percent) / 100) << 8)
+                | Math.max(0, ((a & 0xFF) * inverse + (b & 0xFF) * percent) / 100);
     }
 
     private WidgetGroup buildTile(AssetEntry entry, int tx, int ty) {
         boolean selected = state.selected != null && state.selected.equals(entry.relativePath());
         boolean renaming = state.renameOpen && state.contextFile != null
                 && state.contextFile.equals(entry.relativePath());
-        int iconAreaH = Math.max(24, TILE_H - TILE_LABEL_H - 8);
-        WidgetGroup tile = new WidgetGroup(tx, ty, TILE_W, TILE_H);
+        int iconAreaH = Math.max(24, tileSize - TILE_LABEL_H - 8);
+        WidgetGroup tile = new WidgetGroup(tx, ty, tileSize, tileSize);
         if (selected) {
             tile.setBackground(new ColorRectTexture(LabColors.withAlpha(LabColors.INTERACTIVE, 54)));
         }
         if (entry.kind() == AssetKind.DIRECTORY) {
-            int iconSize = Math.max(24, Math.min(96, Math.min(TILE_W - 24, iconAreaH - 12)));
-            int iconX = Math.max(0, (TILE_W - iconSize) / 2);
+            int iconSize = Math.max(24, Math.min(96, Math.min(tileSize - 24, iconAreaH - 12)));
+            int iconX = Math.max(0, (tileSize - iconSize) / 2);
             int iconY = Math.max(4, (iconAreaH - iconSize) / 2);
-            tile.addWidget(new ImageWidget(iconX, iconY, iconSize, iconSize,
-                    LabIconAtlas.iconTexture("folder", LabActionTone.NEUTRAL)));
+            ResourceTexture folderIcon = LabIconAtlas.iconTexture("folder", LabColors.TEXT_SECONDARY);
+            if (folderIcon != null) {
+                tile.addWidget(new ImageWidget(iconX, iconY, iconSize, iconSize, folderIcon));
+            } else {
+                tile.addWidget(new WidgetGroup(0, 2, tileSize, iconAreaH) {
+                    private final TextTexture dirFallback = new TextTexture("[dir]", LabColors.TEXT_MUTED)
+                            .setType(TextTexture.TextType.NORMAL)
+                            .setWidth(tileSize - 4);
+
+                    @Override
+                    public void drawInBackground(GuiGraphics g, int mx, int my, float pt) {
+                        dirFallback.draw(g, mx, my, getPositionX() + 2, getPositionY(),
+                                getSizeWidth() - 4, getSizeHeight());
+                    }
+                });
+            }
         } else if (entry.kind() == AssetKind.IMAGE || entry.kind() == AssetKind.GIF) {
-            int thumbW = Math.max(12, TILE_W - 14);
+            int thumbW = Math.max(12, tileSize - 14);
             int thumbH = Math.max(16, iconAreaH - 4);
-            tile.addWidget(new ImageWidget((TILE_W - thumbW) / 2, 4, thumbW, thumbH,
+            tile.addWidget(new ImageWidget((tileSize - thumbW) / 2, 4, thumbW, thumbH,
                     LabAssetLibrary.assetThumbnailTexture(root, entry.relativePath())));
         } else {
-            int iconSize = Math.max(24, Math.min(96, Math.min(TILE_W - 24, iconAreaH - 12)));
-            int iconX = Math.max(0, (TILE_W - iconSize) / 2);
+            int iconSize = Math.max(24, Math.min(96, Math.min(tileSize - 24, iconAreaH - 12)));
+            int iconX = Math.max(0, (tileSize - iconSize) / 2);
             int iconY = Math.max(4, (iconAreaH - iconSize) / 2);
             tile.addWidget(new ImageWidget(iconX, iconY, iconSize, iconSize,
-                    LabIconAtlas.iconTexture("box", LabActionTone.NEUTRAL)));
+                    LabIconAtlas.iconTexture("box", LabColors.TEXT_SECONDARY)));
         }
         if (renaming) {
             LabCommitFieldWidget renameField = new LabCommitFieldWidget(
-                    2, TILE_H - TILE_LABEL_H - 2, TILE_W - 4, TILE_LABEL_H + 2,
+                    2, tileSize - TILE_LABEL_H - 2, tileSize - 4, TILE_LABEL_H + 2,
                     null, name -> commitRename(entry.relativePath(), name));
             renameField.setClientSideWidget();
             renameField.setMaxStringLength(80);
@@ -385,10 +477,10 @@ public final class LabAssetPickerModal {
             renameField.setCurrentString(state.renameDraft);
             tile.addWidget(renameField);
         } else {
-            tile.addWidget(new WidgetGroup(2, TILE_H - TILE_LABEL_H, TILE_W - 4, TILE_LABEL_H) {
+            tile.addWidget(new WidgetGroup(2, tileSize - TILE_LABEL_H, tileSize - 4, TILE_LABEL_H) {
                 private final TextTexture nameTex = new TextTexture(entry.name(), LabColors.TEXT_SECONDARY)
-                        .setType(TextTexture.TextType.LEFT_HIDE)
-                        .setWidth(TILE_W - 4);
+                        .setType(TextTexture.TextType.NORMAL)
+                        .setWidth(tileSize - 4);
 
                 @Override
                 public void drawInBackground(GuiGraphics g, int mx, int my, float pt) {
@@ -396,32 +488,42 @@ public final class LabAssetPickerModal {
                 }
             });
         }
-        tile.addWidget(new ButtonWidget(tx, ty, TILE_W, TILE_H, IGuiTexture.EMPTY,
-                cd -> onTileClick(cd, entry, tx, ty)));
+        tile.addWidget(new ButtonWidget(0, 0, tileSize, tileSize, IGuiTexture.EMPTY,
+                cd -> onTileClick(cd, entry)));
         return tile;
     }
 
-    private void onTileClick(ClickData click, AssetEntry entry, int tx, int ty) {
+    private void onTileClick(ClickData click, AssetEntry entry) {
         if (click.button == LabColors.MOUSE_BUTTON_LEFT) {
+            if (entry.directory()) {
+                state.dir = entry.relativePath();
+                state.scroll = 0;
+                refresh();
+                return;
+            }
             long now = System.currentTimeMillis();
             if (now - state.lastClickMs < DOUBLE_CLICK_MS) {
                 state.lastClickMs = 0;
-                if (entry.directory()) {
-                    state.dir = entry.relativePath();
-                    state.scroll = 0;
-                    refresh();
-                } else {
-                    onApply.accept(entry.relativePath());
-                    layer.setVisible(false);
-                }
+                onApply.accept(entry.relativePath());
+                close();
             } else {
                 state.lastClickMs = now;
                 state.selected = entry.relativePath();
                 refresh();
             }
         } else if (click.button == LabColors.MOUSE_BUTTON_RIGHT) {
-            openContext(entry, gridX + tx, bodyY + ty);
+            openContext(entry, gridX + txOf(entry), bodyY + tyOf(entry));
         }
+    }
+
+    private int txOf(AssetEntry entry) {
+        int i = entries.indexOf(entry);
+        return i < 0 ? 0 : layout.tileX(i - layout.scrollStart());
+    }
+
+    private int tyOf(AssetEntry entry) {
+        int i = entries.indexOf(entry);
+        return i < 0 ? 0 : layout.tileY(i - layout.scrollStart());
     }
 
     private void openContext(AssetEntry entry, int tilePanelX, int tilePanelY) {
@@ -433,7 +535,7 @@ public final class LabAssetPickerModal {
         List<LabContextAction> actions = contextActions(entry);
         int menuW = LabContextMenuPanel.menuWidth(actions);
         int menuH = LabContextMenuPanel.menuHeight(actions);
-        contextMenuX = clamp(tilePanelX + TILE_W - menuW, 4, panelW - menuW - 4);
+        contextMenuX = clamp(tilePanelX + tileSize - menuW, 4, panelW - menuW - 4);
         contextMenuY = clamp(tilePanelY, 4, panelH - menuH - 4);
         contextDismiss = new ButtonWidget(0, 0, panelW, panelH, IGuiTexture.EMPTY,
                 cd -> closeContext());

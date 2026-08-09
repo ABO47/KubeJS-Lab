@@ -11,7 +11,15 @@ public final class LabPathResolver {
 		return Platform.getGameFolder().resolve("kubejs");
 	}
 
-	public static Path stateFile() {
+	public static Path itemStateFile() {
+		return kubejsDir().resolve("lab").resolve("items.json");
+	}
+
+	public static Path recipeStateFile() {
+		return kubejsDir().resolve("lab").resolve("recipes.json");
+	}
+
+	public static Path legacyStateFile() {
 		return kubejsDir().resolve("lab").resolve("state.json");
 	}
 

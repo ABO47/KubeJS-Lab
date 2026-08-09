@@ -64,6 +64,8 @@ public final class LabGuiKeys {
     public static final String LAB_ITEM_DISABLE_VIEWER = "kubejslab.gui.lab_item_disable_viewer";
     public static final String LAB_ITEM_SAVE = "kubejslab.gui.lab_item_save";
     public static final String LAB_ITEM_CLEAR = "kubejslab.gui.lab_item_clear";
+    public static final String LAB_ITEM_TIP_PREFIX = "kubejslab.gui.lab_item_tip_";
+    public static final String LAB_CHAT_RESTART_REQUIRED = "kubejslab.chat.restart_required";
     public static final String NOT_SUPPORTED = "kubejslab.gui.lab_not_supported";
     public static final String LAB_RECIPE_SHAPELESS = "kubejslab.gui.lab_recipe_shapeless";
     public static final String LAB_RECIPE_SAVE = "kubejslab.gui.lab_recipe_save";
@@ -87,7 +89,6 @@ public final class LabGuiKeys {
     public static final String LAB_RECIPE_HEAT_HEATED = "kubejslab.gui.lab_recipe_heat_heated";
     public static final String LAB_RECIPE_HEAT_SUPERHEATED = "kubejslab.gui.lab_recipe_heat_superheated";
     public static final String LAB_RECIPE_CHANCE = "kubejslab.gui.lab_recipe_chance";
-    public static final String LAB_RECIPE_UNIT_PERCENT = "kubejslab.gui.lab_recipe_unit_percent";
     public static final String LAB_RECIPE_ACCEPT_MIRRORED = "kubejslab.gui.lab_recipe_accept_mirrored";
     public static final String LAB_RECIPE_GRID_WIDTH = "kubejslab.gui.lab_recipe_grid_width";
     public static final String LAB_RECIPE_GRID_HEIGHT = "kubejslab.gui.lab_recipe_grid_height";

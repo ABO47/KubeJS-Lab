@@ -18,7 +18,7 @@ import com.abo47.kubejslab.item.model.LabItemState;
 import com.abo47.kubejslab.item.model.LabItemStatus;
 
 
-public record S2CItemStatePacket(Map<ResourceLocation, LabItemState> states) {
+public record S2CItemStatePacket(Map<ResourceLocation, LabItemState> states, List<ResourceLocation> pendingOnly) {
 
     public void write(FriendlyByteBuf buf) {
         buf.writeVarInt(states.size());
@@ -58,6 +58,10 @@ public record S2CItemStatePacket(Map<ResourceLocation, LabItemState> states) {
             for (LabItemAction action : entry.actions()) {
                 buf.writeVarInt(action.ordinal());
             }
+        }
+        buf.writeVarInt(pendingOnly.size());
+        for (ResourceLocation id : pendingOnly) {
+            buf.writeUtf(id.toString());
         }
         KubeJSLab.LOGGER.info("[Net] S2CItemStatePacket write: {} bytes, {} entries", buf.readableBytes(), states.size());
         if (buf.readableBytes() > 2048) {
@@ -115,11 +119,16 @@ public record S2CItemStatePacket(Map<ResourceLocation, LabItemState> states) {
             states.put(id, new LabItemState(id, type, LabItemStatus.values()[statusOrdinal], pendingRestart, name,
                     wasModified, tier, values, tagList, actions));
         }
-        return new S2CItemStatePacket(states);
+        int pendingCount = Math.min(buf.readVarInt(), 65536);
+        List<ResourceLocation> pendingOnly = new ArrayList<>(pendingCount);
+        for (int i = 0; i < pendingCount; i++) {
+            pendingOnly.add(new ResourceLocation(buf.readUtf()));
+        }
+        return new S2CItemStatePacket(states, pendingOnly);
     }
 
     public void handleClient() {
-        LabItemStates.apply(states);
+        LabItemStates.apply(states, pendingOnly);
         LabScreen.refreshOpen();
     }
 }

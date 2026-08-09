@@ -2,36 +2,41 @@ package com.abo47.kubejslab.client.ui.items;
 
 import javax.annotation.Nonnull;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
-import com.lowdragmc.lowdraglib.gui.texture.IGuiTexture;
 import com.lowdragmc.lowdraglib.gui.texture.ItemStackTexture;
-import com.lowdragmc.lowdraglib.gui.texture.TextTexture;
+import com.lowdragmc.lowdraglib.gui.texture.ResourceTexture;
 import com.lowdragmc.lowdraglib.gui.widget.WidgetGroup;
-
-import com.abo47.kubejslab.client.ui.base.LabColors;
 
 
 public final class LabItemPreviewWidget extends WidgetGroup {
-    private static final int ICON_SIZE = 40;
-    private static final IGuiTexture PANEL_TEXTURE =
-            LabColors.bordered(LabColors.SURFACE_PANEL_ALT, LabColors.BORDER_BASE);
-
     private String type = "basic";
-    private String name = "";
-    private String id = "kubejs:lab/";
+    private ItemStack stack = ItemStack.EMPTY;
+    private ResourceTexture textureTex;
 
     public LabItemPreviewWidget(int x, int y, int w, int h) {
         super(x, y, w, h);
     }
 
-    public void setItem(String type, String name, String id) {
+    public void setItem(String type, ItemStack stack) {
         this.type = type == null || type.isBlank() ? "basic" : type;
-        this.name = name == null ? "" : name;
-        this.id = id == null ? "" : id;
+        this.stack = stack == null || stack.isEmpty() ? ItemStack.EMPTY : stack;
+    }
+
+    public void setTexture(String relativePath) {
+        textureTex = null;
+        if (relativePath == null || relativePath.isBlank()) {
+            return;
+        }
+        ResourceLocation id = ResourceLocation.tryBuild("kubejs", "textures/" + relativePath);
+        if (id != null && Minecraft.getInstance().getResourceManager().getResource(id).isPresent()) {
+            textureTex = new ResourceTexture(id);
+        }
     }
 
     @Override
@@ -40,23 +45,17 @@ public final class LabItemPreviewWidget extends WidgetGroup {
         int py = getPositionY();
         int pw = getSizeWidth();
         int ph = getSizeHeight();
-        PANEL_TEXTURE.draw(graphics, mouseX, mouseY, px, py, pw, ph);
 
-        int iconX = px + (pw - ICON_SIZE) / 2;
-        int iconY = py + 14;
-        new ItemStackTexture(new ItemStack(typeIcon(type)))
-                .draw(graphics, mouseX, mouseY, iconX, iconY, ICON_SIZE, ICON_SIZE);
-
-        int textY = iconY + ICON_SIZE + 12;
-        String label = name.isBlank() ? type : name;
-        new TextTexture(label)
-                .setType(TextTexture.TextType.LEFT_HIDE)
-                .setColor(LabColors.TEXT_PRIMARY)
-                .draw(graphics, mouseX, mouseY, px + 8, py + textY, pw - 16, 11);
-        new TextTexture(id)
-                .setType(TextTexture.TextType.LEFT_HIDE)
-                .setColor(LabColors.TEXT_MUTED)
-                .draw(graphics, mouseX, mouseY, px + 8, py + textY + 15, pw - 16, 9);
+        int size = Math.max(32, Math.min(pw, ph) - 16);
+        int iconX = px + (pw - size) / 2;
+        int iconY = py + (ph - size) / 2;
+        if (textureTex != null) {
+            textureTex.draw(graphics, mouseX, mouseY, iconX, iconY, size, size);
+            return;
+        }
+        ItemStack shown = stack.isEmpty() ? new ItemStack(typeIcon(type)) : stack;
+        new ItemStackTexture(shown)
+                .draw(graphics, mouseX, mouseY, iconX, iconY, size, size);
     }
 
     private static Item typeIcon(String type) {

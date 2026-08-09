@@ -86,6 +86,9 @@ final class LabAssetSearchIndex {
     private static void addDirectEntry(List<LabAssetLibrary.AssetEntry> result, String base, Path path) {
         String name = path.getFileName().toString();
         boolean isDir = Files.isDirectory(path);
+        if (isDir && LabAssetPathResolver.isStubAssetDirectory(name)) {
+            return;
+        }
         if (!isDir && !LabAssetPathResolver.isSupportedAsset(base, name)) {
             return;
         }
@@ -96,6 +99,9 @@ final class LabAssetSearchIndex {
     private static void addMatchingDirectEntry(Map<String, LabAssetLibrary.AssetEntry> result, String base, Path path, String query) {
         String name = path.getFileName().toString();
         boolean isDir = Files.isDirectory(path);
+        if (isDir && LabAssetPathResolver.isStubAssetDirectory(name)) {
+            return;
+        }
         if (!isDir && !LabAssetPathResolver.isSupportedAsset(base, name)) {
             return;
         }

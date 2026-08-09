@@ -14,11 +14,20 @@ import java.util.Set;
 import java.util.TreeMap;
 
 import net.minecraft.network.chat.Component;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.AxeItem;
+import net.minecraft.world.item.HoeItem;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.PickaxeItem;
+import net.minecraft.world.item.ShearsItem;
+import net.minecraft.world.item.ShovelItem;
+import net.minecraft.world.item.SwordItem;
 
 import com.abo47.kubejslab.KubeJSLab;
+import com.abo47.kubejslab.client.ui.base.LabGuiKeys;
 import com.abo47.kubejslab.item.model.LabCustomTier;
 import com.abo47.kubejslab.item.model.LabItemAction;
 import com.abo47.kubejslab.item.model.LabItemEditAction;
@@ -37,8 +46,6 @@ import com.abo47.kubejslab.network.item.S2CItemStatePacket;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-
-import dev.architectury.platform.Platform;
 
 public final class LabItemService {
     private static final Map<ResourceLocation, LabItemSaveEntry> STATE = new LinkedHashMap<>();
@@ -78,6 +85,7 @@ public final class LabItemService {
             }
             saveState();
             writeStartupScript();
+            writeModelOverrides();
             writeServerScript();
             writeClientScript();
             MinecraftServer server = player.getServer();
@@ -88,6 +96,9 @@ public final class LabItemService {
             }
             KubeJSLab.LOGGER.info("[LabItemService] sent /kubejs reload startup_scripts and /reload after {}", action);
             ModNetwork.sendItemState(player, statePacket());
+            if (!PENDING.isEmpty()) {
+                player.sendSystemMessage(Component.translatable(LabGuiKeys.LAB_CHAT_RESTART_REQUIRED));
+            }
         } catch (IOException e) {
             e.printStackTrace();
         } catch (RuntimeException e) {
@@ -104,7 +115,13 @@ public final class LabItemService {
             states.put(entry.getKey(), new LabItemState(entry.getKey(), e.type(), e.status(), PENDING.contains(entry.getKey()),
                     e.name(), e.wasModified(), e.customTier(), e.values(), e.tags(), e.actions()));
         }
-        return new S2CItemStatePacket(states);
+        List<ResourceLocation> pendingOnly = new ArrayList<>();
+        for (ResourceLocation id : PENDING) {
+            if (!states.containsKey(id)) {
+                pendingOnly.add(id);
+            }
+        }
+        return new S2CItemStatePacket(states, pendingOnly);
     }
 
     private static void saveNew(LabItemPayload payload) throws IOException {
@@ -164,10 +181,14 @@ public final class LabItemService {
             return;
         }
         LabItemSaveEntry entry = STATE.get(targetId);
-        if (entry != null) {
-            STATE.put(targetId, new LabItemSaveEntry(entry.type(), LabItemStatus.DISABLED, entry.name(),
-                    entry.wasModified(), entry.customTier(), entry.values(), entry.tags(), entry.actions()));
+        if (entry == null) {
+            entry = new LabItemSaveEntry("basic", LabItemStatus.NORMAL, targetId.getPath(), false, null,
+                    LabItemFieldValues.defaults(), List.of(), List.of());
         }
+        STATE.put(targetId, new LabItemSaveEntry(entry.type(), LabItemStatus.DISABLED, entry.name(),
+                entry.wasModified(), entry.customTier(), entry.values(), entry.tags(),
+                withHideActions(entry.actions(), true)));
+        PENDING.add(targetId);
         KubeJSLab.LOGGER.info("[LabItemService] DISABLE {}", targetId);
     }
 
@@ -181,12 +202,26 @@ public final class LabItemService {
         }
         if (entry.wasModified()) {
             STATE.put(targetId, new LabItemSaveEntry(entry.type(), LabItemStatus.MODIFIED, entry.name(),
-                    true, entry.customTier(), entry.values(), entry.tags(), entry.actions()));
+                    true, entry.customTier(), entry.values(), entry.tags(),
+                    withHideActions(entry.actions(), false)));
         } else {
             STATE.remove(targetId);
         }
         PENDING.add(targetId);
         KubeJSLab.LOGGER.info("[LabItemService] ENABLE {}", targetId);
+    }
+
+    private static List<LabItemAction> withHideActions(List<LabItemAction> source, boolean set) {
+        List<LabItemAction> actions = new ArrayList<>(source);
+        for (LabItemAction action : List.of(LabItemAction.HIDE_CREATIVE_TAB, LabItemAction.REMOVE_RECIPES,
+                LabItemAction.HIDE_VIEWER)) {
+            if (set && !actions.contains(action)) {
+                actions.add(action);
+            } else if (!set) {
+                actions.remove(action);
+            }
+        }
+        return actions;
     }
 
     private static void reset(ResourceLocation targetId) {
@@ -195,6 +230,20 @@ public final class LabItemService {
         }
         STATE.remove(targetId);
         PENDING.add(targetId);
+        if (!LabPathResolver.isLabOwned(targetId)) {
+            try {
+                Files.deleteIfExists(textureFile(targetId));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            Path modelFile = LabPathResolver.kubejsDir().resolve("assets").resolve("minecraft").resolve("models")
+                    .resolve("item").resolve(targetId.getPath() + ".json");
+            try {
+                Files.deleteIfExists(modelFile);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
         KubeJSLab.LOGGER.info("[LabItemService] RESET {}", targetId);
     }
 
@@ -563,6 +612,36 @@ public final class LabItemService {
                 || v.foodAlwaysEdible() || !v.foodEffect().isBlank();
     }
 
+    private static void writeModelOverrides() throws IOException {
+        Path modelsDir = LabPathResolver.kubejsDir().resolve("assets").resolve("minecraft").resolve("models")
+                .resolve("item");
+        boolean any = false;
+        for (Map.Entry<ResourceLocation, LabItemSaveEntry> item : STATE.entrySet()) {
+            LabItemSaveEntry entry = item.getValue();
+            if (item.getKey().getNamespace().equals("kubejs") || entry.values().texture().isBlank()) {
+                continue;
+            }
+            Path modelFile = modelsDir.resolve(item.getKey().getPath() + ".json");
+            if (Files.isRegularFile(modelFile)) {
+                continue;
+            }
+            Files.createDirectories(modelsDir);
+            Item registered = BuiltInRegistries.ITEM.get(item.getKey());
+            boolean handheld = registered instanceof SwordItem || registered instanceof PickaxeItem
+                    || registered instanceof AxeItem || registered instanceof ShovelItem
+                    || registered instanceof HoeItem || registered instanceof ShearsItem;
+            String parent = handheld ? "minecraft:item/handheld" : "minecraft:item/generated";
+            String layer0 = "kubejs:item/" + item.getKey().getPath();
+            String content = "{\n  \"parent\": \"" + parent + "\",\n  \"textures\": {\n    \"layer0\": \""
+                    + layer0 + "\"\n  }\n}\n";
+            Files.writeString(modelFile, content);
+            any = true;
+        }
+        if (any) {
+            KubeJSLab.LOGGER.info("[LabItemService] wrote model overrides");
+        }
+    }
+
     private static void writeServerScript() throws IOException {
         StringBuilder sb = new StringBuilder("ServerEvents.recipes(event => {\n");
         STATE.entrySet().stream().filter(e -> e.getValue().actions().contains(LabItemAction.REMOVE_RECIPES))
@@ -590,19 +669,19 @@ public final class LabItemService {
 
     private static boolean copyTextures() throws IOException {
         boolean copied = false;
+        Path root = LabPathResolver.kubejsDir().resolve("assets").resolve("kubejs").resolve("textures");
         for (Map.Entry<ResourceLocation, LabItemSaveEntry> item : STATE.entrySet()) {
             LabItemSaveEntry entry = item.getValue();
             String rel = entry.values().texture();
             if (rel.isBlank()) {
                 continue;
             }
-            Path root = Platform.getConfigFolder().resolve("kubejslab").resolve("assets");
             Path source = root.resolve(rel).normalize();
-            if (!source.startsWith(root.normalize()) || !Files.isRegularFile(source)
+            Path dest = textureFile(item.getKey());
+            if (source.equals(dest) || !source.startsWith(root.normalize()) || !Files.isRegularFile(source)
                     || !extension(source.getFileName().toString()).equals("png")) {
                 continue;
             }
-            Path dest = textureFile(item.getKey());
             Files.createDirectories(dest.getParent());
             Files.copy(source, dest, StandardCopyOption.REPLACE_EXISTING);
             copied = true;
@@ -682,13 +761,19 @@ public final class LabItemService {
             return;
         }
         stateLoaded = true;
-        JsonObject root = LabStateFile.load(LabPathResolver.stateFile());
+        JsonObject root = LabStateFile.load(LabPathResolver.itemStateFile());
+        if (root == null) {
+            root = LabStateFile.load(LabPathResolver.legacyStateFile());
+        }
         if (root == null) {
             return;
         }
         for (String key : root.keySet()) {
             try {
                 JsonObject obj = root.getAsJsonObject(key);
+                if (!obj.has("values")) {
+                    continue;
+                }
                 ResourceLocation id = new ResourceLocation(key);
                 LabItemStatus status = LabItemStatus.valueOf(obj.get("status").getAsString());
                 String type = obj.has("type") ? obj.get("type").getAsString() : "basic";
@@ -784,7 +869,7 @@ public final class LabItemService {
             }
             root.add(item.getKey().toString(), obj);
         }
-        LabStateFile.save(LabPathResolver.stateFile(), root);
+        LabStateFile.save(LabPathResolver.itemStateFile(), root);
     }
 
     private static void writeValues(JsonObject obj, LabItemFieldValues v) {

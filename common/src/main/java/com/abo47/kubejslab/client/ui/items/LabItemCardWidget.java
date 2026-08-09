@@ -19,8 +19,6 @@ public final class LabItemCardWidget extends LabEntryCardWidget {
             LabColors.bordered(LabColors.SURFACE_PANEL_ALT, LabColors.WARNING);
     private static final IGuiTexture DISABLED_TEXTURE =
             LabColors.bordered(LabColors.SURFACE_PANEL_ALT, LabColors.ERROR);
-    private static final IGuiTexture PENDING_TEXTURE =
-            LabColors.bordered(LabColors.SURFACE_PANEL_ALT, LabColors.TEXT_MUTED);
     private static final int BADGE_X = 16;
     private static final int BADGE_Y = 3;
     private static final int BADGE_SIZE = 9;
@@ -45,7 +43,7 @@ public final class LabItemCardWidget extends LabEntryCardWidget {
 
     @Override
     public void drawInBackground(@Nonnull GuiGraphics g, int mx, int my, float pt) {
-        setCardTexture(pending ? PENDING_TEXTURE : switch (status) {
+        setCardTexture(switch (status) {
             case MODIFIED -> MODIFIED_TEXTURE;
             case DISABLED -> DISABLED_TEXTURE;
             case CREATED, NORMAL -> CARD_TEXTURE;

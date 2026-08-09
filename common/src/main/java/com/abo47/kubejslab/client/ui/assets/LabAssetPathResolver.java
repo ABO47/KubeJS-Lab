@@ -15,10 +15,6 @@ final class LabAssetPathResolver {
     static void ensureAssetsDirs(Path assetsRoot) {
         try {
             Files.createDirectories(assetsRoot);
-            Files.createDirectories(assetsRoot.resolve("pics"));
-            Files.createDirectories(assetsRoot.resolve("gifs"));
-            Files.createDirectories(assetsRoot.resolve("sounds"));
-            Files.createDirectories(assetsRoot.resolve("blueprints"));
         } catch (Exception e) {
             KubeJSLab.LOGGER.warn("[Lab:UI] Failed creating assets dirs {}", assetsRoot, e);
         }
@@ -63,6 +59,10 @@ final class LabAssetPathResolver {
             return null;
         }
         return dir.startsWith(root) ? dir : null;
+    }
+
+    static boolean isStubAssetDirectory(String name) {
+        return "pics".equals(name) || "gifs".equals(name) || "sounds".equals(name) || "blueprints".equals(name);
     }
 
     static String normalizeRelative(String value) {

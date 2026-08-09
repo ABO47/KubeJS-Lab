@@ -34,7 +34,6 @@ public final class LabItemBrowserWidget extends LabCardBrowserWidget<LabItemCard
     protected List<LabItemIndex.LabItemEntry> entries() {
         List<LabItemIndex.LabItemEntry> entries = new ArrayList<>(LabItemIndex.search(query(), kubejsOnly()));
         entries.addAll(LabItemStates.stateEntries().stream()
-                .filter(e -> kubejsOnly() == e.kubejs())
                 .filter(e -> query().isBlank() || e.matches(LabSearchNormalizer.normalizeUserSearch(query())))
                 .toList());
         Set<ResourceLocation> seen = new HashSet<>();

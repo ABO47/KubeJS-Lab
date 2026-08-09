@@ -233,13 +233,19 @@ public final class LabRecipeService {
             return;
         }
         stateLoaded = true;
-        JsonObject root = LabStateFile.load(LabPathResolver.stateFile());
+        JsonObject root = LabStateFile.load(LabPathResolver.recipeStateFile());
+        if (root == null) {
+            root = LabStateFile.load(LabPathResolver.legacyStateFile());
+        }
         if (root == null) {
             return;
         }
         for (String key : root.keySet()) {
             try {
                 JsonObject obj = root.getAsJsonObject(key);
+                if (!obj.has("item")) {
+                    continue;
+                }
                 ResourceLocation id = new ResourceLocation(key);
                 LabRecipeStatus status = LabRecipeStatus.valueOf(obj.get("status").getAsString());
                 ItemStack output = decodeStack(obj);
@@ -272,7 +278,7 @@ public final class LabRecipeService {
             }
             root.add(entry.id().toString(), obj);
         }
-        LabStateFile.save(LabPathResolver.stateFile(), root);
+        LabStateFile.save(LabPathResolver.recipeStateFile(), root);
     }
 
     private static ItemStack decodeStack(JsonObject obj) {

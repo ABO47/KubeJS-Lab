@@ -49,11 +49,15 @@ public final class LabIconAtlas {
     }
 
     public static ResourceTexture iconTexture(String key, LabActionTone tone) {
+        return iconTexture(key, tone.accentColor());
+    }
+
+    public static ResourceTexture iconTexture(String key, int color) {
         String clean = normalizeKey(key);
         if (clean.isBlank() || !isValidIconPath(clean)) {
             return null;
         }
-        String cacheKey = clean + "|" + tone.name();
+        String cacheKey = clean + "|" + Integer.toHexString(color);
         ResourceTexture cached = ICON_TEXTURES.get(cacheKey);
         if (cached != null) {
             return cached;
@@ -62,7 +66,7 @@ public final class LabIconAtlas {
         if (id == null) {
             return null;
         }
-        ResourceTexture texture = new SmoothResourceTexture(id).setColor(tone.accentColor());
+        ResourceTexture texture = new SmoothResourceTexture(id).setColor(color);
         ICON_TEXTURES.put(cacheKey, texture);
         return texture;
     }

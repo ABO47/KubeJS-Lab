@@ -18,6 +18,8 @@ import com.lowdragmc.lowdraglib.gui.widget.Widget;
 import com.lowdragmc.lowdraglib.gui.widget.WidgetGroup;
 import com.lowdragmc.lowdraglib.utils.Position;
 
+import org.joml.Vector4f;
+
 
 public abstract class LabRowCardSettingsWidget extends WidgetGroup {
     public static final IGuiTexture CARD_TEXTURE =
@@ -25,8 +27,9 @@ public abstract class LabRowCardSettingsWidget extends WidgetGroup {
     public static final int ROW_STRIDE = LabLayout.CARD_H + 4;
     public static final int FIELD_H = 15;
     public static final int CONTROL_W = 44;
+    private static final int ROW_GAP = 4;
 
-    private final List<LabOptionDropdownWidget> popupDropdowns = new ArrayList<>();
+    private final List<LabPopupProvider> popupDropdowns = new ArrayList<>();
     private final LabScrollBarWidget scrollBar;
     private final LabActionButton clearButton;
     private final LabActionButton saveButton;
@@ -59,7 +62,7 @@ public abstract class LabRowCardSettingsWidget extends WidgetGroup {
         addWidget(saveButton);
 
         scrollBar = new LabScrollBarWidget(
-                w - LabLayout.SCROLLBAR_W - 2, 0, LabLayout.SCROLLBAR_W, bottomY,
+                w - LabLayout.SCROLLBAR_W - 2, 0, LabLayout.SCROLLBAR_W, bottomY - ROW_GAP,
                 () -> scrollOffset,
                 () -> scrollMax,
                 this::scrollKnobHeight,
@@ -80,8 +83,14 @@ public abstract class LabRowCardSettingsWidget extends WidgetGroup {
         relayoutFields();
     }
 
-    protected void addPopupDropdown(LabOptionDropdownWidget dropdown) {
+    protected void addPopupDropdown(LabPopupProvider dropdown) {
         popupDropdowns.add(dropdown);
+    }
+
+    public void closeAllPopups() {
+        for (LabPopupProvider dropdown : popupDropdowns) {
+            dropdown.closePopup();
+        }
     }
 
     protected void resetScroll() {
@@ -104,12 +113,12 @@ public abstract class LabRowCardSettingsWidget extends WidgetGroup {
         int h = getSizeHeight();
         int pad = LabLayout.SETTINGS_PAD;
         int cardX = x + pad;
-        int cardW = w - pad * 2;
+        int cardW = contentCardW(w);
         int bottomY = h - pad - LabLayout.SETTINGS_BTN_H;
-        int contentBottom = y + bottomY;
+        int contentBottom = y + bottomY - ROW_GAP;
 
         g.flush();
-        g.enableScissor(x + 1, y, x + w - 1, contentBottom);
+        scissorRect(g, x + 1, y, x + w - 1, contentBottom);
         for (int i = 0; i < rows.size(); i++) {
             FieldRow row = rows.get(i);
             int rowY = rowY(i) - scrollOffset;
@@ -123,7 +132,9 @@ public abstract class LabRowCardSettingsWidget extends WidgetGroup {
                 g.flush();
                 RenderSystem.enableBlend();
                 RenderSystem.setShaderColor(1, 1, 1, 1);
+                scissorRect(g, cardX, cardY, cardX + cardW, cardY + LabLayout.CARD_H);
                 row.control.drawInBackground(g, mx, my, pt);
+                g.disableScissor();
                 g.flush();
             }
         }
@@ -139,10 +150,56 @@ public abstract class LabRowCardSettingsWidget extends WidgetGroup {
     }
 
     @Override
+    public void drawInForeground(@Nonnull GuiGraphics g, int mx, int my, float pt) {
+        boolean anyPopupOpen = false;
+        for (LabPopupProvider dropdown : popupDropdowns) {
+            if (dropdown.isOpen()) {
+                anyPopupOpen = true;
+                break;
+            }
+        }
+        if (anyPopupOpen) {
+            super.drawInForeground(g, mx, my, pt);
+            return;
+        }
+        int x = getPositionX();
+        int y = getPositionY();
+        int bottomY = getSizeHeight() - LabLayout.SETTINGS_PAD - LabLayout.SETTINGS_BTN_H;
+        scissorRect(g, x + 1, y, x + getSizeWidth() - 1, y + bottomY - ROW_GAP);
+        super.drawInForeground(g, mx, my, pt);
+        g.disableScissor();
+    }
+
+    private static void scissorRect(GuiGraphics g, int x1, int y1, int x2, int y2) {
+        var trans = g.pose().last().pose();
+        var realPos = new Vector4f(x1, y1, 0, 1);
+        var realPos2 = new Vector4f(x2, y2, 0, 1);
+        trans.transform(realPos);
+        trans.transform(realPos2);
+        g.enableScissor((int) realPos.x, (int) realPos.y, (int) realPos2.x, (int) realPos2.y);
+    }
+
+    @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        for (LabOptionDropdownWidget dropdown : popupDropdowns) {
+        for (LabPopupProvider dropdown : popupDropdowns) {
             if (dropdown.isOpen() && dropdown.isPopupOver(mouseX, mouseY)) {
                 return dropdown.mouseClicked(mouseX, mouseY, button);
+            }
+        }
+        if (clearButton.isMouseOverElement(mouseX, mouseY)) {
+            return clearButton.mouseClicked(mouseX, mouseY, button);
+        }
+        if (saveButton.isMouseOverElement(mouseX, mouseY)) {
+            return saveButton.mouseClicked(mouseX, mouseY, button);
+        }
+        if (!isInsideViewport(mouseX, mouseY)) {
+            return false;
+        }
+        for (int i = widgets.size() - 1; i >= 0; i--) {
+            Widget widget = widgets.get(i);
+            if (widget.isVisible() && widget.isActive() && childInsideViewport(widget)
+                    && widget.mouseClicked(mouseX, mouseY, button)) {
+                return true;
             }
         }
         return super.mouseClicked(mouseX, mouseY, button);
@@ -150,13 +207,17 @@ public abstract class LabRowCardSettingsWidget extends WidgetGroup {
 
     @Override
     public boolean mouseWheelMove(double mouseX, double mouseY, double wheelDelta) {
-        for (LabOptionDropdownWidget dropdown : popupDropdowns) {
+        for (LabPopupProvider dropdown : popupDropdowns) {
             if (dropdown.isOpen() && dropdown.isPopupOver(mouseX, mouseY)) {
                 return dropdown.mouseWheelMove(mouseX, mouseY, wheelDelta);
             }
         }
-        if (super.mouseWheelMove(mouseX, mouseY, wheelDelta)) {
-            return true;
+        for (int i = widgets.size() - 1; i >= 0; i--) {
+            Widget widget = widgets.get(i);
+            if (widget.isVisible() && widget.isActive() && childInsideViewport(widget)
+                    && widget.mouseWheelMove(mouseX, mouseY, wheelDelta)) {
+                return true;
+            }
         }
         if (isMouseOverElement(mouseX, mouseY) && scrollMax > 0) {
             int step = Math.max(8, ROW_STRIDE / 3);
@@ -167,10 +228,24 @@ public abstract class LabRowCardSettingsWidget extends WidgetGroup {
         return false;
     }
 
+    private boolean isInsideViewport(double mouseX, double mouseY) {
+        return mouseY >= getPositionY() && mouseY <= viewportBottom();
+    }
+
+    private boolean childInsideViewport(Widget child) {
+        int top = getPositionY();
+        int bottom = viewportBottom();
+        return child.getPositionY() < bottom && child.getPositionY() + child.getSizeHeight() > top;
+    }
+
+    private int viewportBottom() {
+        return getPositionY() + getSizeHeight() - LabLayout.SETTINGS_PAD - LabLayout.SETTINGS_BTN_H - ROW_GAP;
+    }
+
     private void recomputeScrollMax() {
         int pad = LabLayout.SETTINGS_PAD;
         int bottomY = getSizeHeight() - pad - LabLayout.SETTINGS_BTN_H;
-        int viewport = Math.max(1, bottomY);
+        int viewport = Math.max(1, bottomY - ROW_GAP);
         int contentH = rows.size() * ROW_STRIDE;
         scrollMax = Math.max(0, contentH - viewport);
         scrollOffset = Math.min(scrollOffset, scrollMax);
@@ -180,13 +255,18 @@ public abstract class LabRowCardSettingsWidget extends WidgetGroup {
     private int scrollKnobHeight() {
         int pad = LabLayout.SETTINGS_PAD;
         int bottomY = getSizeHeight() - pad - LabLayout.SETTINGS_BTN_H;
-        int viewport = Math.max(1, bottomY);
+        int viewport = Math.max(1, bottomY - ROW_GAP);
         int contentH = Math.max(1, rows.size() * ROW_STRIDE);
         return Math.max(LabLayout.KNOB_MIN_H, viewport * viewport / contentH);
     }
 
     private int controlWidth(Widget control) {
         return CONTROL_W;
+    }
+
+    private int contentCardW(int panelW) {
+        int pad = LabLayout.SETTINGS_PAD;
+        return panelW - pad * 2 - (scrollMax > 0 ? LabLayout.SCROLLBAR_W + 2 : 0);
     }
 
     private int controlX(int cardX, int cardW, int pad, FieldRow row) {
@@ -196,12 +276,12 @@ public abstract class LabRowCardSettingsWidget extends WidgetGroup {
     private void relayoutFields() {
         int pad = LabLayout.SETTINGS_PAD;
         int cardX = pad;
-        int cardW = getSizeWidth() - pad * 2;
+        int cardW = contentCardW(getSizeWidth());
         for (int i = 0; i < rows.size(); i++) {
             FieldRow row = rows.get(i);
             int rowY = rowY(i) - scrollOffset;
-            row.control.setSelfPosition(new Position(controlX(cardX, cardW, pad, row),
-                    rowY + (LabLayout.CARD_H - row.control.getSizeHeight()) / 2));
+            int y = rowY + (LabLayout.CARD_H - row.control.getSizeHeight()) / 2;
+            row.control.setSelfPosition(new Position(controlX(cardX, cardW, pad, row), y));
         }
     }
 
@@ -225,7 +305,7 @@ public abstract class LabRowCardSettingsWidget extends WidgetGroup {
     protected static TextTexture rowLabel(String key, int width) {
         return new TextTexture(Component.translatable(key).getString(), LabColors.TEXT_PRIMARY)
                 .setWidth(width)
-                .setType(TextTexture.TextType.LEFT_HIDE);
+                .setType(TextTexture.TextType.ROLL);
     }
 
     protected static TextFieldWidget numberField(int x, int y, java.util.function.Supplier<String> supplier,
