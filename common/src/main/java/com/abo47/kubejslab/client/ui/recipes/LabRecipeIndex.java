@@ -19,6 +19,8 @@ import net.minecraft.world.item.ItemStack;
 import com.abo47.kubejslab.KubeJSLab;
 import com.abo47.kubejslab.client.ui.picker.LabSearchNormalizer;
 import com.abo47.kubejslab.platform.Services;
+import com.abo47.kubejslab.recipe.model.LabRecipeStateEntry;
+import com.abo47.kubejslab.recipe.model.LabRecipeStatus;
 
 import com.lowdragmc.lowdraglib.side.fluid.FluidStack;
 
@@ -58,6 +60,32 @@ public final class LabRecipeIndex {
 
     public static String normalizeUserSearch(String value) {
         return LabSearchNormalizer.normalizeUserSearch(value);
+    }
+
+    public record RecipeCounts(int recipes, int disabled, int modified) {
+    }
+
+    public static RecipeCounts counts(boolean kubejs) {
+        int recipes = 0;
+        for (LabRecipeEntry entry : entries()) {
+            if (entry.kubejs() == kubejs) {
+                recipes++;
+            }
+        }
+        int disabled = 0;
+        int modified = 0;
+        for (LabRecipeStateEntry state : LabRecipeStates.stateEntries()) {
+            if ("kubejs".equals(state.id().getNamespace()) != kubejs) {
+                continue;
+            }
+            LabRecipeStatus status = state.status();
+            if (status == LabRecipeStatus.DISABLED) {
+                disabled++;
+            } else if (status == LabRecipeStatus.MODIFIED) {
+                modified++;
+            }
+        }
+        return new RecipeCounts(recipes, disabled, modified);
     }
 
     public static Recipe<?> recipeById(ResourceLocation id) {

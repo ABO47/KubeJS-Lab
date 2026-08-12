@@ -315,6 +315,11 @@ public final class LabScreen {
             }
 
             if (isLeft) {
+                tabs[0].setRecipeCategory(false);
+                tabs[1].setRecipeCategory(true);
+            }
+
+            if (isLeft) {
                 buildLeftContent();
             } else {
                 buildRightContent();
