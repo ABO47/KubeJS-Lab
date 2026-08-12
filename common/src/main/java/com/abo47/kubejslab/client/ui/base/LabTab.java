@@ -80,9 +80,9 @@ public final class LabTab extends Widget {
         if (recipeKubejs != null && isMouseOverElement(mx, my)) {
             LabRecipeIndex.RecipeCounts c = LabRecipeIndex.counts(recipeKubejs);
             setHoverTooltips(
-                    Component.literal("Recipes: " + c.recipes()),
-                    Component.literal("Disabled: " + c.disabled()),
-                    Component.literal("Modified: " + c.modified()));
+                    Component.translatable("kubejslab.gui.lab_tab_tooltip_recipes", c.recipes()),
+                    Component.translatable("kubejslab.gui.lab_tab_tooltip_disabled", c.disabled()),
+                    Component.translatable("kubejslab.gui.lab_tab_tooltip_modified", c.modified()));
         }
         super.drawInForeground(g, mx, my, pt);
     }
