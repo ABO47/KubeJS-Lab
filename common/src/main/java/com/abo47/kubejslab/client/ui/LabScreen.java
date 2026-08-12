@@ -331,7 +331,7 @@ public final class LabScreen {
             searchField = new TextFieldWidget(
                     LabLayout.PANEL_INSET + LabLayout.LIST_INSET,
                     searchY,
-                    LabLayout.recipeCardWidth(innerW),
+                    innerW - LabLayout.LIST_INSET * 2,
                     LabLayout.SEARCH_H,
                     null,
                     this::onSearchChanged);
@@ -477,7 +477,15 @@ public final class LabScreen {
 
             int innerX = px + panelInset;
             int innerW = pw - panelInset * 2;
-            INNER_TEXTURE.draw(g, mx, my, innerX, innerTopY, innerW, innerH);
+
+            if (isLeft) {
+                INNER_TEXTURE.draw(g, mx, my, innerX, innerTopY, innerW, innerH);
+            } else {
+                INNER_TEXTURE.draw(g, mx, my, innerX, innerTopY, LabLayout.MACHINE_W, innerH);
+                INNER_TEXTURE.draw(g, mx, my,
+                        innerX + LabLayout.MACHINE_W + LabLayout.AREA_GAP, innerTopY,
+                        LabLayout.MACHINE_W, innerH);
+            }
 
             for (LabTab tab : tabs) {
                 if (!tab.isTabActive()) {

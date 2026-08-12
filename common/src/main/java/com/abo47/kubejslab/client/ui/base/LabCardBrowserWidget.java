@@ -87,7 +87,7 @@ public abstract class LabCardBrowserWidget<L extends LabEntryCardWidget, E> exte
 
         int trackX = LabLayout.recipeTrackX(listW);
         int cardX = LabLayout.LIST_INSET;
-        int cardW = LabLayout.recipeCardWidth(listW);
+        int cardW = showScrollBar ? LabLayout.recipeCardWidth(listW) : listW - LabLayout.LIST_INSET * 2;
 
         for (int row = 0; row < rows; row++) {
             int y = -scroll + row * rowStep;
