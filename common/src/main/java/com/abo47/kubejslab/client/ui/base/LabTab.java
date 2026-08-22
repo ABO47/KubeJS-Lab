@@ -3,10 +3,13 @@ package com.abo47.kubejslab.client.ui.base;
 import javax.annotation.Nonnull;
 
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
 
 import com.lowdragmc.lowdraglib.gui.texture.ColorRectTexture;
 import com.lowdragmc.lowdraglib.gui.texture.TextTexture;
 import com.lowdragmc.lowdraglib.gui.widget.Widget;
+
+import com.abo47.kubejslab.client.ui.recipes.LabRecipeIndex;
 
 
 public final class LabTab extends Widget {
@@ -18,6 +21,7 @@ public final class LabTab extends Widget {
     private final String label;
     private final TextTexture labelTex;
     private boolean active;
+    private Boolean recipeKubejs;
 
     public LabTab(int x, int y, int w, int h, String translationKey, boolean active) {
         super(x, y, w, h);
@@ -26,6 +30,10 @@ public final class LabTab extends Widget {
                 .setWidth(Math.max(1, w - 8))
                 .setType(TextTexture.TextType.HIDE);
         this.active = active;
+    }
+
+    public void setRecipeCategory(boolean kubejs) {
+        this.recipeKubejs = kubejs;
     }
 
     public boolean isTabActive() {
@@ -65,5 +73,17 @@ public final class LabTab extends Widget {
             return true;
         }
         return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
+    public void drawInForeground(@Nonnull GuiGraphics g, int mx, int my, float pt) {
+        if (recipeKubejs != null && isMouseOverElement(mx, my)) {
+            LabRecipeIndex.RecipeCounts c = LabRecipeIndex.counts(recipeKubejs);
+            setHoverTooltips(
+                    Component.translatable("kubejslab.gui.lab_tab_tooltip_recipes", c.recipes()),
+                    Component.translatable("kubejslab.gui.lab_tab_tooltip_disabled", c.disabled()),
+                    Component.translatable("kubejslab.gui.lab_tab_tooltip_modified", c.modified()));
+        }
+        super.drawInForeground(g, mx, my, pt);
     }
 }

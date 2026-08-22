@@ -49,8 +49,6 @@ public final class LabScreen {
             LabColors.bordered(LabColors.SURFACE_PANEL, LabColors.BORDER_BASE);
     private static final IGuiTexture INNER_TEXTURE =
             LabColors.bordered(LabColors.SURFACE_BASE, LabColors.BORDER_BASE);
-    private static final ColorRectTexture DIVIDER_TEX = new ColorRectTexture(LabColors.BORDER_BASE);
-    private static final ColorRectTexture DIVIDER_FILL_TEX = new ColorRectTexture(LabColors.BORDER_BASE);
     private static final ColorRectTexture TAB_ERASE_TEX = new ColorRectTexture(LabColors.SURFACE_BASE);
 
     private static int lastLeftTab;
@@ -317,6 +315,11 @@ public final class LabScreen {
             }
 
             if (isLeft) {
+                tabs[0].setRecipeCategory(false);
+                tabs[1].setRecipeCategory(true);
+            }
+
+            if (isLeft) {
                 buildLeftContent();
             } else {
                 buildRightContent();
@@ -333,7 +336,7 @@ public final class LabScreen {
             searchField = new TextFieldWidget(
                     LabLayout.PANEL_INSET + LabLayout.LIST_INSET,
                     searchY,
-                    LabLayout.recipeCardWidth(innerW),
+                    innerW - LabLayout.LIST_INSET * 2,
                     LabLayout.SEARCH_H,
                     null,
                     this::onSearchChanged);
@@ -479,13 +482,14 @@ public final class LabScreen {
 
             int innerX = px + panelInset;
             int innerW = pw - panelInset * 2;
-            INNER_TEXTURE.draw(g, mx, my, innerX, innerTopY, innerW, innerH);
 
-            if (!isLeft) {
-                int dividerX = innerX + LabLayout.MACHINE_W + LabLayout.AREA_GAP / 2 - 3;
-                DIVIDER_TEX.draw(g, mx, my, dividerX, innerTopY, 1, innerH);
-                DIVIDER_FILL_TEX.draw(g, mx, my, dividerX + 1, innerTopY, 4, innerH);
-                DIVIDER_TEX.draw(g, mx, my, dividerX + 5, innerTopY, 1, innerH);
+            if (isLeft) {
+                INNER_TEXTURE.draw(g, mx, my, innerX, innerTopY, innerW, innerH);
+            } else {
+                INNER_TEXTURE.draw(g, mx, my, innerX, innerTopY, LabLayout.MACHINE_W, innerH);
+                INNER_TEXTURE.draw(g, mx, my,
+                        innerX + LabLayout.MACHINE_W + LabLayout.AREA_GAP, innerTopY,
+                        LabLayout.MACHINE_W, innerH);
             }
 
             for (LabTab tab : tabs) {

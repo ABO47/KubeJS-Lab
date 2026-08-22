@@ -27,6 +27,10 @@ public final class LabRecipeStates {
         return entry == null ? LabRecipeStatus.NORMAL : entry.status();
     }
 
+    public static java.util.Collection<LabRecipeStateEntry> stateEntries() {
+        return STATES.values();
+    }
+
     public static ResourceLocation machineUidOf(ResourceLocation id) {
         LabRecipeStateEntry entry = STATES.get(id);
         return entry == null ? null : entry.machineUid();
