@@ -28,6 +28,14 @@ allprojects {
 
     repositories {
         mavenCentral()
+        maven {
+            name = 'ParchmentMC'
+            url = 'https://maven.parchmentmc.org'
+            content {
+                includeGroupByRegex 'org\\.parchmentmc\\..*'
+                includeGroup 'org.parchmentmc'
+            }
+        }
         maven { url = 'https://api.modrinth.com/maven' }
         maven {
             name = 'firstdarkdev'
@@ -37,8 +45,18 @@ allprojects {
         maven { url = 'https://maven.minecraftforge.net/' }
         maven { url = 'https://maven.architectury.dev/' }
         maven {
+            name = 'ModMaven'
+            url = 'https://modmaven.dev'
+            content {
+                includeGroup 'mezz.jei'
+            }
+        }
+        maven {
             name = "Progwml6's maven"
             url = 'https://dvs1.progwml6.com/files/maven/'
+            content {
+                includeGroup 'mezz.jei'
+            }
         }
         maven {
             name = "Jared's maven"
@@ -48,11 +66,6 @@ allprojects {
             name = 'TerraformersMC'
             url = 'https://maven.terraformersmc.com/'
         }
-        maven {
-            name = 'ModMaven'
-            url = 'https://modmaven.dev'
-        }
-        maven { url = 'https://maven.parchmentmc.org' }
         maven {
             name = 'Latvian'
             url = 'https://maven.latvian.dev/releases'
