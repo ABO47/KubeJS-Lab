@@ -16,7 +16,6 @@ import com.abo47.kubejslab.recipe.LabRecipeMachine;
 import com.abo47.kubejslab.recipe.model.LabSlotDescriptor;
 import com.abo47.kubejslab.recipe.model.LabSlotKind;
 
-import com.simibubi.create.content.processing.recipe.ProcessingOutput;
 import mezz.jei.api.constants.VanillaTypes;
 import mezz.jei.api.gui.ingredient.IRecipeSlotView;
 import mezz.jei.api.gui.IRecipeLayoutDrawable;
@@ -57,7 +56,7 @@ final class LabFixedLayoutBuilder {
         LabRecipeIndex.LabRecipeEntry entry = widget.entry();
         IRecipeLayoutDrawable<?> jeiLayout = widget.jeiLayout();
         Recipe<?> original = widget.original();
-        List<ProcessingOutput> rollable = LabMachineLayoutWidget.rollableResults(original);
+        List<?> rollable = LabMachineLayoutWidget.rollableResults(original);
         List<Float> ieChances = support.outputChances(original);
         if (ieChances.isEmpty()) {
             ieChances = List.of();

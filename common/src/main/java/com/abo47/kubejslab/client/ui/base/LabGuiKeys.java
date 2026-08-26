@@ -7,6 +7,8 @@ public final class LabGuiKeys {
     public static final String TAB_ITEMS = "kubejslab.gui.lab_tab_items";
     public static final String TAB_BLOCKS = "kubejslab.gui.lab_tab_blocks";
     public static final String LAB_TAB_TOOLTIP_RECIPES = "kubejslab.gui.lab_tab_tooltip_recipes";
+    public static final String LAB_TAB_TOOLTIP_ITEMS = "kubejslab.gui.lab_tab_tooltip_items";
+    public static final String LAB_TAB_TOOLTIP_BLOCKS = "kubejslab.gui.lab_tab_tooltip_blocks";
     public static final String LAB_TAB_TOOLTIP_DISABLED = "kubejslab.gui.lab_tab_tooltip_disabled";
     public static final String LAB_TAB_TOOLTIP_MODIFIED = "kubejslab.gui.lab_tab_tooltip_modified";
     public static final String LAB_BLOCK_MODIFY = "kubejslab.gui.lab_block_modify";

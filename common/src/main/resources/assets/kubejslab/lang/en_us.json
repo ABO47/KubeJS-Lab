@@ -51,6 +51,8 @@
   "kubejslab.gui.lab_block_save": "Save",
   "kubejslab.gui.lab_block_clear": "Clear",
   "kubejslab.gui.lab_tab_tooltip_recipes": "Recipes: %s",
+  "kubejslab.gui.lab_tab_tooltip_items": "Items: %s",
+  "kubejslab.gui.lab_tab_tooltip_blocks": "Blocks: %s",
   "kubejslab.gui.lab_tab_tooltip_disabled": "Disabled: %s",
   "kubejslab.gui.lab_tab_tooltip_modified": "Modified: %s",
   "kubejslab.gui.lab_not_supported": "not supported",

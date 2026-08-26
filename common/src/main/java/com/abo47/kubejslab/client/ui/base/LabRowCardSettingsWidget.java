@@ -112,7 +112,7 @@ public abstract class LabRowCardSettingsWidget extends WidgetGroup {
         }
     }
 
-    protected void resetScroll() {
+    public void resetScroll() {
         scrollOffset = 0;
     }
 

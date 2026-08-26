@@ -21,6 +21,7 @@ public final class LabTab extends Widget {
     private final TextTexture labelTex;
     private boolean active;
     private Supplier<LabTabCounts> countsSupplier;
+    private Supplier<String> totalTooltipKeySupplier;
     private String totalTooltipKey;
 
     public LabTab(int x, int y, int w, int h, String translationKey, boolean active) {
@@ -35,6 +36,13 @@ public final class LabTab extends Widget {
     public void setCounts(Supplier<LabTabCounts> countsSupplier, String totalTooltipKey) {
         this.countsSupplier = countsSupplier;
         this.totalTooltipKey = totalTooltipKey;
+        this.totalTooltipKeySupplier = () -> totalTooltipKey;
+    }
+
+    public void setCounts(Supplier<LabTabCounts> countsSupplier, Supplier<String> totalTooltipKeySupplier) {
+        this.countsSupplier = countsSupplier;
+        this.totalTooltipKeySupplier = totalTooltipKeySupplier;
+        this.totalTooltipKey = null;
     }
 
     public boolean isTabActive() {
@@ -80,8 +88,10 @@ public final class LabTab extends Widget {
     public void drawInForeground(@Nonnull GuiGraphics g, int mx, int my, float pt) {
         if (countsSupplier != null && isMouseOverElement(mx, my)) {
             LabTabCounts c = countsSupplier.get();
+            String key = totalTooltipKeySupplier != null ? totalTooltipKeySupplier.get() : totalTooltipKey;
+            if (key == null) key = LabGuiKeys.LAB_TAB_TOOLTIP_RECIPES;
             setHoverTooltips(
-                    Component.translatable(totalTooltipKey, c.total()),
+                    Component.translatable(key, c.total()),
                     Component.translatable(LabGuiKeys.LAB_TAB_TOOLTIP_DISABLED, c.disabled()),
                     Component.translatable(LabGuiKeys.LAB_TAB_TOOLTIP_MODIFIED, c.modified()));
         }

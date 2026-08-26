@@ -15,6 +15,7 @@ import net.minecraft.world.level.block.Block;
 
 import com.abo47.kubejslab.block.model.LabBlockState;
 import com.abo47.kubejslab.block.model.LabBlockStatus;
+import com.abo47.kubejslab.client.ui.base.LabTabCounts;
 import com.abo47.kubejslab.client.ui.picker.LabSearchNormalizer;
 
 
@@ -44,6 +45,26 @@ public final class LabBlockStates {
     public static boolean pendingRestartOf(ResourceLocation id) {
         LabBlockState entry = STATE.get(id);
         return entry != null && entry.pendingRestart() || PENDING_EXTRA.contains(id);
+    }
+
+    public static LabTabCounts counts(boolean kubejs) {
+        Set<ResourceLocation> seen = new HashSet<>();
+        int total = 0;
+        for (LabBlockIndex.LabBlockEntry e : LabBlockIndex.search("", kubejs)) {
+            if (seen.add(e.id())) total++;
+        }
+        for (LabBlockIndex.LabBlockEntry e : stateEntries()) {
+            if (e.kubejs() != kubejs) continue;
+            if (seen.add(e.id())) total++;
+        }
+        int disabled = 0;
+        int modified = 0;
+        for (LabBlockState s : STATE.values()) {
+            if (s.id().getNamespace().equals("kubejs") != kubejs) continue;
+            if (s.status() == LabBlockStatus.DISABLED) disabled++;
+            else if (s.status() == LabBlockStatus.MODIFIED) modified++;
+        }
+        return new LabTabCounts(total, disabled, modified);
     }
 
     public static List<LabBlockIndex.LabBlockEntry> stateEntries() {

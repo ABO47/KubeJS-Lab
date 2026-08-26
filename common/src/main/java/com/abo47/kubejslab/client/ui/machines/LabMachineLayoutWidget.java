@@ -25,8 +25,7 @@ import com.abo47.kubejslab.recipe.model.LabSlotTint;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.simibubi.create.content.processing.recipe.ProcessingOutput;
-import com.simibubi.create.content.processing.recipe.ProcessingRecipe;
+import dev.architectury.platform.Platform;
 import mezz.jei.api.gui.IRecipeLayoutDrawable;
 import mezz.jei.api.recipe.RecipeIngredientRole;
 
@@ -297,19 +296,33 @@ public final class LabMachineLayoutWidget extends WidgetGroup {
         }
     }
 
-    void applyChance(LabSlotData data, List<ProcessingOutput> rollable, List<Float> ieChances, int index) {
+    void applyChance(LabSlotData data, List<?> rollable, List<Float> ieChances, int index) {
         if (!ieChances.isEmpty() && index < ieChances.size()) {
             data.setChance(ieChances.get(index));
             return;
         }
         if (index < rollable.size()) {
-            data.setChance(rollable.get(index).getChance());
+            Object obj = rollable.get(index);
+            try {
+                var m = obj.getClass().getMethod("getChance");
+                Object v = m.invoke(obj);
+                if (v instanceof Number n) data.setChance(n.floatValue());
+            } catch (Throwable ignored) {
+            }
         }
     }
 
-    static List<ProcessingOutput> rollableResults(Recipe<?> original) {
-        if (original instanceof ProcessingRecipe<?> processing) {
-            return processing.getRollableResults();
+    static List<?> rollableResults(Recipe<?> original) {
+        if (original == null) return List.of();
+        if (!Platform.isModLoaded("create")) return List.of();
+        try {
+            Class<?> clazz = Class.forName("com.simibubi.create.content.processing.recipe.ProcessingRecipe");
+            if (clazz.isInstance(original)) {
+                var m = clazz.getMethod("getRollableResults");
+                Object res = m.invoke(original);
+                if (res instanceof List<?> list) return list;
+            }
+        } catch (Throwable ignored) {
         }
         return List.of();
     }
