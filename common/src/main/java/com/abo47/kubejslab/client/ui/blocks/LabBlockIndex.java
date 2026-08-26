@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import net.minecraft.tags.TagKey;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.Block;
@@ -22,10 +23,12 @@ import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.StairBlock;
 import net.minecraft.world.level.block.WallBlock;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.phys.shapes.CollisionContext;
 
 import com.abo47.kubejslab.block.model.LabBlockFieldValues;
 import com.abo47.kubejslab.client.ui.picker.LabSearchNormalizer;
@@ -121,18 +124,32 @@ public final class LabBlockIndex {
         }
         var state = block.defaultBlockState();
         boolean waterlogged = state.hasProperty(BlockStateProperties.WATERLOGGED);
-        float destroySpeed = destroySpeedOf(block);
+        StringBuilder joinedTags = new StringBuilder();
+        for (ResourceLocation tag : block.builtInRegistryHolder().tags()
+                .map(TagKey::location).sorted().toList()) {
+            if (joinedTags.length() > 0) joinedTags.append(',');
+            joinedTags.append(tag);
+        }
         return new LabBlockFieldValues(block.getName().getString(), "", "", "", "",
-                destroySpeed, block.getExplosionResistance(), false, state.getLightEmission(),
-                soundTypeName(state.getSoundType()), false, false, waterlogged, false, false, true,
-                0f, 0f, 0f, "");
+                destroySpeedOf(state), block.getExplosionResistance(), false, state.getLightEmission(),
+                soundTypeName(state.getSoundType()), state.requiresCorrectToolForDrops(),
+                noCollisionOf(state), waterlogged, false, false, true,
+                0f, 0f, 0f, joinedTags.toString(), "", "", 0, 0, 0f, "", "", "");
     }
 
-    private static float destroySpeedOf(Block block) {
+    private static float destroySpeedOf(BlockState state) {
         try {
-            return block.defaultBlockState().getDestroySpeed(null, null);
+            return state.getDestroySpeed(null, null);
         } catch (RuntimeException e) {
             return LabBlockFieldValues.DEFAULT_HARDNESS;
+        }
+    }
+
+    private static boolean noCollisionOf(BlockState state) {
+        try {
+            return state.getCollisionShape(null, null, CollisionContext.empty()).isEmpty();
+        } catch (RuntimeException e) {
+            return false;
         }
     }
 

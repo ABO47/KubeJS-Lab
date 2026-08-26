@@ -24,6 +24,7 @@ import com.lowdragmc.lowdraglib.utils.Position;
 
 import com.abo47.kubejslab.client.ui.base.*;
 import com.abo47.kubejslab.client.ui.assets.LabAssetPickerModal;
+import com.abo47.kubejslab.client.ui.assets.LabColorPickerModal;
 import com.abo47.kubejslab.client.ui.blocks.*;
 import com.abo47.kubejslab.client.ui.contextmenu.*;
 import com.abo47.kubejslab.client.ui.items.*;
@@ -36,7 +37,6 @@ import com.abo47.kubejslab.block.model.LabBlockFieldValues;
 import com.abo47.kubejslab.block.model.LabBlockState;
 import com.abo47.kubejslab.block.runtime.LabBlockService;
 import com.abo47.kubejslab.item.model.LabItemEditAction;
-import com.abo47.kubejslab.item.model.LabItemField;
 import com.abo47.kubejslab.item.model.LabItemFieldValues;
 import com.abo47.kubejslab.item.model.LabItemState;
 import com.abo47.kubejslab.lab.LabPathResolver;
@@ -119,6 +119,13 @@ public final class LabScreen {
         });
         rightPanel.blockSettings.setOnTexturePick(field -> {
             rightPanel.blockSettings.closeAllPopups();
+            if (field == LabBlockField.DUST_COLOR) {
+                LabColorPickerModal.open(assetLayer,
+                        I18n.get(LabGuiKeys.LAB_BLOCK_DUST_COLOR),
+                        rightPanel.blockSettings.getDustColor(),
+                        hex -> rightPanel.blockSettings.setDustValue(hex));
+                return;
+            }
             LabAssetPickerModal.open(assetLayer,
                     LabPathResolver.kubejsDir().resolve("assets").resolve("kubejs").resolve("textures"),
                     I18n.get(LabGuiKeys.LAB_ITEM_TEXTURE),
@@ -363,8 +370,14 @@ public final class LabScreen {
             }
 
             if (isLeft) {
-                tabs[0].setRecipeCategory(false);
-                tabs[1].setRecipeCategory(true);
+                tabs[0].setCounts(() -> {
+                    LabRecipeIndex.RecipeCounts c = LabRecipeIndex.counts(false);
+                    return new LabTabCounts(c.recipes(), c.disabled(), c.modified());
+                }, LabGuiKeys.LAB_TAB_TOOLTIP_RECIPES);
+                tabs[1].setCounts(() -> {
+                    LabRecipeIndex.RecipeCounts c = LabRecipeIndex.counts(true);
+                    return new LabTabCounts(c.recipes(), c.disabled(), c.modified());
+                }, LabGuiKeys.LAB_TAB_TOOLTIP_RECIPES);
             }
 
             if (isLeft) {
@@ -382,7 +395,7 @@ public final class LabScreen {
             int innerTop = LabLayout.PANEL_INSET + LabLayout.TAB_H;
             int searchY = innerTop + LabLayout.SEARCH_GAP;
 
-            searchField = new TextFieldWidget(
+            searchField = new LabTextFieldWidget(
                     LabLayout.PANEL_INSET + LabLayout.LIST_INSET,
                     searchY,
                     innerW - LabLayout.LIST_INSET * 2,
@@ -767,20 +780,15 @@ public final class LabScreen {
                 itemPreview.setVisible(itemTabActive);
                 itemSettings.setVisible(itemTabActive);
                 if (itemTabActive) {
-                    List<LabItemField> fields = itemModifyTarget == null
-                            ? itemSettings.fullFields()
-                            : (itemModifyTarget.kubejs() ? itemSettings.fullFields() : itemSettings.builtInFields());
-                    itemSettings.setFields(fields);
+                    itemSettings.setFields(itemSettings.fullFields());
                 }
                 boolean blockTabActive = getSelectedTabIndex() == 2;
                 blockTypeDropdown.setVisible(blockTabActive);
                 blockPreview.setVisible(blockTabActive);
                 blockSettings.setVisible(blockTabActive);
                 if (blockTabActive) {
-                    List<LabBlockField> fields = blockModifyTarget == null
-                            ? blockSettings.fullFields()
-                            : (blockModifyTarget.kubejs() ? blockSettings.fullFields() : blockSettings.builtInFields());
-                    blockSettings.setFields(fields);
+                    blockSettings.setBuiltInOnly(blockModifyTarget != null && !blockModifyTarget.kubejs());
+                    blockSettings.setFields(blockSettings.fullFields());
                 }
             }
         }
@@ -831,10 +839,7 @@ public final class LabScreen {
 
         void showItemSettings(LabItemIndex.LabItemEntry entry) {
             itemSelection = entry;
-            List<LabItemField> fields = entry.kubejs()
-                    ? itemSettings.fullFields()
-                    : itemSettings.builtInFields();
-            itemSettings.setFields(fields);
+            itemSettings.setFields(itemSettings.fullFields());
             LabItemState state = LabItemStates.stateOf(entry.id());
             String type = state != null && state.type() != null && !state.type().isBlank()
                     ? state.type()
@@ -933,10 +938,8 @@ public final class LabScreen {
 
         void showBlockSettings(LabBlockIndex.LabBlockEntry entry) {
             blockSelection = entry;
-            List<LabBlockField> fields = entry.kubejs()
-                    ? blockSettings.fullFields()
-                    : blockSettings.builtInFields();
-            blockSettings.setFields(fields);
+            blockSettings.setBuiltInOnly(!entry.kubejs());
+            blockSettings.setFields(blockSettings.fullFields());
             LabBlockState state = LabBlockStates.stateOf(entry.id());
             String type = state != null && state.type() != null && !state.type().isBlank()
                     ? state.type()

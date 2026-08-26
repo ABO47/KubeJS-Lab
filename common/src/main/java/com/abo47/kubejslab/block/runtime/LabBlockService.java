@@ -51,6 +51,10 @@ public final class LabBlockService {
             "", "wood", "stone", "metal", "gravel", "grass", "sand", "glass", "wool", "snow", "crop",
             "slime", "anvil", "ladder", "honey", "amethyst", "deepslate", "netherrack", "candle", "sculk"
     };
+    private static final String[] BLOCK_SET_TYPES = {"", "oak", "stone", "iron", "gold", "diamond", "netherite",
+            "polished_blackstone"};
+    private static final String[] WOOD_TYPES = {"oak", "spruce", "birch", "jungle", "acacia", "dark_oak",
+            "mangrove", "cherry", "bamboo", "crimson", "warped"};
     private static final String[] CREATIVE_TABS = {
             "minecraft:building_blocks", "minecraft:colored_blocks", "minecraft:natural_blocks",
             "minecraft:functional_blocks", "minecraft:redstone_blocks", "minecraft:hotbar",
@@ -80,6 +84,7 @@ public final class LabBlockService {
             writeModificationScript();
             writeServerScript();
             writeCreativeHideScript();
+            writeClientScript();
             MinecraftServer server = player.getServer();
             LabServerCommands.kubejsStartupReload(server);
             LabServerCommands.reload(server);
@@ -193,7 +198,8 @@ public final class LabBlockService {
 
     private static List<LabBlockAction> withHideActions(List<LabBlockAction> source, boolean set) {
         List<LabBlockAction> actions = new ArrayList<>(source);
-        for (LabBlockAction action : List.of(LabBlockAction.HIDE_CREATIVE_TAB, LabBlockAction.REMOVE_RECIPES)) {
+        for (LabBlockAction action : List.of(LabBlockAction.HIDE_CREATIVE_TAB, LabBlockAction.REMOVE_RECIPES,
+                LabBlockAction.HIDE_VIEWER)) {
             if (set && !actions.contains(action)) {
                 actions.add(action);
             } else if (!set) {
@@ -256,8 +262,29 @@ public final class LabBlockService {
             }
             appendCreatedBlock(sb, id.getPath(), entry.getValue());
         }
-        sb.append("});\n");
+        sb.append("});\n\n");
+        appendCreativeTabAdds(sb);
         LabScriptWriter.write("startup_scripts", "blocks.js", sb.toString());
+    }
+
+    private static void appendCreativeTabAdds(StringBuilder sb) {
+        Map<String, List<String>> adds = new LinkedHashMap<>();
+        for (Map.Entry<ResourceLocation, LabBlockSaveEntry> entry : STATE.entrySet()) {
+            ResourceLocation id = entry.getKey();
+            String tab = entry.getValue().values().creativeTab();
+            if (!LabPathResolver.isLabOwned(id) || tab.isBlank()) {
+                continue;
+            }
+            adds.computeIfAbsent(tab, key -> new ArrayList<>()).add(id.toString());
+        }
+        for (Map.Entry<String, List<String>> add : adds.entrySet()) {
+            sb.append("StartupEvents.modifyCreativeTab('").append(js(add.getKey())).append("', event => {\n");
+            for (String blockId : add.getValue()) {
+                sb.append("    event.add('").append(js(blockId)).append("');\n");
+            }
+            sb.append("});\n");
+        }
+        sb.append("\n");
     }
 
     private static void appendCreatedBlock(StringBuilder sb, String path, LabBlockSaveEntry entry) {
@@ -298,8 +325,21 @@ public final class LabBlockService {
         if (v.waterlogged()) {
             sb.append("        .waterlogged()\n");
         }
-        if (v.noDrops()) {
+        if (v.noDrops() || hasCustomLoot(v)) {
             sb.append("        .noDrops()\n");
+        }
+        if ("falling".equals(entry.type()) && !v.dustColor().isBlank()) {
+            Long hex = parseHex(v.dustColor());
+            if (hex != null) {
+                sb.append("        .dustColor(0x").append(Long.toHexString(hex)).append(")\n");
+            }
+        }
+        if (("button".equals(entry.type()) || "pressure_plate".equals(entry.type()))
+                && !v.blockSetType().isBlank()) {
+            sb.append("        .behaviour('").append(js(v.blockSetType())).append("')\n");
+        }
+        if ("fence_gate".equals(entry.type()) && !v.woodType().isBlank()) {
+            sb.append("        .behaviour('").append(js(v.woodType())).append("')\n");
         }
         if (v.slipperiness() > 0) {
             sb.append("        .slipperiness(").append(fmt(v.slipperiness())).append(")\n");
@@ -425,8 +465,30 @@ public final class LabBlockService {
         STATE.entrySet().stream().filter(e -> e.getValue().actions().contains(LabBlockAction.REMOVE_RECIPES))
                 .map(e -> e.getKey().toString()).sorted()
                 .forEach(id -> sb.append("    event.remove({ output: '").append(id).append("' });\n"));
-        sb.append("});\n");
+        sb.append("});\n\n");
+        appendLootHandlers(sb);
         LabScriptWriter.write("server_scripts", "disabled_blocks.js", sb.toString());
+    }
+
+    private static void appendLootHandlers(StringBuilder sb) {
+        for (Map.Entry<ResourceLocation, LabBlockSaveEntry> entry : STATE.entrySet()) {
+            ResourceLocation id = entry.getKey();
+            LabBlockFieldValues v = entry.getValue().values();
+            if (!LabPathResolver.isLabOwned(id) || v.lootItem().isBlank() || v.noDrops()) {
+                continue;
+            }
+            int min = Math.max(0, Math.min(64, v.lootCountMin()));
+            int max = Math.max(min, Math.min(64, v.lootCountMax()));
+            float chance = Math.max(0f, Math.min(100f, v.lootChance())) / 100f;
+            sb.append("BlockEvents.broken('").append(id).append("', event => {\n");
+            if (chance < 1f) {
+                sb.append("    if (Math.random() >= ").append(fmt(chance)).append(") return;\n");
+            }
+            sb.append("    const count = ").append(min).append(" + Math.floor(Math.random() * ")
+                    .append(max - min + 1).append(");\n");
+            sb.append("    if (count > 0) event.block.popItem('").append(js(v.lootItem())).append("', count);\n");
+            sb.append("});\n\n");
+        }
     }
 
     private static void writeCreativeHideScript() throws IOException {
@@ -451,7 +513,20 @@ public final class LabBlockService {
             }
             sb.append("});\n");
         }
+        sb.append("\n");
         LabScriptWriter.write("startup_scripts", "hidden_blocks.js", sb.toString());
+    }
+
+    private static void writeClientScript() throws IOException {
+        StringBuilder sb = new StringBuilder();
+        for (Map.Entry<ResourceLocation, LabBlockSaveEntry> item : STATE.entrySet()) {
+            if (item.getValue().actions().contains(LabBlockAction.HIDE_VIEWER)) {
+                sb.append("JEIEvents.hideItems(event => {\n    event.hide('").append(item.getKey())
+                        .append("');\n});\n");
+                sb.append("REIEvents.hide(event => {\n    event.hide('").append(item.getKey()).append("');\n});\n");
+            }
+        }
+        LabScriptWriter.write("client_scripts", "blocks.js", sb.toString());
     }
 
     private static boolean copyTextures() throws IOException {
@@ -511,6 +586,20 @@ public final class LabBlockService {
         return f == (int) f ? Integer.toString((int) f) : Float.toString(f);
     }
 
+    private static boolean hasCustomLoot(LabBlockFieldValues v) {
+        return !v.lootItem().isBlank() && v.lootCountMax() > 0;
+    }
+
+    private static Long parseHex(String value) {
+        try {
+            String cleaned = value.trim().replace("#", "").replace("0x", "").replace("0X", "");
+            long parsed = Long.parseLong(cleaned, 16);
+            return Math.max(0, Math.min(0xFFFFFF, parsed));
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
     private static void loadStateIfNeeded() {
         if (stateLoaded) {
             return;
@@ -561,7 +650,23 @@ public final class LabBlockService {
                 obj.get("waterlogged").getAsBoolean(), obj.get("noDrops").getAsBoolean(),
                 obj.get("notSolid").getAsBoolean(), obj.get("opaque").getAsBoolean(),
                 obj.get("slipperiness").getAsFloat(), obj.get("speedFactor").getAsFloat(),
-                obj.get("jumpFactor").getAsFloat(), obj.get("tags").getAsString());
+                obj.get("jumpFactor").getAsFloat(), obj.get("tags").getAsString(),
+                stringOr(obj, "creativeTab"), stringOr(obj, "lootItem"),
+                intOr(obj, "lootCountMin"), intOr(obj, "lootCountMax"),
+                floatOr(obj, "lootChance"), stringOr(obj, "dustColor"),
+                stringOr(obj, "blockSetType"), stringOr(obj, "woodType"));
+    }
+
+    private static String stringOr(JsonObject obj, String key) {
+        return obj.has(key) ? obj.get(key).getAsString() : "";
+    }
+
+    private static int intOr(JsonObject obj, String key) {
+        return obj.has(key) ? obj.get(key).getAsInt() : 0;
+    }
+
+    private static float floatOr(JsonObject obj, String key) {
+        return obj.has(key) ? obj.get(key).getAsFloat() : 0f;
     }
 
     private static void saveState() throws IOException {
@@ -612,10 +717,30 @@ public final class LabBlockService {
         obj.addProperty("speedFactor", v.speedFactor());
         obj.addProperty("jumpFactor", v.jumpFactor());
         obj.addProperty("tags", v.tags());
+        obj.addProperty("creativeTab", v.creativeTab());
+        obj.addProperty("lootItem", v.lootItem());
+        obj.addProperty("lootCountMin", v.lootCountMin());
+        obj.addProperty("lootCountMax", v.lootCountMax());
+        obj.addProperty("lootChance", v.lootChance());
+        obj.addProperty("dustColor", v.dustColor());
+        obj.addProperty("blockSetType", v.blockSetType());
+        obj.addProperty("woodType", v.woodType());
     }
 
     public static String[] soundTypes() {
         return SOUND_TYPES;
+    }
+
+    public static String[] blockSetTypes() {
+        return BLOCK_SET_TYPES;
+    }
+
+    public static String[] woodTypes() {
+        return WOOD_TYPES;
+    }
+
+    public static String[] creativeTabs() {
+        return CREATIVE_TABS;
     }
 
     private record LabBlockSaveEntry(String type, LabBlockStatus status, String name, boolean wasModified,

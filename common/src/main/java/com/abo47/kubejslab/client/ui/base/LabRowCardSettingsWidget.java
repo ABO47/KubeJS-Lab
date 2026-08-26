@@ -1,7 +1,9 @@
 package com.abo47.kubejslab.client.ui.base;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import javax.annotation.Nonnull;
 
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -10,6 +12,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 
+import com.lowdragmc.lowdraglib.gui.texture.ColorRectTexture;
 import com.lowdragmc.lowdraglib.gui.texture.IGuiTexture;
 import com.lowdragmc.lowdraglib.gui.texture.ItemStackTexture;
 import com.lowdragmc.lowdraglib.gui.texture.TextTexture;
@@ -33,6 +36,9 @@ public abstract class LabRowCardSettingsWidget extends WidgetGroup {
     private final LabScrollBarWidget scrollBar;
     private final LabActionButton clearButton;
     private final LabActionButton saveButton;
+    private final Set<Widget> disabledControls = new HashSet<>();
+    private static final IGuiTexture DISABLED_OVERLAY =
+            new ColorRectTexture(LabColors.withAlpha(LabColors.ERROR, 56));
 
     private List<FieldRow> rows = List.of();
     private int scrollOffset;
@@ -79,6 +85,13 @@ public abstract class LabRowCardSettingsWidget extends WidgetGroup {
 
     protected void setRows(List<FieldRow> rows) {
         this.rows = rows;
+        disabledControls.clear();
+        for (FieldRow row : rows) {
+            row.label().setColor(row.disabled() ? LabColors.ERROR : LabColors.TEXT_PRIMARY);
+            if (row.disabled() && row.control() != null) {
+                disabledControls.add(row.control());
+            }
+        }
         recomputeScrollMax();
         relayoutFields();
     }
@@ -134,6 +147,9 @@ public abstract class LabRowCardSettingsWidget extends WidgetGroup {
                 RenderSystem.setShaderColor(1, 1, 1, 1);
                 scissorRect(g, cardX, cardY, cardX + cardW, cardY + LabLayout.CARD_H);
                 row.control.drawInBackground(g, mx, my, pt);
+                if (row.disabled()) {
+                    DISABLED_OVERLAY.draw(g, mx, my, cardX + 1, cardY + 1, cardW - 2, LabLayout.CARD_H - 2);
+                }
                 g.disableScissor();
                 g.flush();
             }
@@ -159,7 +175,11 @@ public abstract class LabRowCardSettingsWidget extends WidgetGroup {
             }
         }
         if (anyPopupOpen) {
-            super.drawInForeground(g, mx, my, pt);
+            for (LabPopupProvider dropdown : popupDropdowns) {
+                if (dropdown.isOpen() && dropdown instanceof Widget widget) {
+                    widget.drawInForeground(g, mx, my, pt);
+                }
+            }
             return;
         }
         int x = getPositionX();
@@ -197,6 +217,9 @@ public abstract class LabRowCardSettingsWidget extends WidgetGroup {
         }
         for (int i = widgets.size() - 1; i >= 0; i--) {
             Widget widget = widgets.get(i);
+            if (disabledControls.contains(widget)) {
+                continue;
+            }
             if (widget.isVisible() && widget.isActive() && childInsideViewport(widget)
                     && widget.mouseClicked(mouseX, mouseY, button)) {
                 return true;
@@ -214,6 +237,9 @@ public abstract class LabRowCardSettingsWidget extends WidgetGroup {
         }
         for (int i = widgets.size() - 1; i >= 0; i--) {
             Widget widget = widgets.get(i);
+            if (disabledControls.contains(widget)) {
+                continue;
+            }
             if (widget.isVisible() && widget.isActive() && childInsideViewport(widget)
                     && widget.mouseWheelMove(mouseX, mouseY, wheelDelta)) {
                 return true;
@@ -331,7 +357,7 @@ public abstract class LabRowCardSettingsWidget extends WidgetGroup {
 
     protected static void configureCommit(LabCommitFieldWidget field) {
         field.setClientSideWidget();
-        field.setMaxStringLength(40);
+        field.setMaxStringLength(256);
         field.setBordered(false);
         field.setBackground(LabColors.bordered(LabColors.SURFACE_BASE, LabColors.BORDER_BASE));
         field.setTextColor(LabColors.TEXT_PRIMARY);
@@ -365,6 +391,9 @@ public abstract class LabRowCardSettingsWidget extends WidgetGroup {
         return Float.toString(value);
     }
 
-    public record FieldRow(TextTexture label, Widget control, ItemStackTexture icon) {
+    public record FieldRow(TextTexture label, Widget control, ItemStackTexture icon, boolean disabled) {
+        public FieldRow(TextTexture label, Widget control, ItemStackTexture icon) {
+            this(label, control, icon, false);
+        }
     }
 }

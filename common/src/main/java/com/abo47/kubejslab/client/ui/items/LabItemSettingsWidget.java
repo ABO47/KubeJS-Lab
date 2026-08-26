@@ -246,7 +246,7 @@ public final class LabItemSettingsWidget extends LabRowCardSettingsWidget {
 
         typeDropdown = new LabOptionDropdownWidget(0, 0, CONTROL_W, FIELD_H);
         typeDropdown.setOptions(TYPES);
-        typeDropdown.setOnSelect(value -> rebuildRowsByType());
+        typeDropdown.setOnSelect(value -> rebuildRows());
         addWidget(typeDropdown);
         addPopupDropdown(typeDropdown);
 
@@ -513,7 +513,6 @@ public final class LabItemSettingsWidget extends LabRowCardSettingsWidget {
 
     public void setType(String type) {
         typeDropdown.setSelected(type);
-        setTypeDependentVisibility(isToolType(type), isArmorType(type));
         rebuildRows();
     }
 
@@ -523,94 +522,20 @@ public final class LabItemSettingsWidget extends LabRowCardSettingsWidget {
 
     public void setFields(List<LabItemField> fields) {
         this.fields = fields;
-        typeDropdown.setVisible(fields.contains(LabItemField.TYPE));
-        nameField.setVisible(fields.contains(LabItemField.DISPLAY_NAME));
-        texturePickButton.setVisible(fields.contains(LabItemField.TEXTURE));
-        rarityDropdown.setVisible(fields.contains(LabItemField.RARITY));
-        maxStackField.setVisible(fields.contains(LabItemField.MAX_STACK));
-        maxDamageField.setVisible(fields.contains(LabItemField.MAX_DAMAGE));
-        burnTimeField.setVisible(fields.contains(LabItemField.BURN_TIME));
-        glowToggle.setVisible(fields.contains(LabItemField.GLOW));
-        fireResistantToggle.setVisible(fields.contains(LabItemField.FIRE_RESISTANT));
-        containerItemField.setVisible(fields.contains(LabItemField.CONTAINER_ITEM));
-        tooltipField.setVisible(fields.contains(LabItemField.TOOLTIP));
-        tagsField.setVisible(fields.contains(LabItemField.TAGS));
-        foodHungerField.setVisible(fields.contains(LabItemField.FOOD_HUNGER));
-        foodSaturationField.setVisible(fields.contains(LabItemField.FOOD_SATURATION));
-        foodMeatToggle.setVisible(fields.contains(LabItemField.FOOD_MEAT));
-        foodFastToEatToggle.setVisible(fields.contains(LabItemField.FOOD_FAST_TO_EAT));
-        foodAlwaysEdibleToggle.setVisible(fields.contains(LabItemField.FOOD_ALWAYS_EDIBLE));
-        foodEffectDropdown.setVisible(fields.contains(LabItemField.FOOD_EFFECT));
-        foodEffectDurationField.setVisible(fields.contains(LabItemField.FOOD_EFFECT_DURATION));
-        foodEffectAmplifierField.setVisible(fields.contains(LabItemField.FOOD_EFFECT_AMPLIFIER));
-        foodEffectChanceField.setVisible(fields.contains(LabItemField.FOOD_EFFECT_CHANCE));
-        toolTierDropdown.setVisible(fields.contains(LabItemField.TOOL_TIER));
-        attackDamageField.setVisible(fields.contains(LabItemField.ATTACK_DAMAGE_BASELINE));
-        attackSpeedField.setVisible(fields.contains(LabItemField.SPEED_BASELINE));
-        digSpeedField.setVisible(fields.contains(LabItemField.DIG_SPEED));
-        armorTierField.setVisible(fields.contains(LabItemField.ARMOR_TIER));
-        armorProtectionField.setVisible(fields.contains(LabItemField.ARMOR_PROTECTION));
-        armorToughnessField.setVisible(fields.contains(LabItemField.ARMOR_TOUGHNESS));
-        armorKnockbackField.setVisible(fields.contains(LabItemField.ARMOR_KNOCKBACK));
-        tierUsesField.setVisible(fields.contains(LabItemField.TIER_USES));
-        tierSpeedField.setVisible(fields.contains(LabItemField.TIER_SPEED));
-        tierAttackDamageBonusField.setVisible(fields.contains(LabItemField.TIER_ATTACK_DAMAGE_BONUS));
-        tierLevelField.setVisible(fields.contains(LabItemField.TIER_LEVEL));
-        tierEnchantValueField.setVisible(fields.contains(LabItemField.TIER_ENCHANT_VALUE));
-        tierRepairIngredientField.setVisible(fields.contains(LabItemField.TIER_REPAIR_INGREDIENT));
-        tierDurabilityMultiplierField.setVisible(fields.contains(LabItemField.TIER_DURABILITY_MULTIPLIER));
-        tierProtectionsField.setVisible(fields.contains(LabItemField.TIER_PROTECTIONS));
-        tierEquipSoundField.setVisible(fields.contains(LabItemField.TIER_EQUIP_SOUND));
-        tierToughnessField.setVisible(fields.contains(LabItemField.TIER_TOUGHNESS));
-        tierKnockbackResistanceField.setVisible(fields.contains(LabItemField.TIER_KNOCKBACK_RESISTANCE));
-        attributeIdField.setVisible(fields.contains(LabItemField.ATTRIBUTE_ID));
-        attributeNameField.setVisible(fields.contains(LabItemField.ATTRIBUTE_NAME));
-        attributeAmountField.setVisible(fields.contains(LabItemField.ATTRIBUTE_AMOUNT));
-        attributeOperationDropdown.setVisible(fields.contains(LabItemField.ATTRIBUTE_OPERATION));
-        behaviorDropdown.setVisible(fields.contains(LabItemField.BEHAVIOR));
-        behaviorItemField.setVisible(fields.contains(LabItemField.BEHAVIOR_ITEM));
-        behaviorDamageField.setVisible(fields.contains(LabItemField.BEHAVIOR_DAMAGE));
-        hideCreativeToggle.setVisible(fields.contains(LabItemField.DISABLE_CREATIVE_HIDE));
-        removeRecipesToggle.setVisible(fields.contains(LabItemField.DISABLE_RECIPE_REMOVAL));
-        hideViewerToggle.setVisible(fields.contains(LabItemField.DISABLE_VIEWER_HIDE));
-        boolean tool = isToolType(getType());
-        boolean armor = isArmorType(getType());
-        setTypeDependentVisibility(tool, armor);
-        resetScroll();
         rebuildRows();
     }
 
-    private void setTypeDependentVisibility(boolean tool, boolean armor) {
-        // tool-only
-        toolTierDropdown.setVisible(tool && fields.contains(LabItemField.TOOL_TIER));
-        attackDamageField.setVisible(tool && fields.contains(LabItemField.ATTACK_DAMAGE_BASELINE));
-        attackSpeedField.setVisible(tool && fields.contains(LabItemField.SPEED_BASELINE));
-        digSpeedField.setVisible(tool && fields.contains(LabItemField.DIG_SPEED));
-        tierUsesField.setVisible(tool && fields.contains(LabItemField.TIER_USES));
-        tierSpeedField.setVisible(tool && fields.contains(LabItemField.TIER_SPEED));
-        tierAttackDamageBonusField.setVisible(tool && fields.contains(LabItemField.TIER_ATTACK_DAMAGE_BONUS));
-        tierLevelField.setVisible(tool && fields.contains(LabItemField.TIER_LEVEL));
-        tierEnchantValueField.setVisible(tool && fields.contains(LabItemField.TIER_ENCHANT_VALUE));
-        tierRepairIngredientField.setVisible(tool && fields.contains(LabItemField.TIER_REPAIR_INGREDIENT));
-        // armor-only
-        armorTierField.setVisible(armor && fields.contains(LabItemField.ARMOR_TIER));
-        armorProtectionField.setVisible(armor && fields.contains(LabItemField.ARMOR_PROTECTION));
-        armorToughnessField.setVisible(armor && fields.contains(LabItemField.ARMOR_TOUGHNESS));
-        armorKnockbackField.setVisible(armor && fields.contains(LabItemField.ARMOR_KNOCKBACK));
-        tierDurabilityMultiplierField.setVisible(armor && fields.contains(LabItemField.TIER_DURABILITY_MULTIPLIER));
-        tierProtectionsField.setVisible(armor && fields.contains(LabItemField.TIER_PROTECTIONS));
-        tierEquipSoundField.setVisible(armor && fields.contains(LabItemField.TIER_EQUIP_SOUND));
-        tierToughnessField.setVisible(armor && fields.contains(LabItemField.TIER_TOUGHNESS));
-        tierKnockbackResistanceField.setVisible(armor && fields.contains(LabItemField.TIER_KNOCKBACK_RESISTANCE));
-        boolean showBehavior = behaviorDropdown.isVisible() && !behavior.equals("none");
-        behaviorItemField.setVisible(showBehavior && fields.contains(LabItemField.BEHAVIOR_ITEM));
-        behaviorDamageField.setVisible(showBehavior && fields.contains(LabItemField.BEHAVIOR_DAMAGE));
-    }
-
-    private void rebuildRowsByType() {
-        String current = getType();
-        setTypeDependentVisibility(isToolType(current), isArmorType(current));
-        rebuildRows();
+    private boolean isDisabled(LabItemField field) {
+        return switch (field) {
+            case TOOL_TIER, ATTACK_DAMAGE_BASELINE, SPEED_BASELINE, DIG_SPEED, TIER_USES, TIER_SPEED,
+                    TIER_ATTACK_DAMAGE_BONUS, TIER_LEVEL, TIER_ENCHANT_VALUE, TIER_REPAIR_INGREDIENT ->
+                    !isToolType(getType());
+            case ARMOR_TIER, ARMOR_PROTECTION, ARMOR_TOUGHNESS, ARMOR_KNOCKBACK, TIER_DURABILITY_MULTIPLIER,
+                    TIER_PROTECTIONS, TIER_EQUIP_SOUND, TIER_TOUGHNESS, TIER_KNOCKBACK_RESISTANCE ->
+                    !isArmorType(getType());
+            case BEHAVIOR_ITEM, BEHAVIOR_DAMAGE -> behavior.equals("none");
+            default -> false;
+        };
     }
 
     private static boolean isToolType(String type) {
@@ -624,84 +549,123 @@ public final class LabItemSettingsWidget extends LabRowCardSettingsWidget {
     private void rebuildRows() {
         List<FieldRow> rows = new ArrayList<>();
         for (LabItemField field : fields) {
-            if (!isVisible(field)) {
-                continue;
-            }
-            FieldRow row = fieldRow(field);
+            FieldRow row = new FieldRow(rowLabelFor(field), fieldControl(field), null, isDisabled(field));
             if (row.control() != null) {
                 row.control().setHoverTooltips(List.of(Component.translatable(LabItemTooltips.key(field))));
             }
             rows.add(row);
         }
+        resetScroll();
         setRows(rows);
     }
 
-    private boolean isVisible(LabItemField field) {
+    private TextTexture rowLabelFor(LabItemField field) {
         return switch (field) {
-            case TOOL_TIER, ATTACK_DAMAGE_BASELINE, SPEED_BASELINE, DIG_SPEED, TIER_USES, TIER_SPEED,
-                    TIER_ATTACK_DAMAGE_BONUS, TIER_LEVEL, TIER_ENCHANT_VALUE, TIER_REPAIR_INGREDIENT ->
-                    isToolType(getType());
-            case ARMOR_TIER, ARMOR_PROTECTION, ARMOR_TOUGHNESS, ARMOR_KNOCKBACK, TIER_DURABILITY_MULTIPLIER,
-                    TIER_PROTECTIONS, TIER_EQUIP_SOUND, TIER_TOUGHNESS, TIER_KNOCKBACK_RESISTANCE ->
-                    isArmorType(getType());
-            case BEHAVIOR_ITEM, BEHAVIOR_DAMAGE -> !behavior.equals("none");
-            default -> true;
+            case TYPE -> typeLabel;
+            case DISPLAY_NAME -> nameLabel;
+            case TEXTURE -> textureLabel;
+            case RARITY -> rarityLabel;
+            case MAX_STACK -> maxStackLabel;
+            case MAX_DAMAGE -> maxDamageLabel;
+            case BURN_TIME -> burnTimeLabel;
+            case GLOW -> glowLabel;
+            case FIRE_RESISTANT -> fireResistantLabel;
+            case CONTAINER_ITEM -> containerItemLabel;
+            case TOOLTIP -> tooltipLabel;
+            case TAGS -> tagsLabel;
+            case FOOD_HUNGER -> foodHungerLabel;
+            case FOOD_SATURATION -> foodSaturationLabel;
+            case FOOD_MEAT -> foodMeatLabel;
+            case FOOD_FAST_TO_EAT -> foodFastToEatLabel;
+            case FOOD_ALWAYS_EDIBLE -> foodAlwaysEdibleLabel;
+            case FOOD_EFFECT -> foodEffectLabel;
+            case FOOD_EFFECT_DURATION -> foodEffectDurationLabel;
+            case FOOD_EFFECT_AMPLIFIER -> foodEffectAmplifierLabel;
+            case FOOD_EFFECT_CHANCE -> foodEffectChanceLabel;
+            case TOOL_TIER -> toolTierLabel;
+            case ATTACK_DAMAGE_BASELINE -> attackDamageLabel;
+            case SPEED_BASELINE -> attackSpeedLabel;
+            case DIG_SPEED -> digSpeedLabel;
+            case ARMOR_TIER -> armorTierLabel;
+            case ARMOR_PROTECTION -> armorProtectionLabel;
+            case ARMOR_TOUGHNESS -> armorToughnessLabel;
+            case ARMOR_KNOCKBACK -> armorKnockbackLabel;
+            case TIER_USES -> tierUsesLabel;
+            case TIER_SPEED -> tierSpeedLabel;
+            case TIER_ATTACK_DAMAGE_BONUS -> tierAttackDamageBonusLabel;
+            case TIER_LEVEL -> tierLevelLabel;
+            case TIER_ENCHANT_VALUE -> tierEnchantValueLabel;
+            case TIER_REPAIR_INGREDIENT -> tierRepairIngredientLabel;
+            case TIER_DURABILITY_MULTIPLIER -> tierDurabilityMultiplierLabel;
+            case TIER_PROTECTIONS -> tierProtectionsLabel;
+            case TIER_EQUIP_SOUND -> tierEquipSoundLabel;
+            case TIER_TOUGHNESS -> tierToughnessLabel;
+            case TIER_KNOCKBACK_RESISTANCE -> tierKnockbackResistanceLabel;
+            case ATTRIBUTE_ID -> attributeIdLabel;
+            case ATTRIBUTE_NAME -> attributeNameLabel;
+            case ATTRIBUTE_AMOUNT -> attributeAmountLabel;
+            case ATTRIBUTE_OPERATION -> attributeOperationLabel;
+            case BEHAVIOR -> behaviorLabel;
+            case BEHAVIOR_ITEM -> behaviorItemLabel;
+            case BEHAVIOR_DAMAGE -> behaviorDamageLabel;
+            case DISABLE_CREATIVE_HIDE -> hideCreativeLabel;
+            case DISABLE_RECIPE_REMOVAL -> removeRecipesLabel;
+            case DISABLE_VIEWER_HIDE -> hideViewerLabel;
         };
     }
 
-    private FieldRow fieldRow(LabItemField field) {
+    private com.lowdragmc.lowdraglib.gui.widget.Widget fieldControl(LabItemField field) {
         return switch (field) {
-            case TYPE -> new FieldRow(typeLabel, typeDropdown, null);
-            case DISPLAY_NAME -> new FieldRow(nameLabel, nameField, null);
-            case TEXTURE -> new FieldRow(textureLabel, texturePickButton, null);
-            case RARITY -> new FieldRow(rarityLabel, rarityDropdown, null);
-            case MAX_STACK -> new FieldRow(maxStackLabel, maxStackField, null);
-            case MAX_DAMAGE -> new FieldRow(maxDamageLabel, maxDamageField, null);
-            case BURN_TIME -> new FieldRow(burnTimeLabel, burnTimeField, null);
-            case GLOW -> new FieldRow(glowLabel, glowToggle, null);
-            case FIRE_RESISTANT -> new FieldRow(fireResistantLabel, fireResistantToggle, null);
-            case CONTAINER_ITEM -> new FieldRow(containerItemLabel, containerItemField, null);
-            case TOOLTIP -> new FieldRow(tooltipLabel, tooltipField, null);
-            case TAGS -> new FieldRow(tagsLabel, tagsField, null);
-            case FOOD_HUNGER -> new FieldRow(foodHungerLabel, foodHungerField, null);
-            case FOOD_SATURATION -> new FieldRow(foodSaturationLabel, foodSaturationField, null);
-            case FOOD_MEAT -> new FieldRow(foodMeatLabel, foodMeatToggle, null);
-            case FOOD_FAST_TO_EAT -> new FieldRow(foodFastToEatLabel, foodFastToEatToggle, null);
-            case FOOD_ALWAYS_EDIBLE -> new FieldRow(foodAlwaysEdibleLabel, foodAlwaysEdibleToggle, null);
-            case FOOD_EFFECT -> new FieldRow(foodEffectLabel, foodEffectDropdown, null);
-            case FOOD_EFFECT_DURATION -> new FieldRow(foodEffectDurationLabel, foodEffectDurationField, null);
-            case FOOD_EFFECT_AMPLIFIER -> new FieldRow(foodEffectAmplifierLabel, foodEffectAmplifierField, null);
-            case FOOD_EFFECT_CHANCE -> new FieldRow(foodEffectChanceLabel, foodEffectChanceField, null);
-            case TOOL_TIER -> new FieldRow(toolTierLabel, toolTierDropdown, null);
-            case ATTACK_DAMAGE_BASELINE -> new FieldRow(attackDamageLabel, attackDamageField, null);
-            case SPEED_BASELINE -> new FieldRow(attackSpeedLabel, attackSpeedField, null);
-            case DIG_SPEED -> new FieldRow(digSpeedLabel, digSpeedField, null);
-            case ARMOR_TIER -> new FieldRow(armorTierLabel, armorTierField, null);
-            case ARMOR_PROTECTION -> new FieldRow(armorProtectionLabel, armorProtectionField, null);
-            case ARMOR_TOUGHNESS -> new FieldRow(armorToughnessLabel, armorToughnessField, null);
-            case ARMOR_KNOCKBACK -> new FieldRow(armorKnockbackLabel, armorKnockbackField, null);
-            case TIER_USES -> new FieldRow(tierUsesLabel, tierUsesField, null);
-            case TIER_SPEED -> new FieldRow(tierSpeedLabel, tierSpeedField, null);
-            case TIER_ATTACK_DAMAGE_BONUS -> new FieldRow(tierAttackDamageBonusLabel, tierAttackDamageBonusField, null);
-            case TIER_LEVEL -> new FieldRow(tierLevelLabel, tierLevelField, null);
-            case TIER_ENCHANT_VALUE -> new FieldRow(tierEnchantValueLabel, tierEnchantValueField, null);
-            case TIER_REPAIR_INGREDIENT -> new FieldRow(tierRepairIngredientLabel, tierRepairIngredientField, null);
-            case TIER_DURABILITY_MULTIPLIER -> new FieldRow(tierDurabilityMultiplierLabel, tierDurabilityMultiplierField, null);
-            case TIER_PROTECTIONS -> new FieldRow(tierProtectionsLabel, tierProtectionsField, null);
-            case TIER_EQUIP_SOUND -> new FieldRow(tierEquipSoundLabel, tierEquipSoundField, null);
-            case TIER_TOUGHNESS -> new FieldRow(tierToughnessLabel, tierToughnessField, null);
-            case TIER_KNOCKBACK_RESISTANCE -> new FieldRow(tierKnockbackResistanceLabel, tierKnockbackResistanceField, null);
-            case ATTRIBUTE_ID -> new FieldRow(attributeIdLabel, attributeIdField, null);
-            case ATTRIBUTE_NAME -> new FieldRow(attributeNameLabel, attributeNameField, null);
-            case ATTRIBUTE_AMOUNT -> new FieldRow(attributeAmountLabel, attributeAmountField, null);
-            case ATTRIBUTE_OPERATION -> new FieldRow(attributeOperationLabel, attributeOperationDropdown, null);
-            case BEHAVIOR -> new FieldRow(behaviorLabel, behaviorDropdown, null);
-            case BEHAVIOR_ITEM -> new FieldRow(behaviorItemLabel, behaviorItemField, null);
-            case BEHAVIOR_DAMAGE -> new FieldRow(behaviorDamageLabel, behaviorDamageField, null);
-            case DISABLE_CREATIVE_HIDE -> new FieldRow(hideCreativeLabel, hideCreativeToggle, null);
-            case DISABLE_RECIPE_REMOVAL -> new FieldRow(removeRecipesLabel, removeRecipesToggle, null);
-            case DISABLE_VIEWER_HIDE -> new FieldRow(hideViewerLabel, hideViewerToggle, null);
-            default -> throw new IllegalStateException("Unexpected item field: " + field);
+            case TYPE -> typeDropdown;
+            case DISPLAY_NAME -> nameField;
+            case TEXTURE -> texturePickButton;
+            case RARITY -> rarityDropdown;
+            case MAX_STACK -> maxStackField;
+            case MAX_DAMAGE -> maxDamageField;
+            case BURN_TIME -> burnTimeField;
+            case GLOW -> glowToggle;
+            case FIRE_RESISTANT -> fireResistantToggle;
+            case CONTAINER_ITEM -> containerItemField;
+            case TOOLTIP -> tooltipField;
+            case TAGS -> tagsField;
+            case FOOD_HUNGER -> foodHungerField;
+            case FOOD_SATURATION -> foodSaturationField;
+            case FOOD_MEAT -> foodMeatToggle;
+            case FOOD_FAST_TO_EAT -> foodFastToEatToggle;
+            case FOOD_ALWAYS_EDIBLE -> foodAlwaysEdibleToggle;
+            case FOOD_EFFECT -> foodEffectDropdown;
+            case FOOD_EFFECT_DURATION -> foodEffectDurationField;
+            case FOOD_EFFECT_AMPLIFIER -> foodEffectAmplifierField;
+            case FOOD_EFFECT_CHANCE -> foodEffectChanceField;
+            case TOOL_TIER -> toolTierDropdown;
+            case ATTACK_DAMAGE_BASELINE -> attackDamageField;
+            case SPEED_BASELINE -> attackSpeedField;
+            case DIG_SPEED -> digSpeedField;
+            case ARMOR_TIER -> armorTierField;
+            case ARMOR_PROTECTION -> armorProtectionField;
+            case ARMOR_TOUGHNESS -> armorToughnessField;
+            case ARMOR_KNOCKBACK -> armorKnockbackField;
+            case TIER_USES -> tierUsesField;
+            case TIER_SPEED -> tierSpeedField;
+            case TIER_ATTACK_DAMAGE_BONUS -> tierAttackDamageBonusField;
+            case TIER_LEVEL -> tierLevelField;
+            case TIER_ENCHANT_VALUE -> tierEnchantValueField;
+            case TIER_REPAIR_INGREDIENT -> tierRepairIngredientField;
+            case TIER_DURABILITY_MULTIPLIER -> tierDurabilityMultiplierField;
+            case TIER_PROTECTIONS -> tierProtectionsField;
+            case TIER_EQUIP_SOUND -> tierEquipSoundField;
+            case TIER_TOUGHNESS -> tierToughnessField;
+            case TIER_KNOCKBACK_RESISTANCE -> tierKnockbackResistanceField;
+            case ATTRIBUTE_ID -> attributeIdField;
+            case ATTRIBUTE_NAME -> attributeNameField;
+            case ATTRIBUTE_AMOUNT -> attributeAmountField;
+            case ATTRIBUTE_OPERATION -> attributeOperationDropdown;
+            case BEHAVIOR -> behaviorDropdown;
+            case BEHAVIOR_ITEM -> behaviorItemField;
+            case BEHAVIOR_DAMAGE -> behaviorDamageField;
+            case DISABLE_CREATIVE_HIDE -> hideCreativeToggle;
+            case DISABLE_RECIPE_REMOVAL -> removeRecipesToggle;
+            case DISABLE_VIEWER_HIDE -> hideViewerToggle;
         };
     }
 
@@ -814,6 +778,7 @@ public final class LabItemSettingsWidget extends LabRowCardSettingsWidget {
         attributeIdField.setCurrentString(attributeId);
         attributeNameField.setCurrentString(attributeName);
         behaviorItemField.setCurrentString(behaviorItem);
+        texturePickButton.setLabel(fileName(texture));
         refreshToolTierOptions();
         refreshArmorTierOptions();
         rebuildRows();
@@ -873,6 +838,9 @@ public final class LabItemSettingsWidget extends LabRowCardSettingsWidget {
     }
 
     private static String fileName(String relativePath) {
+        if (relativePath == null || relativePath.isBlank()) {
+            return Component.translatable(LabGuiKeys.LAB_ITEM_TEXTURE_PICK).getString();
+        }
         int slash = relativePath.lastIndexOf('/');
         return slash < 0 ? relativePath : relativePath.substring(slash + 1);
     }
@@ -898,9 +866,5 @@ public final class LabItemSettingsWidget extends LabRowCardSettingsWidget {
 
     public List<LabItemField> fullFields() {
         return List.of(LabItemField.values());
-    }
-
-    public List<LabItemField> builtInFields() {
-        return fullFields();
     }
 }

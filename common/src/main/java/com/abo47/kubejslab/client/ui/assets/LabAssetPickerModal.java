@@ -26,6 +26,7 @@ import com.abo47.kubejslab.client.ui.base.LabIconAtlas;
 import com.abo47.kubejslab.client.ui.base.LabLayout;
 import com.abo47.kubejslab.client.ui.base.LabScrollBarWidget;
 import com.abo47.kubejslab.client.ui.base.LabScrollMath;
+import com.abo47.kubejslab.client.ui.base.LabTextFieldWidget;
 import com.abo47.kubejslab.client.ui.contextmenu.LabActionTone;
 import com.abo47.kubejslab.client.ui.contextmenu.LabContextAction;
 import com.abo47.kubejslab.client.ui.contextmenu.LabContextMenuAnimation;
@@ -393,7 +394,7 @@ public final class LabAssetPickerModal {
 
     private TextFieldWidget buildSearchField() {
         int searchW = firstHeaderX() - GRID_X - HEADER_GAP;
-        TextFieldWidget field = new TextFieldWidget(GRID_X, SEARCH_Y, searchW, SEARCH_H,
+        TextFieldWidget field = new LabTextFieldWidget(GRID_X, SEARCH_Y, searchW, SEARCH_H,
                 () -> state.query, value -> {
                     state.query = value;
                     state.scroll = 0;

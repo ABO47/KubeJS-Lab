@@ -25,6 +25,7 @@ import com.abo47.kubejslab.client.ui.base.LabGuiKeys;
 import com.abo47.kubejslab.client.ui.base.LabIconAtlas;
 import com.abo47.kubejslab.client.ui.base.LabLayout;
 import com.abo47.kubejslab.client.ui.base.LabScrollBarWidget;
+import com.abo47.kubejslab.client.ui.base.LabTextFieldWidget;
 import com.abo47.kubejslab.client.ui.base.LabScrollMath;
 import com.abo47.kubejslab.client.ui.contextmenu.LabActionTone;
 
@@ -87,7 +88,7 @@ public final class LabPickerWindowWidget extends WidgetGroup {
         minimizeButton.setHoverTooltips(List.of(
                 Component.translatable(LabGuiKeys.LAB_PICKER_MINIMIZE)));
         modeButton = new ModeButton(PAD + TILE + GAP, DRAG_H, MODE_W, TILE, mode);
-        searchField = new TextFieldWidget(SEARCH_X, DRAG_H, SEARCH_W, TILE, () -> query,
+        searchField = new LabTextFieldWidget(SEARCH_X, DRAG_H, SEARCH_W, TILE, () -> query,
                 value -> {
                     query = LabSearchNormalizer.normalizeUserSearch(value);
                     scroll = 0;

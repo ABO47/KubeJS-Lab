@@ -113,7 +113,7 @@ public final class LabOptionDropdownWidget extends WidgetGroup implements LabPop
         int popupY = y + h + 1;
         int popupH = visibleRows * ROW_H + 2;
         g.pose().pushPose();
-        g.pose().translate(0, 0, 200);
+        g.pose().translate(0, 0, 400);
         POPUP_FILL.draw(g, mx, my, x, popupY, w, popupH);
         for (int row = 0; row < visibleRows; row++) {
             int index = row + scroll;

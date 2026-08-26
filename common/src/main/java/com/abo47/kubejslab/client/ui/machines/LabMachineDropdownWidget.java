@@ -17,6 +17,7 @@ import com.lowdragmc.lowdraglib.gui.widget.Widget;
 import com.lowdragmc.lowdraglib.gui.widget.WidgetGroup;
 
 import com.abo47.kubejslab.client.ui.base.LabColors;
+import com.abo47.kubejslab.client.ui.base.LabTextFieldWidget;
 import com.abo47.kubejslab.client.ui.base.LabGlow;
 import com.abo47.kubejslab.client.ui.base.LabLayout;
 import com.abo47.kubejslab.client.ui.base.LabScrollMath;
@@ -43,7 +44,7 @@ public final class LabMachineDropdownWidget extends WidgetGroup {
     public LabMachineDropdownWidget(int x, int y, int w, int h) {
         super(x, y, w, h);
         setBackground(LabColors.bordered(LabColors.SURFACE_BASE, LabColors.BORDER_BASE));
-        searchField = new TextFieldWidget(0, 0, w, h, (Supplier<String>) null, this::onFilterChanged) {
+        searchField = new LabTextFieldWidget(0, 0, w, h, (Supplier<String>) null, this::onFilterChanged) {
             @Override
             public boolean mouseClicked(double mouseX, double mouseY, int button) {
                 boolean handled = super.mouseClicked(mouseX, mouseY, button);
@@ -209,7 +210,7 @@ public final class LabMachineDropdownWidget extends WidgetGroup {
 
         var pose = g.pose();
         pose.pushPose();
-        pose.translate(0, 0, 200);
+        pose.translate(0, 0, 400);
 
         POPUP_FILL.draw(g, mx, my, x, popupY, w, popupH);
 

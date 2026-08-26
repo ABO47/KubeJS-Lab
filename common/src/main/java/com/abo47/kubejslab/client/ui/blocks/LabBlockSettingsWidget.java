@@ -2,6 +2,7 @@ package com.abo47.kubejslab.client.ui.blocks;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 
 import net.minecraft.network.chat.Component;
@@ -43,8 +44,17 @@ public final class LabBlockSettingsWidget extends LabRowCardSettingsWidget {
     private final TextFieldWidget speedFactorField;
     private final TextFieldWidget jumpFactorField;
     private final TextFieldWidget tagsField;
+    private final LabOptionDropdownWidget creativeTabDropdown;
+    private final TextFieldWidget lootItemField;
+    private final TextFieldWidget lootCountMinField;
+    private final TextFieldWidget lootCountMaxField;
+    private final TextFieldWidget lootChanceField;
+    private final LabActionButton dustPickButton;
+    private final LabOptionDropdownWidget blockSetTypeDropdown;
+    private final LabOptionDropdownWidget woodTypeDropdown;
     private final LabToggleSwitchWidget hideCreativeToggle;
     private final LabToggleSwitchWidget removeRecipesToggle;
+    private final LabToggleSwitchWidget hideViewerToggle;
 
     private final TextTexture typeLabel;
     private final TextTexture nameLabel;
@@ -67,8 +77,17 @@ public final class LabBlockSettingsWidget extends LabRowCardSettingsWidget {
     private final TextTexture speedFactorLabel;
     private final TextTexture jumpFactorLabel;
     private final TextTexture tagsLabel;
+    private final TextTexture creativeTabLabel;
+    private final TextTexture lootItemLabel;
+    private final TextTexture lootCountMinLabel;
+    private final TextTexture lootCountMaxLabel;
+    private final TextTexture lootChanceLabel;
+    private final TextTexture dustColorLabel;
+    private final TextTexture blockSetTypeLabel;
+    private final TextTexture woodTypeLabel;
     private final TextTexture hideCreativeLabel;
     private final TextTexture removeRecipesLabel;
+    private final TextTexture hideViewerLabel;
 
     private boolean unbreakable;
     private boolean requiresTool;
@@ -79,6 +98,7 @@ public final class LabBlockSettingsWidget extends LabRowCardSettingsWidget {
     private boolean opaque = true;
     private boolean hideCreative;
     private boolean removeRecipes;
+    private boolean hideViewer;
     private String name = "";
     private String textureAll = "";
     private String textureTop = "";
@@ -86,15 +106,30 @@ public final class LabBlockSettingsWidget extends LabRowCardSettingsWidget {
     private String textureSides = "";
     private String tags = "";
     private String soundType = "";
+    private String creativeTab = "";
+    private String lootItem = "";
+    private String dustColor = "";
+    private String blockSetType = "";
+    private String woodType = "";
     private String hardnessText = formatFloat(LabBlockFieldValues.DEFAULT_HARDNESS);
     private String resistanceText = formatFloat(LabBlockFieldValues.DEFAULT_RESISTANCE);
     private String lightLevelText = "0";
     private String slipperinessText = "0";
     private String speedFactorText = "0";
     private String jumpFactorText = "0";
+    private String lootCountMinText = "1";
+    private String lootCountMaxText = "1";
+    private String lootChanceText = "100";
 
     private List<LabBlockField> fields = List.of();
     private Consumer<LabBlockField> onTexturePick;
+    private boolean builtInOnly;
+
+    private static final Set<LabBlockField> BUILTIN_MODIFIABLE = Set.of(
+            LabBlockField.HARDNESS, LabBlockField.RESISTANCE, LabBlockField.UNBREAKABLE,
+            LabBlockField.LIGHT_LEVEL, LabBlockField.REQUIRES_TOOL, LabBlockField.NO_COLLISION,
+            LabBlockField.SLIPPERINESS, LabBlockField.SPEED_FACTOR, LabBlockField.JUMP_FACTOR,
+            LabBlockField.DISABLE_CREATIVE_HIDE, LabBlockField.DISABLE_RECIPE_REMOVAL);
 
     public LabBlockSettingsWidget(int x, int y, int w, int h) {
         super(x, y, w, h, Component.translatable(LabGuiKeys.LAB_BLOCK_CLEAR).getString(),
@@ -124,8 +159,17 @@ public final class LabBlockSettingsWidget extends LabRowCardSettingsWidget {
         speedFactorLabel = rowLabel(LabGuiKeys.LAB_BLOCK_SPEED_FACTOR, labelW);
         jumpFactorLabel = rowLabel(LabGuiKeys.LAB_BLOCK_JUMP_FACTOR, labelW);
         tagsLabel = rowLabel(LabGuiKeys.LAB_BLOCK_TAGS, labelW);
+        creativeTabLabel = rowLabel(LabGuiKeys.LAB_BLOCK_CREATIVE_TAB, labelW);
+        lootItemLabel = rowLabel(LabGuiKeys.LAB_BLOCK_LOOT_ITEM, labelW);
+        lootCountMinLabel = rowLabel(LabGuiKeys.LAB_BLOCK_LOOT_COUNT_MIN, labelW);
+        lootCountMaxLabel = rowLabel(LabGuiKeys.LAB_BLOCK_LOOT_COUNT_MAX, labelW);
+        lootChanceLabel = rowLabel(LabGuiKeys.LAB_BLOCK_LOOT_CHANCE, labelW);
+        dustColorLabel = rowLabel(LabGuiKeys.LAB_BLOCK_DUST_COLOR, labelW);
+        blockSetTypeLabel = rowLabel(LabGuiKeys.LAB_BLOCK_SET_TYPE, labelW);
+        woodTypeLabel = rowLabel(LabGuiKeys.LAB_BLOCK_WOOD_TYPE, labelW);
         hideCreativeLabel = rowLabel(LabGuiKeys.LAB_BLOCK_DISABLE_CREATIVE, labelW);
         removeRecipesLabel = rowLabel(LabGuiKeys.LAB_BLOCK_DISABLE_RECIPES, labelW);
+        hideViewerLabel = rowLabel(LabGuiKeys.LAB_BLOCK_DISABLE_VIEWER, labelW);
 
         typeDropdown = new LabOptionDropdownWidget(0, 0, CONTROL_W, FIELD_H);
         typeDropdown.setOptions(LabBlockService.TYPES);
@@ -139,6 +183,7 @@ public final class LabBlockSettingsWidget extends LabRowCardSettingsWidget {
         textureTopButton = pickButton(LabBlockField.TEXTURE_TOP);
         textureBottomButton = pickButton(LabBlockField.TEXTURE_BOTTOM);
         textureSidesButton = pickButton(LabBlockField.TEXTURE_SIDES);
+        dustPickButton = pickButton(LabBlockField.DUST_COLOR);
 
         hardnessField = numberField(0, 0, () -> hardnessText, value -> hardnessText = value, hardnessText);
         addWidget(hardnessField);
@@ -194,11 +239,53 @@ public final class LabBlockSettingsWidget extends LabRowCardSettingsWidget {
         tagsField = commitField(this::commitTags);
         addWidget(tagsField);
 
+        creativeTabDropdown = new LabOptionDropdownWidget(0, 0, CONTROL_W, FIELD_H);
+        creativeTabDropdown.setOptions(List.of(LabBlockService.creativeTabs()));
+        creativeTabDropdown.setLabelMapper(tabId -> {
+            int colon = tabId.indexOf(':');
+            return colon < 0 ? tabId : tabId.substring(colon + 1);
+        });
+        creativeTabDropdown.setSelected("");
+        addWidget(creativeTabDropdown);
+        addPopupDropdown(creativeTabDropdown);
+
+        lootItemField = commitField(value -> {
+            if (value != null) lootItem = value;
+        });
+        addWidget(lootItemField);
+
+        lootCountMinField = numberField(0, 0, () -> lootCountMinText, value -> lootCountMinText = value,
+                lootCountMinText, 2);
+        addWidget(lootCountMinField);
+
+        lootCountMaxField = numberField(0, 0, () -> lootCountMaxText, value -> lootCountMaxText = value,
+                lootCountMaxText, 2);
+        addWidget(lootCountMaxField);
+
+        lootChanceField = numberField(0, 0, () -> lootChanceText, value -> lootChanceText = value,
+                lootChanceText, 3);
+        addWidget(lootChanceField);
+
+        blockSetTypeDropdown = new LabOptionDropdownWidget(0, 0, CONTROL_W, FIELD_H);
+        blockSetTypeDropdown.setOptions(List.of(LabBlockService.blockSetTypes()));
+        blockSetTypeDropdown.setSelected("");
+        addWidget(blockSetTypeDropdown);
+        addPopupDropdown(blockSetTypeDropdown);
+
+        woodTypeDropdown = new LabOptionDropdownWidget(0, 0, CONTROL_W, FIELD_H);
+        woodTypeDropdown.setOptions(List.of(LabBlockService.woodTypes()));
+        woodTypeDropdown.setSelected("oak");
+        addWidget(woodTypeDropdown);
+        addPopupDropdown(woodTypeDropdown);
+
         hideCreativeToggle = new LabToggleSwitchWidget(0, 0, () -> hideCreative, value -> hideCreative = value, null);
         addWidget(hideCreativeToggle);
 
         removeRecipesToggle = new LabToggleSwitchWidget(0, 0, () -> removeRecipes, value -> removeRecipes = value, null);
         addWidget(removeRecipesToggle);
+
+        hideViewerToggle = new LabToggleSwitchWidget(0, 0, () -> hideViewer, value -> hideViewer = value, null);
+        addWidget(hideViewerToggle);
     }
 
     private LabActionButton pickButton(LabBlockField field) {
@@ -237,6 +324,11 @@ public final class LabBlockSettingsWidget extends LabRowCardSettingsWidget {
         return typeDropdown.getSelected() == null ? "basic" : typeDropdown.getSelected();
     }
 
+    public void setBuiltInOnly(boolean builtInOnly) {
+        this.builtInOnly = builtInOnly;
+        rebuildRows();
+    }
+
     public void setFields(List<LabBlockField> fields) {
         this.fields = fields;
         rebuildRows();
@@ -246,58 +338,104 @@ public final class LabBlockSettingsWidget extends LabRowCardSettingsWidget {
         return "basic".equals(getType()) || "cardinal".equals(getType());
     }
 
-    private boolean isVisible(LabBlockField field) {
+    private boolean isDisabled(LabBlockField field) {
         return switch (field) {
-            case TEXTURE_ALL -> !"detector".equals(getType());
-            case TEXTURE_TOP, TEXTURE_BOTTOM, TEXTURE_SIDES -> perFaceTextures();
-            case HARDNESS, RESISTANCE -> !unbreakable;
-            default -> true;
+            case TEXTURE_ALL -> "detector".equals(getType());
+            case TEXTURE_TOP, TEXTURE_BOTTOM, TEXTURE_SIDES -> !perFaceTextures();
+            case HARDNESS, RESISTANCE -> unbreakable;
+            case CREATIVE_TAB -> builtInOnly;
+            case LOOT_ITEM, LOOT_COUNT_MIN, LOOT_COUNT_MAX, LOOT_CHANCE -> builtInOnly || noDrops;
+            case DUST_COLOR -> builtInOnly || !"falling".equals(getType());
+            case BLOCK_SET_TYPE -> builtInOnly
+                    || !("button".equals(getType()) || "pressure_plate".equals(getType()));
+            case WOOD_TYPE -> builtInOnly || !"fence_gate".equals(getType());
+            default -> builtInOnly && !BUILTIN_MODIFIABLE.contains(field);
         };
     }
 
     private void rebuildRows() {
         List<FieldRow> rows = new ArrayList<>();
         for (LabBlockField field : fields) {
-            if (!isVisible(field)) {
-                continue;
-            }
-            FieldRow row = fieldRow(field);
-            if (row != null && row.control() != null) {
+            FieldRow row = new FieldRow(fieldLabel(field), fieldControl(field), null, isDisabled(field));
+            if (row.control() != null) {
                 row.control().setHoverTooltips(List.of(Component.translatable(LabBlockTooltips.key(field))));
             }
-            if (row != null) {
-                rows.add(row);
-            }
+            rows.add(row);
         }
         resetScroll();
         setRows(rows);
     }
 
-    private FieldRow fieldRow(LabBlockField field) {
+    private TextTexture fieldLabel(LabBlockField field) {
         return switch (field) {
-            case TYPE -> new FieldRow(typeLabel, typeDropdown, null);
-            case DISPLAY_NAME -> new FieldRow(nameLabel, nameField, null);
-            case TEXTURE_ALL -> new FieldRow(textureAllLabel, textureAllButton, null);
-            case TEXTURE_TOP -> new FieldRow(textureTopLabel, textureTopButton, null);
-            case TEXTURE_BOTTOM -> new FieldRow(textureBottomLabel, textureBottomButton, null);
-            case TEXTURE_SIDES -> new FieldRow(textureSidesLabel, textureSidesButton, null);
-            case HARDNESS -> new FieldRow(hardnessLabel, hardnessField, null);
-            case RESISTANCE -> new FieldRow(resistanceLabel, resistanceField, null);
-            case UNBREAKABLE -> new FieldRow(unbreakableLabel, unbreakableToggle, null);
-            case LIGHT_LEVEL -> new FieldRow(lightLevelLabel, lightLevelField, null);
-            case SOUND_TYPE -> new FieldRow(soundTypeLabel, soundTypeDropdown, null);
-            case REQUIRES_TOOL -> new FieldRow(requiresToolLabel, requiresToolToggle, null);
-            case NO_COLLISION -> new FieldRow(noCollisionLabel, noCollisionToggle, null);
-            case WATERLOGGED -> new FieldRow(waterloggedLabel, waterloggedToggle, null);
-            case NO_DROPS -> new FieldRow(noDropsLabel, noDropsToggle, null);
-            case NOT_SOLID -> new FieldRow(notSolidLabel, notSolidToggle, null);
-            case OPAQUE -> new FieldRow(opaqueLabel, opaqueToggle, null);
-            case SLIPPERINESS -> new FieldRow(slipperinessLabel, slipperinessField, null);
-            case SPEED_FACTOR -> new FieldRow(speedFactorLabel, speedFactorField, null);
-            case JUMP_FACTOR -> new FieldRow(jumpFactorLabel, jumpFactorField, null);
-            case TAGS -> new FieldRow(tagsLabel, tagsField, null);
-            case DISABLE_CREATIVE_HIDE -> new FieldRow(hideCreativeLabel, hideCreativeToggle, null);
-            case DISABLE_RECIPE_REMOVAL -> new FieldRow(removeRecipesLabel, removeRecipesToggle, null);
+            case TYPE -> typeLabel;
+            case DISPLAY_NAME -> nameLabel;
+            case TEXTURE_ALL -> textureAllLabel;
+            case TEXTURE_TOP -> textureTopLabel;
+            case TEXTURE_BOTTOM -> textureBottomLabel;
+            case TEXTURE_SIDES -> textureSidesLabel;
+            case HARDNESS -> hardnessLabel;
+            case RESISTANCE -> resistanceLabel;
+            case UNBREAKABLE -> unbreakableLabel;
+            case LIGHT_LEVEL -> lightLevelLabel;
+            case SOUND_TYPE -> soundTypeLabel;
+            case REQUIRES_TOOL -> requiresToolLabel;
+            case NO_COLLISION -> noCollisionLabel;
+            case WATERLOGGED -> waterloggedLabel;
+            case NO_DROPS -> noDropsLabel;
+            case NOT_SOLID -> notSolidLabel;
+            case OPAQUE -> opaqueLabel;
+            case SLIPPERINESS -> slipperinessLabel;
+            case SPEED_FACTOR -> speedFactorLabel;
+            case JUMP_FACTOR -> jumpFactorLabel;
+            case TAGS -> tagsLabel;
+            case CREATIVE_TAB -> creativeTabLabel;
+            case LOOT_ITEM -> lootItemLabel;
+            case LOOT_COUNT_MIN -> lootCountMinLabel;
+            case LOOT_COUNT_MAX -> lootCountMaxLabel;
+            case LOOT_CHANCE -> lootChanceLabel;
+            case DUST_COLOR -> dustColorLabel;            case BLOCK_SET_TYPE -> blockSetTypeLabel;
+            case WOOD_TYPE -> woodTypeLabel;
+            case DISABLE_CREATIVE_HIDE -> hideCreativeLabel;
+            case DISABLE_RECIPE_REMOVAL -> removeRecipesLabel;
+            case DISABLE_VIEWER_HIDE -> hideViewerLabel;
+        };
+    }
+
+    private com.lowdragmc.lowdraglib.gui.widget.Widget fieldControl(LabBlockField field) {
+        return switch (field) {
+            case TYPE -> typeDropdown;
+            case DISPLAY_NAME -> nameField;
+            case TEXTURE_ALL -> textureAllButton;
+            case TEXTURE_TOP -> textureTopButton;
+            case TEXTURE_BOTTOM -> textureBottomButton;
+            case TEXTURE_SIDES -> textureSidesButton;
+            case HARDNESS -> hardnessField;
+            case RESISTANCE -> resistanceField;
+            case UNBREAKABLE -> unbreakableToggle;
+            case LIGHT_LEVEL -> lightLevelField;
+            case SOUND_TYPE -> soundTypeDropdown;
+            case REQUIRES_TOOL -> requiresToolToggle;
+            case NO_COLLISION -> noCollisionToggle;
+            case WATERLOGGED -> waterloggedToggle;
+            case NO_DROPS -> noDropsToggle;
+            case NOT_SOLID -> notSolidToggle;
+            case OPAQUE -> opaqueToggle;
+            case SLIPPERINESS -> slipperinessField;
+            case SPEED_FACTOR -> speedFactorField;
+            case JUMP_FACTOR -> jumpFactorField;
+            case TAGS -> tagsField;
+            case CREATIVE_TAB -> creativeTabDropdown;
+            case LOOT_ITEM -> lootItemField;
+            case LOOT_COUNT_MIN -> lootCountMinField;
+            case LOOT_COUNT_MAX -> lootCountMaxField;
+            case LOOT_CHANCE -> lootChanceField;
+            case DUST_COLOR -> dustPickButton;
+            case BLOCK_SET_TYPE -> blockSetTypeDropdown;
+            case WOOD_TYPE -> woodTypeDropdown;
+            case DISABLE_CREATIVE_HIDE -> hideCreativeToggle;
+            case DISABLE_RECIPE_REMOVAL -> removeRecipesToggle;
+            case DISABLE_VIEWER_HIDE -> hideViewerToggle;
         };
     }
 
@@ -322,7 +460,15 @@ public final class LabBlockSettingsWidget extends LabRowCardSettingsWidget {
                 parseFloat(slipperinessText, 0f),
                 parseFloat(speedFactorText, 0f),
                 parseFloat(jumpFactorText, 0f),
-                tags);
+                tags,
+                creativeTabDropdown.getSelected() == null ? "" : creativeTabDropdown.getSelected(),
+                lootItem,
+                parseInt(lootCountMinText, 0),
+                parseInt(lootCountMaxText, 0),
+                parseFloat(lootChanceText, 100f),
+                dustColor,
+                blockSetTypeDropdown.getSelected() == null ? "" : blockSetTypeDropdown.getSelected(),
+                woodTypeDropdown.getSelected() == null ? "" : woodTypeDropdown.getSelected());
     }
 
     public void applyValues(LabBlockFieldValues values) {
@@ -347,6 +493,14 @@ public final class LabBlockSettingsWidget extends LabRowCardSettingsWidget {
         speedFactorText = formatFloat(values.speedFactor());
         jumpFactorText = formatFloat(values.jumpFactor());
         tags = values.tags();
+        creativeTab = values.creativeTab();
+        lootItem = values.lootItem();
+        lootCountMinText = Integer.toString(values.lootCountMin());
+        lootCountMaxText = Integer.toString(values.lootCountMax());
+        lootChanceText = formatFloat(values.lootChance());
+        dustColor = values.dustColor();
+        blockSetType = values.blockSetType();
+        woodType = values.woodType();
 
         nameField.setCurrentString(name);
         tagsField.setCurrentString(tags);
@@ -361,12 +515,24 @@ public final class LabBlockSettingsWidget extends LabRowCardSettingsWidget {
         applyTextureButtonLabel(textureBottomButton, textureBottom);
         applyTextureButtonLabel(textureSidesButton, textureSides);
         soundTypeDropdown.setSelected(soundType);
+        creativeTabDropdown.setSelected(creativeTab);
+        lootItemField.setCurrentString(lootItem);
+        lootCountMinField.setCurrentString(lootCountMinText);
+        lootCountMaxField.setCurrentString(lootCountMaxText);
+        lootChanceField.setCurrentString(lootChanceText);
+        applyDustButtonLabel();
+        blockSetTypeDropdown.setSelected(blockSetType);
+        woodTypeDropdown.setSelected(woodType.isBlank() ? "oak" : woodType);
         rebuildRows();
     }
 
     private static void applyTextureButtonLabel(LabActionButton button, String relativePath) {
+        if (relativePath == null || relativePath.isBlank()) {
+            button.setLabel(Component.translatable(LabGuiKeys.LAB_ITEM_TEXTURE_PICK).getString());
+            return;
+        }
         int slash = relativePath.lastIndexOf('/');
-        button.setLabel(slash < 0 ? relativePath : relativePath.substring(slash + 1));
+        button.setLabel(relativePath.substring(slash + 1));
     }
 
     public List<String> getTags() {
@@ -392,16 +558,19 @@ public final class LabBlockSettingsWidget extends LabRowCardSettingsWidget {
         List<LabBlockAction> result = new ArrayList<>();
         if (hideCreative) result.add(LabBlockAction.HIDE_CREATIVE_TAB);
         if (removeRecipes) result.add(LabBlockAction.REMOVE_RECIPES);
+        if (hideViewer) result.add(LabBlockAction.HIDE_VIEWER);
         return result;
     }
 
     public void applyActions(List<LabBlockAction> actions) {
         hideCreative = false;
         removeRecipes = false;
+        hideViewer = false;
         for (LabBlockAction action : actions) {
             switch (action) {
                 case HIDE_CREATIVE_TAB -> hideCreative = true;
                 case REMOVE_RECIPES -> removeRecipes = true;
+                case HIDE_VIEWER -> hideViewer = true;
             }
         }
         rebuildRows();
@@ -409,22 +578,6 @@ public final class LabBlockSettingsWidget extends LabRowCardSettingsWidget {
 
     public List<LabBlockField> fullFields() {
         return List.of(LabBlockField.values());
-    }
-
-    public List<LabBlockField> builtInFields() {
-        return List.of(
-                LabBlockField.HARDNESS,
-                LabBlockField.RESISTANCE,
-                LabBlockField.UNBREAKABLE,
-                LabBlockField.LIGHT_LEVEL,
-                LabBlockField.SOUND_TYPE,
-                LabBlockField.REQUIRES_TOOL,
-                LabBlockField.NO_COLLISION,
-                LabBlockField.SLIPPERINESS,
-                LabBlockField.SPEED_FACTOR,
-                LabBlockField.JUMP_FACTOR,
-                LabBlockField.DISABLE_CREATIVE_HIDE,
-                LabBlockField.DISABLE_RECIPE_REMOVAL);
     }
 
     public void setTextureValue(LabBlockField field, String relativePath) {
@@ -450,5 +603,25 @@ public final class LabBlockSettingsWidget extends LabRowCardSettingsWidget {
 
     public String getAllTexture() {
         return textureAll;
+    }
+
+    public String getDustColor() {
+        return dustColor;
+    }
+
+    public void setDustValue(String hex) {
+        if (hex == null || hex.isBlank()) {
+            return;
+        }
+        dustColor = hex.trim().toUpperCase(java.util.Locale.ROOT);
+        applyDustButtonLabel();
+    }
+
+    private void applyDustButtonLabel() {
+        if (dustColor.isBlank()) {
+            dustPickButton.setLabel(Component.translatable(LabGuiKeys.LAB_ITEM_TEXTURE_PICK).getString());
+        } else {
+            dustPickButton.setLabel(dustColor);
+        }
     }
 }

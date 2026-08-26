@@ -6,6 +6,9 @@ public final class LabGuiKeys {
     public static final String TAB_RECIPE = "kubejslab.gui.lab_tab_recipe";
     public static final String TAB_ITEMS = "kubejslab.gui.lab_tab_items";
     public static final String TAB_BLOCKS = "kubejslab.gui.lab_tab_blocks";
+    public static final String LAB_TAB_TOOLTIP_RECIPES = "kubejslab.gui.lab_tab_tooltip_recipes";
+    public static final String LAB_TAB_TOOLTIP_DISABLED = "kubejslab.gui.lab_tab_tooltip_disabled";
+    public static final String LAB_TAB_TOOLTIP_MODIFIED = "kubejslab.gui.lab_tab_tooltip_modified";
     public static final String LAB_BLOCK_MODIFY = "kubejslab.gui.lab_block_modify";
     public static final String LAB_BLOCK_DISABLE = "kubejslab.gui.lab_block_disable";
     public static final String LAB_BLOCK_RESET = "kubejslab.gui.lab_block_reset";
@@ -33,8 +36,17 @@ public final class LabGuiKeys {
     public static final String LAB_BLOCK_SPEED_FACTOR = "kubejslab.gui.lab_block_speed_factor";
     public static final String LAB_BLOCK_JUMP_FACTOR = "kubejslab.gui.lab_block_jump_factor";
     public static final String LAB_BLOCK_TAGS = "kubejslab.gui.lab_block_tags";
+    public static final String LAB_BLOCK_CREATIVE_TAB = "kubejslab.gui.lab_block_creative_tab";
+    public static final String LAB_BLOCK_LOOT_ITEM = "kubejslab.gui.lab_block_loot_item";
+    public static final String LAB_BLOCK_LOOT_COUNT_MIN = "kubejslab.gui.lab_block_loot_count_min";
+    public static final String LAB_BLOCK_LOOT_COUNT_MAX = "kubejslab.gui.lab_block_loot_count_max";
+    public static final String LAB_BLOCK_LOOT_CHANCE = "kubejslab.gui.lab_block_loot_chance";
+    public static final String LAB_BLOCK_DUST_COLOR = "kubejslab.gui.lab_block_dust_color";
+    public static final String LAB_BLOCK_SET_TYPE = "kubejslab.gui.lab_block_set_type";
+    public static final String LAB_BLOCK_WOOD_TYPE = "kubejslab.gui.lab_block_wood_type";
     public static final String LAB_BLOCK_DISABLE_CREATIVE = "kubejslab.gui.lab_block_disable_creative";
     public static final String LAB_BLOCK_DISABLE_RECIPES = "kubejslab.gui.lab_block_disable_recipes";
+    public static final String LAB_BLOCK_DISABLE_VIEWER = "kubejslab.gui.lab_block_disable_viewer";
     public static final String LAB_BLOCK_SAVE = "kubejslab.gui.lab_block_save";
     public static final String LAB_BLOCK_CLEAR = "kubejslab.gui.lab_block_clear";
     public static final String LAB_BLOCK_TIP_PREFIX = "kubejslab.gui.lab_block_tip_";
@@ -165,6 +177,7 @@ public final class LabGuiKeys {
     public static final String LAB_ASSETS_RENAME = "kubejslab.gui.lab_assets_rename";
     public static final String LAB_ASSETS_DELETE = "kubejslab.gui.lab_assets_delete";
     public static final String LAB_ASSETS_CONFIRM = "kubejslab.gui.lab_assets_confirm";
+    public static final String LAB_COLOR_SAVE_PALETTE = "kubejslab.gui.lab_color_save_palette";
 
     private LabGuiKeys() {
     }

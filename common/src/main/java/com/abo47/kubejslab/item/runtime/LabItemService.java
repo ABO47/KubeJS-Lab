@@ -653,18 +653,14 @@ public final class LabItemService {
 
     private static void writeClientScript() throws IOException {
         StringBuilder sb = new StringBuilder();
-        boolean any = false;
         for (Map.Entry<ResourceLocation, LabItemSaveEntry> item : STATE.entrySet()) {
             if (item.getValue().actions().contains(LabItemAction.HIDE_VIEWER)) {
                 sb.append("JEIEvents.hideItems(event => {\n    event.hide('").append(item.getKey())
                         .append("');\n});\n");
                 sb.append("REIEvents.hide(event => {\n    event.hide('").append(item.getKey()).append("');\n});\n");
-                any = true;
             }
         }
-        if (any) {
-            LabScriptWriter.write("client_scripts", "items.js", sb.toString());
-        }
+        LabScriptWriter.write("client_scripts", "items.js", sb.toString());
     }
 
     private static boolean copyTextures() throws IOException {
