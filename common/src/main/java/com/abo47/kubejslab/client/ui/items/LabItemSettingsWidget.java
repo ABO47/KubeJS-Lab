@@ -546,7 +546,45 @@ public final class LabItemSettingsWidget extends LabRowCardSettingsWidget {
         return List.of("helmet", "chestplate", "leggings", "boots").contains(type);
     }
 
+    private void syncCommitFields() {
+        if (nameField != null && nameField.getRawCurrentString() != null) name = nameField.getRawCurrentString().trim();
+        if (containerItemField != null && containerItemField.getRawCurrentString() != null) containerItem = containerItemField.getRawCurrentString().trim();
+        if (tooltipField != null && tooltipField.getRawCurrentString() != null) tooltip = tooltipField.getRawCurrentString().trim();
+        if (tagsField != null && tagsField.getRawCurrentString() != null) tags = tagsField.getRawCurrentString().trim();
+        if (tierRepairIngredientField != null && tierRepairIngredientField.getRawCurrentString() != null) tierRepairIngredient = tierRepairIngredientField.getRawCurrentString().trim();
+        if (tierProtectionsField != null && tierProtectionsField.getRawCurrentString() != null) tierProtections = tierProtectionsField.getRawCurrentString().trim();
+        if (tierEquipSoundField != null && tierEquipSoundField.getRawCurrentString() != null) tierEquipSound = tierEquipSoundField.getRawCurrentString().trim();
+        if (attributeIdField != null && attributeIdField.getRawCurrentString() != null) attributeId = attributeIdField.getRawCurrentString().trim();
+        if (attributeNameField != null && attributeNameField.getRawCurrentString() != null) attributeName = attributeNameField.getRawCurrentString().trim();
+        if (behaviorItemField != null && behaviorItemField.getRawCurrentString() != null) behaviorItem = behaviorItemField.getRawCurrentString().trim();
+        if (maxStackField != null && maxStackField.getRawCurrentString() != null && !maxStackField.getRawCurrentString().trim().isBlank()) maxStackText = maxStackField.getRawCurrentString().trim();
+        if (maxDamageField != null && maxDamageField.getRawCurrentString() != null && !maxDamageField.getRawCurrentString().trim().isBlank()) maxDamageText = maxDamageField.getRawCurrentString().trim();
+        if (burnTimeField != null && burnTimeField.getRawCurrentString() != null && !burnTimeField.getRawCurrentString().trim().isBlank()) burnTimeText = burnTimeField.getRawCurrentString().trim();
+        if (foodHungerField != null && foodHungerField.getRawCurrentString() != null && !foodHungerField.getRawCurrentString().trim().isBlank()) foodHungerText = foodHungerField.getRawCurrentString().trim();
+        if (foodSaturationField != null && foodSaturationField.getRawCurrentString() != null && !foodSaturationField.getRawCurrentString().trim().isBlank()) foodSaturationText = foodSaturationField.getRawCurrentString().trim();
+        if (foodEffectDurationField != null && foodEffectDurationField.getRawCurrentString() != null && !foodEffectDurationField.getRawCurrentString().trim().isBlank()) foodEffectDurationText = foodEffectDurationField.getRawCurrentString().trim();
+        if (foodEffectAmplifierField != null && foodEffectAmplifierField.getRawCurrentString() != null && !foodEffectAmplifierField.getRawCurrentString().trim().isBlank()) foodEffectAmplifierText = foodEffectAmplifierField.getRawCurrentString().trim();
+        if (foodEffectChanceField != null && foodEffectChanceField.getRawCurrentString() != null && !foodEffectChanceField.getRawCurrentString().trim().isBlank()) foodEffectChanceText = foodEffectChanceField.getRawCurrentString().trim();
+        if (attackDamageField != null && attackDamageField.getRawCurrentString() != null && !attackDamageField.getRawCurrentString().trim().isBlank()) attackDamageText = attackDamageField.getRawCurrentString().trim();
+        if (attackSpeedField != null && attackSpeedField.getRawCurrentString() != null && !attackSpeedField.getRawCurrentString().trim().isBlank()) attackSpeedText = attackSpeedField.getRawCurrentString().trim();
+        if (digSpeedField != null && digSpeedField.getRawCurrentString() != null && !digSpeedField.getRawCurrentString().trim().isBlank()) digSpeedText = digSpeedField.getRawCurrentString().trim();
+        if (armorProtectionField != null && armorProtectionField.getRawCurrentString() != null && !armorProtectionField.getRawCurrentString().trim().isBlank()) armorProtectionText = armorProtectionField.getRawCurrentString().trim();
+        if (armorToughnessField != null && armorToughnessField.getRawCurrentString() != null && !armorToughnessField.getRawCurrentString().trim().isBlank()) armorToughnessText = armorToughnessField.getRawCurrentString().trim();
+        if (armorKnockbackField != null && armorKnockbackField.getRawCurrentString() != null && !armorKnockbackField.getRawCurrentString().trim().isBlank()) armorKnockbackText = armorKnockbackField.getRawCurrentString().trim();
+        if (tierUsesField != null && tierUsesField.getRawCurrentString() != null && !tierUsesField.getRawCurrentString().trim().isBlank()) tierUsesText = tierUsesField.getRawCurrentString().trim();
+        if (tierSpeedField != null && tierSpeedField.getRawCurrentString() != null && !tierSpeedField.getRawCurrentString().trim().isBlank()) tierSpeedText = tierSpeedField.getRawCurrentString().trim();
+        if (tierAttackDamageBonusField != null && tierAttackDamageBonusField.getRawCurrentString() != null && !tierAttackDamageBonusField.getRawCurrentString().trim().isBlank()) tierAttackDamageBonusText = tierAttackDamageBonusField.getRawCurrentString().trim();
+        if (tierLevelField != null && tierLevelField.getRawCurrentString() != null && !tierLevelField.getRawCurrentString().trim().isBlank()) tierLevelText = tierLevelField.getRawCurrentString().trim();
+        if (tierEnchantValueField != null && tierEnchantValueField.getRawCurrentString() != null && !tierEnchantValueField.getRawCurrentString().trim().isBlank()) tierEnchantValueText = tierEnchantValueField.getRawCurrentString().trim();
+        if (tierDurabilityMultiplierField != null && tierDurabilityMultiplierField.getRawCurrentString() != null && !tierDurabilityMultiplierField.getRawCurrentString().trim().isBlank()) tierDurabilityMultiplierText = tierDurabilityMultiplierField.getRawCurrentString().trim();
+        if (tierToughnessField != null && tierToughnessField.getRawCurrentString() != null && !tierToughnessField.getRawCurrentString().trim().isBlank()) tierToughnessText = tierToughnessField.getRawCurrentString().trim();
+        if (tierKnockbackResistanceField != null && tierKnockbackResistanceField.getRawCurrentString() != null && !tierKnockbackResistanceField.getRawCurrentString().trim().isBlank()) tierKnockbackResistanceText = tierKnockbackResistanceField.getRawCurrentString().trim();
+        if (attributeAmountField != null && attributeAmountField.getRawCurrentString() != null && !attributeAmountField.getRawCurrentString().trim().isBlank()) attributeAmountText = attributeAmountField.getRawCurrentString().trim();
+        if (behaviorDamageField != null && behaviorDamageField.getRawCurrentString() != null && !behaviorDamageField.getRawCurrentString().trim().isBlank()) behaviorDamageText = behaviorDamageField.getRawCurrentString().trim();
+    }
+
     private void rebuildRows() {
+        syncCommitFields();
         List<FieldRow> rows = new ArrayList<>();
         for (LabItemField field : fields) {
             FieldRow row = new FieldRow(rowLabelFor(field), fieldControl(field), null, isDisabled(field));
@@ -555,7 +593,6 @@ public final class LabItemSettingsWidget extends LabRowCardSettingsWidget {
             }
             rows.add(row);
         }
-        resetScroll();
         setRows(rows);
     }
 
@@ -670,6 +707,7 @@ public final class LabItemSettingsWidget extends LabRowCardSettingsWidget {
     }
 
     public LabItemFieldValues getValues() {
+        syncCommitFields();
         return new LabItemFieldValues(
                 name,
                 texture,

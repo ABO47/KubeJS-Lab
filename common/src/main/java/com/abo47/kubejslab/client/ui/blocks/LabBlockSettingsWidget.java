@@ -216,7 +216,10 @@ public final class LabBlockSettingsWidget extends LabRowCardSettingsWidget {
         waterloggedToggle = new LabToggleSwitchWidget(0, 0, () -> waterlogged, value -> waterlogged = value, null);
         addWidget(waterloggedToggle);
 
-        noDropsToggle = new LabToggleSwitchWidget(0, 0, () -> noDrops, value -> noDrops = value, null);
+        noDropsToggle = new LabToggleSwitchWidget(0, 0, () -> noDrops, value -> {
+            noDrops = value;
+            rebuildRows();
+        }, null);
         addWidget(noDropsToggle);
 
         notSolidToggle = new LabToggleSwitchWidget(0, 0, () -> notSolid, value -> notSolid = value, null);
@@ -354,6 +357,7 @@ public final class LabBlockSettingsWidget extends LabRowCardSettingsWidget {
     }
 
     private void rebuildRows() {
+        syncCommitFields();
         List<FieldRow> rows = new ArrayList<>();
         for (LabBlockField field : fields) {
             FieldRow row = new FieldRow(fieldLabel(field), fieldControl(field), null, isDisabled(field));
@@ -362,7 +366,6 @@ public final class LabBlockSettingsWidget extends LabRowCardSettingsWidget {
             }
             rows.add(row);
         }
-        resetScroll();
         setRows(rows);
     }
 
@@ -439,7 +442,35 @@ public final class LabBlockSettingsWidget extends LabRowCardSettingsWidget {
         };
     }
 
+    private void syncCommitFields() {
+        String liveName = nameField != null && nameField.getRawCurrentString() != null ? nameField.getRawCurrentString().trim() : null;
+        if (liveName != null) name = liveName;
+        String liveTags = tagsField != null && tagsField.getRawCurrentString() != null ? tagsField.getRawCurrentString().trim() : null;
+        if (liveTags != null) tags = liveTags;
+        String liveLoot = lootItemField != null && lootItemField.getRawCurrentString() != null ? lootItemField.getRawCurrentString().trim() : null;
+        if (liveLoot != null) lootItem = liveLoot;
+        String liveHardness = hardnessField != null && hardnessField.getRawCurrentString() != null ? hardnessField.getRawCurrentString().trim() : null;
+        if (liveHardness != null && !liveHardness.isBlank()) hardnessText = liveHardness;
+        String liveResistance = resistanceField != null && resistanceField.getRawCurrentString() != null ? resistanceField.getRawCurrentString().trim() : null;
+        if (liveResistance != null && !liveResistance.isBlank()) resistanceText = liveResistance;
+        String liveLight = lightLevelField != null && lightLevelField.getRawCurrentString() != null ? lightLevelField.getRawCurrentString().trim() : null;
+        if (liveLight != null && !liveLight.isBlank()) lightLevelText = liveLight;
+        String liveSlipperiness = slipperinessField != null && slipperinessField.getRawCurrentString() != null ? slipperinessField.getRawCurrentString().trim() : null;
+        if (liveSlipperiness != null && !liveSlipperiness.isBlank()) slipperinessText = liveSlipperiness;
+        String liveSpeed = speedFactorField != null && speedFactorField.getRawCurrentString() != null ? speedFactorField.getRawCurrentString().trim() : null;
+        if (liveSpeed != null && !liveSpeed.isBlank()) speedFactorText = liveSpeed;
+        String liveJump = jumpFactorField != null && jumpFactorField.getRawCurrentString() != null ? jumpFactorField.getRawCurrentString().trim() : null;
+        if (liveJump != null && !liveJump.isBlank()) jumpFactorText = liveJump;
+        String liveMin = lootCountMinField != null && lootCountMinField.getRawCurrentString() != null ? lootCountMinField.getRawCurrentString().trim() : null;
+        if (liveMin != null && !liveMin.isBlank()) lootCountMinText = liveMin;
+        String liveMax = lootCountMaxField != null && lootCountMaxField.getRawCurrentString() != null ? lootCountMaxField.getRawCurrentString().trim() : null;
+        if (liveMax != null && !liveMax.isBlank()) lootCountMaxText = liveMax;
+        String liveChance = lootChanceField != null && lootChanceField.getRawCurrentString() != null ? lootChanceField.getRawCurrentString().trim() : null;
+        if (liveChance != null && !liveChance.isBlank()) lootChanceText = liveChance;
+    }
+
     public LabBlockFieldValues getValues() {
+        syncCommitFields();
         return new LabBlockFieldValues(
                 name,
                 textureAll,

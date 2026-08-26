@@ -1,4 +1,5 @@
 package com.abo47.kubejslab.client.ui;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import javax.annotation.Nonnull;
@@ -99,6 +100,24 @@ public final class LabScreen {
         leftPanel.getRecipeBrowser().setRecipeRightClickListener(
                 (entry, mouseX, mouseY) -> root.openContextMenu(entry, mouseX, mouseY));
         rightPanel.setMachineChangedListener(updateViews);
+        rightPanel.itemTypeDropdown.setOnSelect(value -> {
+            if ("all".equals(value)) {
+                rightPanel.refreshItemPreview();
+            } else {
+                rightPanel.itemSettings.setType(value);
+                rightPanel.refreshItemPreview();
+            }
+            updateViews.run();
+        });
+        rightPanel.blockTypeDropdown.setOnSelect(value -> {
+            if ("all".equals(value)) {
+                rightPanel.refreshBlockPreview();
+            } else {
+                rightPanel.blockSettings.setType(value);
+                rightPanel.refreshBlockPreview();
+            }
+            updateViews.run();
+        });
         rightPanel.settingsWidget.setCategoryContextRequester((option, mx, my) -> root.openActionsMenu(
                 List.of(new LabContextAction(I18n.get(LabGuiKeys.LAB_RECIPE_DELETE), "delete", LabActionTone.DANGER,
                         () -> rightPanel.settingsWidget.deleteBlueprintCategory(option))), mx, my));
@@ -520,10 +539,21 @@ public final class LabScreen {
 
             itemTypeDropdown = new LabOptionDropdownWidget(columnX, searchY, columnW, LabLayout.SEARCH_H);
             itemTypeDropdown.setClientSideWidget();
-            itemTypeDropdown.setOptions(LabItemSettingsWidget.types());
+            {
+                List<String> opts = new ArrayList<>();
+                opts.add("all");
+                opts.addAll(LabItemSettingsWidget.types());
+                itemTypeDropdown.setOptions(opts);
+                itemTypeDropdown.setLabelMapper(v -> "all".equals(v) ? "All" : v);
+                itemTypeDropdown.setSelected("all");
+            }
             itemTypeDropdown.setOnSelect(value -> {
-                itemSettings.setType(value);
-                refreshItemPreview();
+                if ("all".equals(value)) {
+                    refreshItemPreview();
+                } else {
+                    itemSettings.setType(value);
+                    refreshItemPreview();
+                }
             });
             itemTypeDropdown.setVisible(false);
             addWidget(itemTypeDropdown);
@@ -563,10 +593,21 @@ public final class LabScreen {
 
             blockTypeDropdown = new LabOptionDropdownWidget(columnX, searchY, columnW, LabLayout.SEARCH_H);
             blockTypeDropdown.setClientSideWidget();
-            blockTypeDropdown.setOptions(LabBlockService.TYPES);
+            {
+                List<String> opts = new ArrayList<>();
+                opts.add("all");
+                opts.addAll(LabBlockService.TYPES);
+                blockTypeDropdown.setOptions(opts);
+                blockTypeDropdown.setLabelMapper(v -> "all".equals(v) ? "All" : v);
+                blockTypeDropdown.setSelected("all");
+            }
             blockTypeDropdown.setOnSelect(value -> {
-                blockSettings.setType(value);
-                refreshBlockPreview();
+                if ("all".equals(value)) {
+                    refreshBlockPreview();
+                } else {
+                    blockSettings.setType(value);
+                    refreshBlockPreview();
+                }
             });
             blockTypeDropdown.setVisible(false);
             addWidget(blockTypeDropdown);
@@ -817,10 +858,14 @@ public final class LabScreen {
                 }
                 if (showItemView) {
                     itemBrowser.setKubejsOnly(getSelectedTabIndex() == 1);
+                    String type = rightPanel != null && rightPanel.itemTypeDropdown != null ? rightPanel.itemTypeDropdown.getSelected() : null;
+                    itemBrowser.setTypeFilter(type);
                     itemBrowser.rebuild();
                 }
                 if (showBlockView) {
                     blockBrowser.setKubejsOnly(getSelectedTabIndex() == 1);
+                    String type = rightPanel != null && rightPanel.blockTypeDropdown != null ? rightPanel.blockTypeDropdown.getSelected() : null;
+                    blockBrowser.setTypeFilter(type);
                     blockBrowser.rebuild();
                 }
             } else {

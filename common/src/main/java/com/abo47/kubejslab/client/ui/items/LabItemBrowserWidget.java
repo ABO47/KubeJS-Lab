@@ -14,8 +14,19 @@ import com.abo47.kubejslab.client.ui.picker.LabSearchNormalizer;
 
 
 public final class LabItemBrowserWidget extends LabCardBrowserWidget<LabItemCardWidget, LabItemIndex.LabItemEntry> {
+    private String typeFilter;
+
     public LabItemBrowserWidget(int x, int y, int w, int h) {
         super(x, y, w, h);
+    }
+
+    public void setTypeFilter(String typeFilter) {
+        if (typeFilter == null || typeFilter.isBlank() || "all".equals(typeFilter)) {
+            this.typeFilter = null;
+        } else {
+            this.typeFilter = typeFilter;
+        }
+        resetScroll();
     }
 
     public void setItemClickListener(Consumer<LabItemIndex.LabItemEntry> itemClickListener) {
@@ -36,6 +47,13 @@ public final class LabItemBrowserWidget extends LabCardBrowserWidget<LabItemCard
         entries.addAll(LabItemStates.stateEntries().stream()
                 .filter(e -> query().isBlank() || e.matches(LabSearchNormalizer.normalizeUserSearch(query())))
                 .toList());
+        if (typeFilter != null && !typeFilter.isBlank()) {
+            entries.removeIf(e -> {
+                var state = LabItemStates.stateOf(e.id());
+                String t = (state != null && state.type() != null && !state.type().isBlank()) ? state.type() : LabItemIndex.typeOf(e.id());
+                return !typeFilter.equals(t);
+            });
+        }
         Set<ResourceLocation> seen = new HashSet<>();
         entries.removeIf(e -> !seen.add(e.id()));
         entries.sort(Comparator.comparing(LabItemIndex.LabItemEntry::name, String.CASE_INSENSITIVE_ORDER)

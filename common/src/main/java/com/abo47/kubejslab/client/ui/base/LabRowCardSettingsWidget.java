@@ -86,8 +86,16 @@ public abstract class LabRowCardSettingsWidget extends WidgetGroup {
         disabledControls.clear();
         for (FieldRow row : rows) {
             row.label().setColor(row.disabled() ? LabColors.ERROR : LabColors.TEXT_PRIMARY);
-            if (row.disabled() && row.control() != null) {
-                disabledControls.add(row.control());
+            if (row.control() != null) {
+                if (row.disabled()) {
+                    disabledControls.add(row.control());
+                    row.control().setActive(false);
+                    if (row.control().isFocus()) row.control().setFocus(false);
+                    if (row.control() instanceof LabPopupProvider popup && popup.isOpen()) popup.closePopup();
+                    if (row.control() instanceof com.lowdragmc.lowdraglib.gui.widget.TextFieldWidget tf) tf.setFocus(false);
+                } else {
+                    row.control().setActive(true);
+                }
             }
         }
         recomputeScrollMax();
@@ -238,6 +246,16 @@ public abstract class LabRowCardSettingsWidget extends WidgetGroup {
             if (disabledControls.contains(widget)) {
                 continue;
             }
+            if (widget.isVisible() && widget.isActive() && widget.isMouseOverElement(mouseX, mouseY)
+                    && widget.mouseWheelMove(mouseX, mouseY, wheelDelta)) {
+                return true;
+            }
+        }
+        for (int i = widgets.size() - 1; i >= 0; i--) {
+            Widget widget = widgets.get(i);
+            if (disabledControls.contains(widget)) {
+                continue;
+            }
             if (widget.isVisible() && widget.isActive() && childInsideViewport(widget)
                     && widget.mouseWheelMove(mouseX, mouseY, wheelDelta)) {
                 return true;
@@ -250,6 +268,42 @@ public abstract class LabRowCardSettingsWidget extends WidgetGroup {
             return true;
         }
         return false;
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        for (Widget w : disabledControls) {
+            if (w.isFocus()) return true;
+        }
+        for (int i = widgets.size() - 1; i >= 0; i--) {
+            Widget widget = widgets.get(i);
+            if (disabledControls.contains(widget)) continue;
+            if (widget.isVisible() && widget.isActive() && widget.keyPressed(keyCode, scanCode, modifiers)) return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean charTyped(char codePoint, int modifiers) {
+        for (Widget w : disabledControls) {
+            if (w.isFocus()) return true;
+        }
+        for (int i = widgets.size() - 1; i >= 0; i--) {
+            Widget widget = widgets.get(i);
+            if (disabledControls.contains(widget)) continue;
+            if (widget.isVisible() && widget.isActive() && widget.charTyped(codePoint, modifiers)) return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+        for (int i = widgets.size() - 1; i >= 0; i--) {
+            Widget widget = widgets.get(i);
+            if (disabledControls.contains(widget)) continue;
+            if (widget.isVisible() && widget.isActive() && widget.mouseDragged(mouseX, mouseY, button, dragX, dragY)) return true;
+        }
+        return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
     }
 
     private boolean isInsideViewport(double mouseX, double mouseY) {

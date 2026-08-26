@@ -1,5 +1,6 @@
 package com.abo47.kubejslab.recipe.immersiveengineering;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import net.minecraft.world.item.crafting.Recipe;
@@ -90,7 +91,7 @@ public class ArcFurnaceMachine extends ImmersiveEngineeringMachine {
     @Override
     public List<Float> outputChances(Recipe<?> original) {
         if (original instanceof ArcFurnaceRecipe arc) {
-            List<Float> chances = new java.util.ArrayList<>();
+            List<Float> chances = new ArrayList<>();
             chances.add(1.0f);
             for (StackWithChance secondary : arc.secondaryOutputs) {
                 chances.add(secondary.chance());
