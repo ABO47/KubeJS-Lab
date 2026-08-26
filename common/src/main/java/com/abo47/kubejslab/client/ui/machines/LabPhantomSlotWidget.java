@@ -10,12 +10,11 @@ import com.lowdragmc.lowdraglib.gui.widget.PhantomSlotWidget;
 import com.lowdragmc.lowdraglib.gui.widget.SlotWidget;
 import com.lowdragmc.lowdraglib.side.item.IItemTransfer;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-
 import com.abo47.kubejslab.client.ui.base.LabColors;
 import com.abo47.kubejslab.recipe.model.LabSlotKind;
 import com.abo47.kubejslab.recipe.model.LabSlotTint;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import mezz.jei.api.recipe.RecipeIngredientRole;
 
 

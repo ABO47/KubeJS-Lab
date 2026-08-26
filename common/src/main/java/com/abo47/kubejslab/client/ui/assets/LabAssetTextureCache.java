@@ -13,8 +13,6 @@ import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
 
-import com.mojang.blaze3d.platform.NativeImage;
-
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
 
@@ -23,6 +21,9 @@ import com.lowdragmc.lowdraglib.gui.texture.IGuiTexture;
 import com.lowdragmc.lowdraglib.gui.texture.ResourceTexture;
 
 import com.abo47.kubejslab.KubeJSLab;
+
+import com.mojang.blaze3d.platform.NativeImage;
+
 
 final class LabAssetTextureCache {
     private static final Map<String, IGuiTexture> TEXTURE_CACHE = new HashMap<>();

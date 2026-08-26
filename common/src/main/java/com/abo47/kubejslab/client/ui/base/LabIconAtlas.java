@@ -6,18 +6,18 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
-import org.lwjgl.opengl.GL11;
-
-import com.mojang.blaze3d.systems.RenderSystem;
-
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
 
 import com.lowdragmc.lowdraglib.gui.texture.ResourceTexture;
 
-import com.abo47.kubejslab.KubeJSLab;
 import com.abo47.kubejslab.client.ui.contextmenu.LabActionTone;
+import com.abo47.kubejslab.KubeJSLab;
+
+import com.mojang.blaze3d.systems.RenderSystem;
+import org.lwjgl.opengl.GL11;
+
 
 public final class LabIconAtlas {
     private static final String BASE = "textures/gui/icons/";

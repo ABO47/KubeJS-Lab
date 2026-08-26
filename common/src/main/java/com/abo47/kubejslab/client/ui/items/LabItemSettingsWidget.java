@@ -1,8 +1,8 @@
 package com.abo47.kubejslab.client.ui.items;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.function.Consumer;
+import java.util.List;
 
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;

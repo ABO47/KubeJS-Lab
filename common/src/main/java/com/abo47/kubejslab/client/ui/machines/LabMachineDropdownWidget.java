@@ -17,10 +17,10 @@ import com.lowdragmc.lowdraglib.gui.widget.Widget;
 import com.lowdragmc.lowdraglib.gui.widget.WidgetGroup;
 
 import com.abo47.kubejslab.client.ui.base.LabColors;
-import com.abo47.kubejslab.client.ui.base.LabTextFieldWidget;
 import com.abo47.kubejslab.client.ui.base.LabGlow;
 import com.abo47.kubejslab.client.ui.base.LabLayout;
 import com.abo47.kubejslab.client.ui.base.LabScrollMath;
+import com.abo47.kubejslab.client.ui.base.LabTextFieldWidget;
 
 
 public final class LabMachineDropdownWidget extends WidgetGroup {

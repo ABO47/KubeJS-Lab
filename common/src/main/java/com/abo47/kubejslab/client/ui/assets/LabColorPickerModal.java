@@ -1,25 +1,27 @@
 package com.abo47.kubejslab.client.ui.assets;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.function.Consumer;
+import java.util.List;
 
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.language.I18n;
 
 import com.lowdragmc.lowdraglib.gui.texture.ColorRectTexture;
 import com.lowdragmc.lowdraglib.gui.texture.IGuiTexture;
+import com.lowdragmc.lowdraglib.gui.texture.TextTexture;
 import com.lowdragmc.lowdraglib.gui.util.ClickData;
 import com.lowdragmc.lowdraglib.gui.widget.ButtonWidget;
 import com.lowdragmc.lowdraglib.gui.widget.HsbColorWidget;
 import com.lowdragmc.lowdraglib.gui.widget.TextFieldWidget;
-import com.lowdragmc.lowdraglib.gui.widget.Widget;
 import com.lowdragmc.lowdraglib.gui.widget.WidgetGroup;
 
 import com.abo47.kubejslab.client.ui.base.LabActionButton;
 import com.abo47.kubejslab.client.ui.base.LabColors;
 import com.abo47.kubejslab.client.ui.base.LabCommitFieldWidget;
-import com.abo47.kubejslab.client.ui.base.LabGlow;
 import com.abo47.kubejslab.client.ui.base.LabGuiKeys;
 import com.abo47.kubejslab.client.ui.base.LabLayout;
 import com.abo47.kubejslab.client.ui.base.LabScrollBarWidget;
@@ -27,56 +29,56 @@ import com.abo47.kubejslab.client.ui.contextmenu.LabActionTone;
 import com.abo47.kubejslab.client.ui.contextmenu.LabContextAction;
 import com.abo47.kubejslab.client.ui.contextmenu.LabContextMenuAnimation;
 import com.abo47.kubejslab.client.ui.contextmenu.LabContextMenuPanel;
+import com.abo47.kubejslab.lab.LabPathResolver;
+
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 
 
 public final class LabColorPickerModal {
-    private static final int MODAL_W = 260;
-    private static final int MODAL_H = 200;
+    public static final int MODAL_W = 432;
+    public static final int MODAL_H = 260;
+    private static final int PREVIEW_X = 8;
+    private static final int LEFT_W = 150;
+    private static final int RIGHT_X = 166;
     private static final int BODY_Y = 22;
-    private static final int BODY_BOTTOM_PAD = 12;
-    private static final int LEFT_W = 112;
-    private static final int RIGHT_X = LEFT_W + 16;
+    private static final int BODY_BOTTOM_PAD = 26;
+    private static final int PALETTE_TOP = 4;
     private static final int CELL = 16;
     private static final int CELL_GAP = 2;
     private static final int CELL_PAD = 4;
     private static final long DOUBLE_CLICK_MS = 350;
 
     private static final int DIM_COLOR = LabColors.withAlpha(LabColors.SURFACE_BASE, 140);
-    private static final int PANEL_FILL = LabColors.withAlpha(LabColors.SURFACE_BASE, 252);
-    private static final IGuiTexture PANEL_TEXTURE =
-            LabColors.bordered(PANEL_FILL, LabColors.BORDER_ACCENT);
-    private static final IGuiTexture PANEL_INNER_TEXTURE =
-            LabColors.bordered(LabColors.withAlpha(LabColors.SURFACE_PANEL_ALT, 120), LabColors.BORDER_BASE);
-    private static final ColorRectTexture SHADOW_DEEP =
-            new ColorRectTexture(LabColors.withAlpha(LabColors.SURFACE_BASE, 82));
-    private static final ColorRectTexture SHADOW_NEAR =
-            new ColorRectTexture(LabColors.withAlpha(LabColors.SURFACE_BASE, 120));
+    private static final int ELEVATED_FILL = mix(LabColors.SURFACE_PANEL_ALT, LabColors.TEXT_PRIMARY, 10);
+    private static final int SUBTLE_BORDER = mix(LabColors.BORDER_BASE, LabColors.SURFACE_BASE, 28);
 
-    private static final List<Integer> PALETTE = new ArrayList<>();
+    private static final List<Integer> PALETTE = loadPalette();
 
     private final WidgetGroup layer;
     private final WidgetGroup panel;
-    private final WidgetGroup surface;
+    private final WidgetGroup palettePanel;
     private final HsbColorWidget picker;
     private final TextFieldWidget hexField;
+    private final TextTexture emptyTex;
     private final Consumer<String> onApply;
     private final State state = new State();
-    private int draftColor;    private static final class State {
-        String hexDraft = "";
-        int scroll;
-        int maxStart;
-        int knobH;
-        boolean dragging;
-        long lastSwatchMs;
-        int lastSwatchColor = Integer.MIN_VALUE;
-        long contextMenuMs;
-    }
+    private int draftColor;
 
     private WidgetGroup contextMenu;
     private ButtonWidget contextDismiss;
     private int contextMenuX;
     private int contextMenuY;
     private int contextValue;
+
+    private static final class State {
+        String hexDraft = "";
+        int scroll;
+        long lastSwatchMs;
+        int lastSwatchColor = Integer.MIN_VALUE;
+        long contextMenuMs;
+    }
 
     private LabColorPickerModal(WidgetGroup layer, String title, String initialHex, Consumer<String> onApply) {
         this.layer = layer;
@@ -87,189 +89,135 @@ public final class LabColorPickerModal {
         layer.addWidget(new ButtonWidget(0, 0, LabLayout.ROOT_W, LabLayout.ROOT_H,
                 new ColorRectTexture(DIM_COLOR), cd -> close()).setClientSideWidget());
 
-        int panelX = (LabLayout.ROOT_W - MODAL_W) / 2;
-        int panelY = (LabLayout.ROOT_H - MODAL_H) / 2;
-        this.panel = new WidgetGroup(panelX, panelY, MODAL_W, MODAL_H) {
-            @Override
-            public void drawInBackground(GuiGraphics g, int mx, int my, float pt) {
-            }
+        int bodyH = MODAL_H - BODY_Y - BODY_BOTTOM_PAD;
+        int wheelSize = Math.min(LEFT_W - 20, bodyH - 84);
+        int initialColor = parseHexOrDefault(initialHex, 0xFFFFFFFF);
+        this.draftColor = initialColor;
 
-            @Override
-            public void drawInForeground(GuiGraphics g, int mx, int my, float pt) {
-                int x = getPositionX();
-                int y = getPositionY();
-                SHADOW_DEEP.draw(g, mx, my, x + 5, y + 5, MODAL_W, MODAL_H);
-                SHADOW_NEAR.draw(g, mx, my, x + 3, y + 3, MODAL_W, MODAL_H);
-                PANEL_TEXTURE.draw(g, mx, my, x, y, MODAL_W, MODAL_H);
-                g.pose().pushPose();
-                g.pose().translate(0, 0, 300);
-                for (Widget child : widgets) {
-                    child.drawInBackground(g, mx, my, pt);
-                    child.drawInForeground(g, mx, my, pt);
-                }
-                g.pose().popPose();
-            }
-
+        this.panel = new WidgetGroup((LabLayout.ROOT_W - MODAL_W) / 2,
+                (LabLayout.ROOT_H - MODAL_H) / 2, MODAL_W, MODAL_H) {
             @Override
             public boolean mouseClicked(double mx, double my, int button) {
                 super.mouseClicked(mx, my, button);
                 return isMouseOverElement(mx, my);
             }
         };
+        this.panel.setBackground(LabColors.bordered(
+                LabColors.withAlpha(LabColors.SURFACE_BASE, 252), LabColors.BORDER_ACCENT));
         layer.addWidget(panel);
+        panel.addWidget(titleLabel(title));
+        addHeaderClose(MODAL_W - 25, 3);
 
-        panel.addWidget(new WidgetGroup(8, 6, MODAL_W - 50, 9) {
-            private final com.lowdragmc.lowdraglib.gui.texture.TextTexture titleTex =
-                    new com.lowdragmc.lowdraglib.gui.texture.TextTexture(title, LabColors.TEXT_PRIMARY)
-                            .setType(com.lowdragmc.lowdraglib.gui.texture.TextTexture.TextType.LEFT_HIDE)
-                            .setWidth(MODAL_W - 50);
-
-            @Override
-            public void drawInBackground(GuiGraphics g, int mx, int my, float pt) {
-                titleTex.draw(g, mx, my, getPositionX(), getPositionY(), getSizeWidth(), getSizeHeight());
-            }
-        });
-        addHeaderButton(MODAL_W - 25, 3, "close", cd -> close());
-
-        int bodyH = MODAL_H - BODY_Y - BODY_BOTTOM_PAD;
-        int wheelSize = Math.min(LEFT_W - 16, bodyH - 52);
-
-        WidgetGroup left = new WidgetGroup(8, BODY_Y, LEFT_W, bodyH) {
-            @Override
-            public void drawInBackground(GuiGraphics g, int mx, int my, float pt) {
-                PANEL_INNER_TEXTURE.draw(g, mx, my, getPositionX(), getPositionY(),
-                        getSizeWidth(), getSizeHeight());
-            }
-        };
+        WidgetGroup left = new WidgetGroup(PREVIEW_X, BODY_Y, LEFT_W, bodyH);
+        left.setBackground(LabColors.bordered(
+                LabColors.withAlpha(LabColors.SURFACE_PANEL_ALT, 120), LabColors.BORDER_BASE));
         panel.addWidget(left);
 
-        int initialColor = parseHexOrDefault(initialHex, 0xFFFFFFFF);
-        this.draftColor = initialColor;
-        this.picker = new HsbColorWidget(8, 6, wheelSize, wheelSize)
+        this.picker = new HsbColorWidget(8, 8, wheelSize, wheelSize)
                 .setShowAlpha(false)
-                .setColor(initialColor)
-                .setOnChanged(color -> {
-                    draftColor = color;
-                    state.hexDraft = toHex(color);
-                });
+                .setColor(initialColor);
         left.addWidget(picker);
-        state.hexDraft = toHex(draftColor);
 
-        this.hexField = buildHexField(8, wheelSize + 14, LEFT_W - 16, 14);
+        this.hexField = buildHexField(8, wheelSize + 16, LEFT_W - 16, 12);
         left.addWidget(hexField);
+        state.hexDraft = toHex(draftColor);
+        hexField.setCurrentString(state.hexDraft);
+        picker.setOnChanged(color -> {
+            draftColor = color;
+            state.hexDraft = toHex(color);
+            hexField.setCurrentString(state.hexDraft);
+        });
 
-        LabActionButton useButton = new LabActionButton(8, bodyH - 20, LEFT_W - 16,
-                LabLayout.SETTINGS_BTN_H, I18n.get(LabGuiKeys.LAB_ASSETS_USE), () -> {
+        left.addWidget(new LabActionButton(8, bodyH - 20, LEFT_W - 16, 16,
+                I18n.get(LabGuiKeys.LAB_ASSETS_USE), () -> {
             onApply.accept(toHex(draftColor));
             close();
-        });
-        left.addWidget(useButton);
+        }));
 
-        WidgetGroup right = new WidgetGroup(RIGHT_X, BODY_Y, MODAL_W - RIGHT_X - 8, bodyH) {
-            @Override
-            public void drawInBackground(GuiGraphics g, int mx, int my, float pt) {
-                PANEL_INNER_TEXTURE.draw(g, mx, my, getPositionX(), getPositionY(),
-                        getSizeWidth(), getSizeHeight());
-            }
-        };
+        WidgetGroup right = new WidgetGroup(RIGHT_X, BODY_Y, MODAL_W - RIGHT_X - PREVIEW_X, bodyH);
+        right.setBackground(LabColors.bordered(LabColors.withAlpha(ELEVATED_FILL, 190), SUBTLE_BORDER));
         panel.addWidget(right);
 
-        this.surface = new WidgetGroup(CELL_PAD, 4, MODAL_W - RIGHT_X - 8 - CELL_PAD * 2, bodyH - 28) {
-            @Override
-            public void drawInBackground(GuiGraphics g, int mx, int my, float pt) {
-                int x = getPositionX();
-                int y = getPositionY();
-                int w = getSizeWidth();
-                int h = getSizeHeight();
-                g.flush();
-                g.enableScissor(x, y, x + w, y + h);
-                for (Widget child : widgets) {
-                    int cy = child.getPositionY();
-                    if (cy + child.getSizeHeight() < y || cy > y + h) {
-                        continue;
-                    }
-                    child.drawInBackground(g, mx, my, pt);
-                }
-                g.flush();
-                g.disableScissor();
-            }
-        };
-        right.addWidget(surface);
+        this.emptyTex = new TextTexture(I18n.get(LabGuiKeys.LAB_ASSETS_NO_ASSETS), LabColors.TEXT_MUTED)
+                .setType(TextTexture.TextType.NORMAL);
 
-        LabActionButton saveButton = new LabActionButton(CELL_PAD, bodyH - 20, MODAL_W - RIGHT_X - 8 - CELL_PAD * 2,
-                LabLayout.SETTINGS_BTN_H, I18n.get(LabGuiKeys.LAB_COLOR_SAVE_PALETTE), () -> {
+        this.palettePanel = new WidgetGroup(0, 0, MODAL_W - RIGHT_X - PREVIEW_X, bodyH - 28);
+        right.addWidget(palettePanel);
+
+        right.addWidget(new LabActionButton(4, bodyH - 20, MODAL_W - RIGHT_X - PREVIEW_X - 8, 16,
+                I18n.get(LabGuiKeys.LAB_COLOR_SAVE_PALETTE), () -> {
             int rgb = draftColor & 0xFFFFFF;
             if (!PALETTE.contains(rgb)) {
                 PALETTE.add(rgb);
+                savePalette();
             }
-            refresh();
-        });
-        right.addWidget(saveButton);
-
-        refresh();
+            rebuildPalette();
+        }));
+        rebuildPalette();
     }
 
-    private TextFieldWidget buildHexField(int x, int y, int w, int h) {
-        LabCommitFieldWidget field = new LabCommitFieldWidget(x, y, w, h,
-                () -> state.hexDraft,
-                value -> {
-                    if (value == null) {
-                        return;
-                    }
-                    int parsed = parseHexOrDefault(value, draftColor);
-                    picker.setColor(parsed);
-                    draftColor = parsed;
-                    state.hexDraft = toHex(parsed);
-                });
-        field.setClientSideWidget();
-        field.setMaxStringLength(9);
-        field.setBordered(false);
-        field.setBackground(LabColors.bordered(LabColors.SURFACE_BASE, LabColors.BORDER_BASE));
-        field.setTextColor(LabColors.TEXT_PRIMARY);
-        field.setCurrentString(state.hexDraft);
-        return field;
+    private WidgetGroup titleLabel(String title) {
+        return new WidgetGroup(8, 6, MODAL_W - 50, 9) {
+            private final TextTexture tex = new TextTexture(title, LabColors.TEXT_PRIMARY)
+                    .setType(TextTexture.TextType.LEFT_HIDE)
+                    .setWidth(MODAL_W - 50);
+
+            @Override
+            public void drawInBackground(GuiGraphics g, int mx, int my, float pt) {
+                tex.draw(g, mx, my, getPositionX(), getPositionY(), getSizeWidth(), getSizeHeight());
+            }
+        };
     }
 
-    private void refresh() {
+    private void rebuildPalette() {
         closeContext();
-        int areaW = surface.getSizeWidth();
-        int areaH = surface.getSizeHeight();
-        TileGridLayout layout = TileGridLayout.calculate(
-                areaW - LabScrollBarWidget.RESERVED_WIDTH, areaH,
-                CELL, CELL, CELL_GAP, 0, 0,
-                PALETTE.size(), state.scroll);
-        state.maxStart = layout.maxStart();
-        state.knobH = layout.knobH();
+        palettePanel.clearAllWidgets();
 
-        surface.clearAllWidgets();
+        if (PALETTE.isEmpty()) {
+            palettePanel.addWidget(new WidgetGroup(12, PALETTE_TOP + 8, 120, 9) {
+                @Override
+                public void drawInBackground(GuiGraphics g, int mx, int my, float pt) {
+                    emptyTex.draw(g, mx, my, getPositionX(), getPositionY(), getSizeWidth(), getSizeHeight());
+                }
+            });
+            return;
+        }
+
+        int areaW = MODAL_W - RIGHT_X - PREVIEW_X - 8;
+        int areaH = palettePanel.getSizeHeight();
+        TileGridLayout layout = TileGridLayout.calculate(
+                areaW, areaH, CELL, CELL, CELL_GAP, CELL_PAD, CELL_PAD,
+                PALETTE.size(), state.scroll);
         for (int i = layout.scrollStart(); i < layout.visibleEnd(); i++) {
             int vi = i - layout.scrollStart();
             int color = PALETTE.get(i);
-            int px = layout.tileX(vi);
-            int py = layout.tileY(vi);
-            surface.addWidget(buildSwatch(color, px, py));
+            int px = CELL_PAD + layout.tileX(vi);
+            int py = PALETTE_TOP + layout.tileY(vi);
+            palettePanel.addWidget(buildSwatch(color, px, py));        }
+        if (layout.showScroll()) {
+            palettePanel.addWidget(new LabScrollBarWidget(
+                    CELL_PAD + layout.scrollBarX() + 1, PALETTE_TOP + layout.scrollBarY(),
+                    LabScrollBarWidget.RESERVED_WIDTH, layout.scrollBarH(),
+                    () -> state.scroll,
+                    () -> Math.max(0, layout.maxStart()),
+                    layout::knobH,
+                    value -> {
+                        state.scroll = value;
+                        rebuildPalette();
+                    },
+                    () -> false,
+                    value -> {
+                    },
+                    this::rebuildPalette));
         }
-        surface.addWidget(new LabScrollBarWidget(
-                areaW - LabScrollBarWidget.RESERVED_WIDTH, 0,
-                LabScrollBarWidget.RESERVED_WIDTH, areaH,
-                () -> state.scroll,
-                () -> state.maxStart,
-                () -> state.knobH,
-                value -> {
-                    state.scroll = value;
-                    refresh();
-                },
-                () -> state.dragging,
-                value -> state.dragging = value,
-                this::refresh));
     }
 
     private ButtonWidget buildSwatch(int color, int px, int py) {
         ButtonWidget hit = new ButtonWidget(px, py, CELL, CELL,
-                LabColors.bordered(color | 0xFF000000, LabColors.BORDER_BASE), click -> onSwatchClick(click, color));
+                LabColors.bordered(color | 0xFF000000, LabColors.BORDER_BASE),
+                click -> onSwatchClick(click, color));
         hit.setClientSideWidget();
-        hit.setHoverTexture((g, mx, my, x0, y0, w0, h0) ->
-                LabGlow.drawGlow(g, (int) mx, (int) my, (int) x0, (int) y0, (int) w0, (int) h0));
+        hit.setHoverBorderTexture(1, LabColors.BORDER_ACCENT);
         return hit;
     }
 
@@ -305,14 +253,21 @@ public final class LabColorPickerModal {
                         }),
                 new LabContextAction(I18n.get(LabGuiKeys.LAB_ASSETS_DELETE), "delete", LabActionTone.DANGER,
                         () -> {
-                            PALETTE.removeIf(value -> value == contextValue);
-                            refresh();
+                            if (PALETTE.removeIf(value -> value == contextValue)) {
+                                savePalette();
+                            }
+                            rebuildPalette();
                         }));
         int menuW = LabContextMenuPanel.menuWidth(actions);
         int menuH = LabContextMenuPanel.menuHeight(actions);
-        contextMenuX = Math.max(4, Math.min(CELL_PAD + CELL, panelW() - menuW - 4));
-        contextMenuY = Math.max(4, Math.min(BODY_Y + 4, panelH() - menuH - 4));
-        contextDismiss = new ButtonWidget(0, 0, panelW(), panelH(), IGuiTexture.EMPTY,
+        Minecraft mc = Minecraft.getInstance();
+        int cursorX = (int) Math.round(mc.mouseHandler.xpos() * mc.getWindow().getGuiScaledWidth()
+                / (double) mc.getWindow().getScreenWidth());
+        int cursorY = (int) Math.round(mc.mouseHandler.ypos() * mc.getWindow().getGuiScaledHeight()
+                / (double) mc.getWindow().getScreenHeight());
+        contextMenuX = clamp(cursorX - panel.getPositionX(), 4, MODAL_W - menuW - 4);
+        contextMenuY = clamp(cursorY - panel.getPositionY(), 4, MODAL_H - menuH - 4);
+        contextDismiss = new ButtonWidget(0, 0, MODAL_W, MODAL_H, IGuiTexture.EMPTY,
                 cd -> closeContext());
         contextDismiss.setClientSideWidget();
         panel.addWidget(contextDismiss);
@@ -334,23 +289,52 @@ public final class LabColorPickerModal {
         }
     }
 
-    private void addHeaderButton(int x, int y, String iconKey, java.util.function.Consumer<ClickData> onClick) {
-        ButtonWidget button = new ButtonWidget(x, y, 16, 16,
-                LabColors.bordered(LabColors.SURFACE_PANEL_ALT, LabColors.BORDER_BASE), onClick);
+    private void addHeaderClose(int x, int y) {
+        com.lowdragmc.lowdraglib.gui.texture.ResourceTexture icon =
+                com.abo47.kubejslab.client.ui.base.LabIconAtlas.iconTexture("close", LabColors.ERROR);
+        IGuiTexture face = new IGuiTexture() {
+            @Override
+            public void draw(GuiGraphics g, int mx, int my, float x0, float y0, int w0, int h0) {
+                LabColors.bordered(LabColors.SURFACE_PANEL_ALT, LabColors.BORDER_BASE)
+                        .draw(g, mx, my, x0, y0, w0, h0);
+                icon.draw(g, mx, my, x0 + 2, y0 + 2, w0 - 4, h0 - 4);
+            }
+        };
+        ButtonWidget button = new ButtonWidget(x, y, 16, 16, face, cd -> close());
         button.setClientSideWidget();
+        button.setHoverTexture((g, mx, my, x0, y0, w0, h0) ->
+                com.abo47.kubejslab.client.ui.base.LabGlow.drawGlow(g, mx, my,
+                        (int) x0, (int) y0, (int) w0, (int) h0));
         panel.addWidget(button);
     }
 
-    private int panelW() {
-        return MODAL_W;
-    }
-
-    private int panelH() {
-        return MODAL_H;
+    private TextFieldWidget buildHexField(int x, int y, int w, int h) {
+        LabCommitFieldWidget field = new LabCommitFieldWidget(x, y, w, h,
+                () -> state.hexDraft,
+                value -> {
+                    if (value == null) {
+                        return;
+                    }
+                    int parsed = parseHexOrDefault(value, draftColor);
+                    picker.setColor(parsed);
+                    draftColor = parsed;
+                    state.hexDraft = toHex(parsed);
+                });
+        field.setClientSideWidget();
+        field.setMaxStringLength(9);
+        field.setBordered(false);
+        field.setBackground(LabColors.bordered(LabColors.SURFACE_BASE, LabColors.BORDER_BASE));
+        field.setTextColor(LabColors.TEXT_PRIMARY);
+        field.setCurrentString(state.hexDraft);
+        return field;
     }
 
     private void close() {
         layer.setVisible(false);
+    }
+
+    private static int clamp(int value, int min, int max) {
+        return Math.max(min, Math.min(max, value));
     }
 
     private static String toHex(int argb) {
@@ -369,6 +353,68 @@ public final class LabColorPickerModal {
             return (int) (Long.parseLong(cleaned, 16) & 0xFFFFFF) | 0xFF000000;
         } catch (NumberFormatException e) {
             return fallback;
+        }
+    }
+
+    private static int mix(int a, int b, int percent) {
+        int r = (a >> 16) & 0xFF;
+        int g = (a >> 8) & 0xFF;
+        int bl = a & 0xFF;
+        int r2 = (b >> 16) & 0xFF;
+        int g2 = (b >> 8) & 0xFF;
+        int bl2 = b & 0xFF;
+        float t = percent / 100f;
+        int mr = Math.round(r + (r2 - r) * t);
+        int mg = Math.round(g + (g2 - g) * t);
+        int mb = Math.round(bl + (bl2 - bl) * t);
+        return 0xFF000000 | (mr << 16) | (mg << 8) | mb;
+    }
+
+    private static List<Integer> loadPalette() {
+        Path file = LabPathResolver.colorPaletteFile();
+        if (Files.isRegularFile(file)) {
+            try {
+                JsonArray array = com.google.gson.JsonParser.parseString(Files.readString(file)).getAsJsonArray();
+                List<Integer> loaded = new ArrayList<>();
+                for (JsonElement element : array) {
+                    try {
+                        loaded.add((int) (Long.parseLong(element.getAsString(), 16) & 0xFFFFFF));
+                    } catch (NumberFormatException ignored) {
+                    }
+                }
+                if (!loaded.isEmpty()) {
+                    return loaded;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        return defaultPalette();
+    }
+
+    private static List<Integer> defaultPalette() {
+        return new ArrayList<>(List.of(
+                LabColors.SURFACE_BASE & 0xFFFFFF,
+                LabColors.SURFACE_PANEL_ALT & 0xFFFFFF,
+                LabColors.BORDER_BASE & 0xFFFFFF,
+                LabColors.SUCCESS & 0xFFFFFF,
+                LabColors.WARNING & 0xFFFFFF,
+                LabColors.ERROR & 0xFFFFFF,
+                LabColors.INTERACTIVE & 0xFFFFFF,
+                LabColors.TEXT_PRIMARY & 0xFFFFFF));
+    }
+
+    private static void savePalette() {
+        JsonArray array = new JsonArray();
+        for (int color : PALETTE) {
+            array.add(toHex(color));
+        }
+        try {
+            Path file = LabPathResolver.colorPaletteFile();
+            Files.createDirectories(file.getParent());
+            Files.writeString(file, array.toString());
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 

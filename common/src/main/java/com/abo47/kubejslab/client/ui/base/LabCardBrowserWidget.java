@@ -1,17 +1,17 @@
 package com.abo47.kubejslab.client.ui.base;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.function.Consumer;
+import java.util.List;
 import javax.annotation.Nonnull;
-
-import com.mojang.blaze3d.systems.RenderSystem;
 
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
 
 import com.lowdragmc.lowdraglib.gui.widget.Widget;
 import com.lowdragmc.lowdraglib.gui.widget.WidgetGroup;
+
+import com.mojang.blaze3d.systems.RenderSystem;
 
 
 public abstract class LabCardBrowserWidget<L extends LabEntryCardWidget, E> extends WidgetGroup {

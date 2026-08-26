@@ -6,9 +6,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import net.minecraft.tags.TagKey;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.TagKey;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.ButtonBlock;
@@ -22,12 +25,9 @@ import net.minecraft.world.level.block.PressurePlateBlock;
 import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.StairBlock;
-import net.minecraft.world.level.block.WallBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
-import net.minecraft.world.item.BlockItem;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.WallBlock;
 import net.minecraft.world.phys.shapes.CollisionContext;
 
 import com.abo47.kubejslab.block.model.LabBlockFieldValues;

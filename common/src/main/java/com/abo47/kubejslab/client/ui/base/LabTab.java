@@ -1,7 +1,7 @@
 package com.abo47.kubejslab.client.ui.base;
 
-import javax.annotation.Nonnull;
 import java.util.function.Supplier;
+import javax.annotation.Nonnull;
 
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;

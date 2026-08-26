@@ -7,8 +7,8 @@ import net.minecraft.resources.ResourceLocation;
 import com.abo47.kubejslab.client.ui.items.LabItemSettingsWidget;
 import com.abo47.kubejslab.item.model.LabItemEditAction;
 import com.abo47.kubejslab.item.model.LabItemPayload;
-import com.abo47.kubejslab.network.ModNetwork;
 import com.abo47.kubejslab.network.item.C2SItemEditPacket;
+import com.abo47.kubejslab.network.ModNetwork;
 
 
 final class LabItemSaver {

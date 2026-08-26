@@ -2,8 +2,11 @@ package com.abo47.kubejslab.client.ui.assets;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.function.Consumer;
+import java.util.List;
+
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.resources.language.I18n;
 
 import com.lowdragmc.lowdraglib.gui.texture.ColorRectTexture;
 import com.lowdragmc.lowdraglib.gui.texture.IGuiTexture;
@@ -32,9 +35,6 @@ import com.abo47.kubejslab.client.ui.contextmenu.LabContextAction;
 import com.abo47.kubejslab.client.ui.contextmenu.LabContextMenuAnimation;
 import com.abo47.kubejslab.client.ui.contextmenu.LabContextMenuPanel;
 import com.abo47.kubejslab.client.ui.picker.LabSearchFilter;
-
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.resources.language.I18n;
 
 
 public final class LabAssetPickerModal {

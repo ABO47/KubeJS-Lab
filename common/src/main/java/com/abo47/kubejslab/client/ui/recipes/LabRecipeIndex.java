@@ -16,13 +16,13 @@ import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.item.ItemStack;
 
-import com.abo47.kubejslab.KubeJSLab;
+import com.lowdragmc.lowdraglib.side.fluid.FluidStack;
+
 import com.abo47.kubejslab.client.ui.picker.LabSearchNormalizer;
+import com.abo47.kubejslab.KubeJSLab;
 import com.abo47.kubejslab.platform.Services;
 import com.abo47.kubejslab.recipe.model.LabRecipeStateEntry;
 import com.abo47.kubejslab.recipe.model.LabRecipeStatus;
-
-import com.lowdragmc.lowdraglib.side.fluid.FluidStack;
 
 
 public final class LabRecipeIndex {

@@ -8,12 +8,12 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 
-import com.abo47.kubejslab.KubeJSLab;
 import com.abo47.kubejslab.block.model.LabBlockAction;
 import com.abo47.kubejslab.block.model.LabBlockEditAction;
 import com.abo47.kubejslab.block.model.LabBlockFieldValues;
 import com.abo47.kubejslab.block.model.LabBlockPayload;
 import com.abo47.kubejslab.block.runtime.LabBlockService;
+import com.abo47.kubejslab.KubeJSLab;
 
 
 public record C2SBlockEditPacket(LabBlockEditAction action, @Nullable ResourceLocation targetId,

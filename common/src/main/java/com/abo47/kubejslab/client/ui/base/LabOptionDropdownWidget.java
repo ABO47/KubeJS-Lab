@@ -6,14 +6,14 @@ import java.util.function.Function;
 import java.util.List;
 import javax.annotation.Nonnull;
 
-import org.lwjgl.glfw.GLFW;
-
 import net.minecraft.client.gui.GuiGraphics;
 
 import com.lowdragmc.lowdraglib.gui.texture.ColorRectTexture;
 import com.lowdragmc.lowdraglib.gui.texture.TextTexture;
 import com.lowdragmc.lowdraglib.gui.widget.Widget;
 import com.lowdragmc.lowdraglib.gui.widget.WidgetGroup;
+
+import org.lwjgl.glfw.GLFW;
 
 
 public final class LabOptionDropdownWidget extends WidgetGroup implements LabPopupProvider {

@@ -2,7 +2,6 @@ package com.abo47.kubejslab.client.ui.blocks;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.annotation.Nullable;
 
 import net.minecraft.resources.ResourceLocation;
@@ -10,8 +9,8 @@ import net.minecraft.resources.ResourceLocation;
 import com.abo47.kubejslab.block.model.LabBlockEditAction;
 import com.abo47.kubejslab.block.model.LabBlockStatus;
 import com.abo47.kubejslab.client.ui.base.LabGuiKeys;
-import com.abo47.kubejslab.client.ui.contextmenu.LabActionTone;
 import com.abo47.kubejslab.client.ui.contextmenu.LabActions;
+import com.abo47.kubejslab.client.ui.contextmenu.LabActionTone;
 import com.abo47.kubejslab.client.ui.contextmenu.LabContextAction;
 
 

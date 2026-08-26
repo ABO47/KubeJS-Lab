@@ -7,8 +7,8 @@ import net.minecraft.resources.ResourceLocation;
 import com.abo47.kubejslab.block.model.LabBlockEditAction;
 import com.abo47.kubejslab.block.model.LabBlockPayload;
 import com.abo47.kubejslab.client.ui.blocks.LabBlockSettingsWidget;
-import com.abo47.kubejslab.network.ModNetwork;
 import com.abo47.kubejslab.network.block.C2SBlockEditPacket;
+import com.abo47.kubejslab.network.ModNetwork;
 
 
 final class LabBlockSaver {

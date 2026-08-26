@@ -6,11 +6,8 @@ import java.util.List;
 import java.util.Set;
 import javax.annotation.Nonnull;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.item.ItemStack;
 
 import com.lowdragmc.lowdraglib.gui.texture.ColorRectTexture;
 import com.lowdragmc.lowdraglib.gui.texture.IGuiTexture;
@@ -21,6 +18,7 @@ import com.lowdragmc.lowdraglib.gui.widget.Widget;
 import com.lowdragmc.lowdraglib.gui.widget.WidgetGroup;
 import com.lowdragmc.lowdraglib.utils.Position;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import org.joml.Vector4f;
 
 

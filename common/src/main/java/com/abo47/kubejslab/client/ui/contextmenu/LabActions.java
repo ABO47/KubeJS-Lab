@@ -2,6 +2,7 @@ package com.abo47.kubejslab.client.ui.contextmenu;
 
 import net.minecraft.client.resources.language.I18n;
 
+
 public final class LabActions {
     private LabActions() {
     }

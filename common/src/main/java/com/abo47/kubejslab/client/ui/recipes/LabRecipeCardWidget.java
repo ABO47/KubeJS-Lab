@@ -1,7 +1,5 @@
 package com.abo47.kubejslab.client.ui.recipes;
 
-import javax.annotation.Nonnull;
-
 import net.minecraft.client.gui.GuiGraphics;
 
 import com.lowdragmc.lowdraglib.gui.texture.IGuiTexture;

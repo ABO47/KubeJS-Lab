@@ -25,8 +25,8 @@ import com.abo47.kubejslab.client.ui.base.LabGuiKeys;
 import com.abo47.kubejslab.client.ui.base.LabIconAtlas;
 import com.abo47.kubejslab.client.ui.base.LabLayout;
 import com.abo47.kubejslab.client.ui.base.LabScrollBarWidget;
-import com.abo47.kubejslab.client.ui.base.LabTextFieldWidget;
 import com.abo47.kubejslab.client.ui.base.LabScrollMath;
+import com.abo47.kubejslab.client.ui.base.LabTextFieldWidget;
 import com.abo47.kubejslab.client.ui.contextmenu.LabActionTone;
 
 import com.google.gson.Gson;

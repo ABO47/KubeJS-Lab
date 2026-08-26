@@ -22,20 +22,20 @@ import com.lowdragmc.lowdraglib.gui.widget.TextFieldWidget;
 import com.lowdragmc.lowdraglib.gui.widget.WidgetGroup;
 import com.lowdragmc.lowdraglib.utils.Position;
 
-import com.abo47.kubejslab.client.ui.base.*;
+import com.abo47.kubejslab.block.model.LabBlockEditAction;
+import com.abo47.kubejslab.block.model.LabBlockField;
+import com.abo47.kubejslab.block.model.LabBlockFieldValues;
+import com.abo47.kubejslab.block.model.LabBlockState;
+import com.abo47.kubejslab.block.runtime.LabBlockService;
 import com.abo47.kubejslab.client.ui.assets.LabAssetPickerModal;
 import com.abo47.kubejslab.client.ui.assets.LabColorPickerModal;
+import com.abo47.kubejslab.client.ui.base.*;
 import com.abo47.kubejslab.client.ui.blocks.*;
 import com.abo47.kubejslab.client.ui.contextmenu.*;
 import com.abo47.kubejslab.client.ui.items.*;
 import com.abo47.kubejslab.client.ui.machines.*;
 import com.abo47.kubejslab.client.ui.picker.*;
 import com.abo47.kubejslab.client.ui.recipes.*;
-import com.abo47.kubejslab.block.model.LabBlockEditAction;
-import com.abo47.kubejslab.block.model.LabBlockField;
-import com.abo47.kubejslab.block.model.LabBlockFieldValues;
-import com.abo47.kubejslab.block.model.LabBlockState;
-import com.abo47.kubejslab.block.runtime.LabBlockService;
 import com.abo47.kubejslab.item.model.LabItemEditAction;
 import com.abo47.kubejslab.item.model.LabItemFieldValues;
 import com.abo47.kubejslab.item.model.LabItemState;
@@ -106,7 +106,9 @@ public final class LabScreen {
                         () -> rightPanel.settingsWidget.deleteCustomMold(option))), mx, my));
 
         WidgetGroup assetLayer = new WidgetGroup(0, 0, LabLayout.ROOT_W, LabLayout.ROOT_H);
+        assetLayer.setVisible(false);
         root.addWidget(assetLayer);
+        root.setModalLayer(assetLayer);
         rightPanel.itemSettings.setOnTexturePick(() -> {
             rightPanel.itemSettings.closeAllPopups();
             LabAssetPickerModal.open(assetLayer,
@@ -178,6 +180,7 @@ public final class LabScreen {
         private LabPanelWidget rightPanel;
         private final WidgetGroup contextMenuLayer =
                 new WidgetGroup(0, 0, LabLayout.ROOT_W, LabLayout.ROOT_H);
+        private WidgetGroup modalLayer;
         private boolean menuOpen;
         private List<LabContextAction> menuActions = List.of();
         private int menuX;
@@ -197,6 +200,23 @@ public final class LabScreen {
 
         void attachMenuLayer() {
             addWidget(contextMenuLayer);
+        }
+
+        void setModalLayer(WidgetGroup modalLayer) {
+            this.modalLayer = modalLayer;
+        }
+
+        boolean isModalOpen() {
+            return modalLayer != null && modalLayer.isVisible();
+        }
+
+        @Override
+        public void drawInForeground(@Nonnull GuiGraphics g, int mx, int my, float pt) {
+            if (isModalOpen()) {
+                modalLayer.drawInForeground(g, mx, my, pt);
+                return;
+            }
+            super.drawInForeground(g, mx, my, pt);
         }
 
         LabPanelWidget getLeftPanel() {

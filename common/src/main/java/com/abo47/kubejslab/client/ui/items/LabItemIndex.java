@@ -9,30 +9,29 @@ import java.util.Map;
 
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.entity.ai.attributes.Attribute;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.food.FoodProperties;
 import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.HoeItem;
 import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.PickaxeItem;
-import net.minecraft.world.item.Rarity;
 import net.minecraft.world.item.RecordItem;
 import net.minecraft.world.item.ShearsItem;
 import net.minecraft.world.item.ShovelItem;
 import net.minecraft.world.item.SwordItem;
 import net.minecraft.world.item.TieredItem;
 import net.minecraft.world.item.Tiers;
-import net.minecraft.world.entity.ai.attributes.Attribute;
-import net.minecraft.world.entity.ai.attributes.AttributeModifier;
-import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.effect.MobEffect;
-import net.minecraft.world.effect.MobEffectInstance;
 
 import com.abo47.kubejslab.client.ui.picker.LabSearchNormalizer;
 import com.abo47.kubejslab.item.model.LabItemFieldValues;
+
 import com.mojang.datafixers.util.Pair;
 
 

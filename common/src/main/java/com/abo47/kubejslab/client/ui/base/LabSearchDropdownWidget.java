@@ -1,11 +1,8 @@
 package com.abo47.kubejslab.client.ui.base;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.function.Consumer;
+import java.util.List;
 import javax.annotation.Nonnull;
-
-import org.lwjgl.glfw.GLFW;
 
 import net.minecraft.client.gui.GuiGraphics;
 
@@ -14,6 +11,8 @@ import com.lowdragmc.lowdraglib.gui.texture.TextTexture;
 import com.lowdragmc.lowdraglib.gui.widget.TextFieldWidget;
 import com.lowdragmc.lowdraglib.gui.widget.Widget;
 import com.lowdragmc.lowdraglib.gui.widget.WidgetGroup;
+
+import org.lwjgl.glfw.GLFW;
 
 
 public final class LabSearchDropdownWidget extends WidgetGroup implements LabPopupProvider {

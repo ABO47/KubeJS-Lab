@@ -8,13 +8,13 @@ import java.util.Map;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 
-import com.abo47.kubejslab.KubeJSLab;
 import com.abo47.kubejslab.block.model.LabBlockAction;
 import com.abo47.kubejslab.block.model.LabBlockFieldValues;
 import com.abo47.kubejslab.block.model.LabBlockState;
 import com.abo47.kubejslab.block.model.LabBlockStatus;
-import com.abo47.kubejslab.client.ui.LabScreen;
 import com.abo47.kubejslab.client.ui.blocks.LabBlockStates;
+import com.abo47.kubejslab.client.ui.LabScreen;
+import com.abo47.kubejslab.KubeJSLab;
 
 
 public record S2CBlockStatePacket(Map<ResourceLocation, LabBlockState> states, List<ResourceLocation> pendingOnly) {

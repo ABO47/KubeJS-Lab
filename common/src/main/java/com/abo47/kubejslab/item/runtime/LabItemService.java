@@ -13,11 +13,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
-import net.minecraft.network.chat.Component;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.HoeItem;
 import net.minecraft.world.item.Item;
@@ -26,7 +26,6 @@ import net.minecraft.world.item.ShearsItem;
 import net.minecraft.world.item.ShovelItem;
 import net.minecraft.world.item.SwordItem;
 
-import com.abo47.kubejslab.KubeJSLab;
 import com.abo47.kubejslab.client.ui.base.LabGuiKeys;
 import com.abo47.kubejslab.item.model.LabCustomTier;
 import com.abo47.kubejslab.item.model.LabItemAction;
@@ -35,17 +34,19 @@ import com.abo47.kubejslab.item.model.LabItemFieldValues;
 import com.abo47.kubejslab.item.model.LabItemPayload;
 import com.abo47.kubejslab.item.model.LabItemState;
 import com.abo47.kubejslab.item.model.LabItemStatus;
+import com.abo47.kubejslab.KubeJSLab;
 import com.abo47.kubejslab.lab.LabPathResolver;
 import com.abo47.kubejslab.lab.LabScriptWriter;
 import com.abo47.kubejslab.lab.LabServerCommands;
 import com.abo47.kubejslab.lab.LabStateFile;
 import com.abo47.kubejslab.lab.LabUniqueNames;
-import com.abo47.kubejslab.network.ModNetwork;
 import com.abo47.kubejslab.network.item.S2CItemStatePacket;
+import com.abo47.kubejslab.network.ModNetwork;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+
 
 public final class LabItemService {
     private static final Map<ResourceLocation, LabItemSaveEntry> STATE = new LinkedHashMap<>();

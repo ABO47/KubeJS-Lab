@@ -27,7 +27,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.simibubi.create.content.processing.recipe.ProcessingOutput;
 import com.simibubi.create.content.processing.recipe.ProcessingRecipe;
-import mezz.jei.api.gui.ingredient.IRecipeSlotView;
 import mezz.jei.api.gui.IRecipeLayoutDrawable;
 import mezz.jei.api.recipe.RecipeIngredientRole;
 

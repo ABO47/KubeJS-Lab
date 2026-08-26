@@ -8,14 +8,14 @@ import java.util.Map;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 
-import com.abo47.kubejslab.KubeJSLab;
-import com.abo47.kubejslab.client.ui.LabScreen;
 import com.abo47.kubejslab.client.ui.items.LabItemStates;
+import com.abo47.kubejslab.client.ui.LabScreen;
 import com.abo47.kubejslab.item.model.LabCustomTier;
 import com.abo47.kubejslab.item.model.LabItemAction;
 import com.abo47.kubejslab.item.model.LabItemFieldValues;
 import com.abo47.kubejslab.item.model.LabItemState;
 import com.abo47.kubejslab.item.model.LabItemStatus;
+import com.abo47.kubejslab.KubeJSLab;
 
 
 public record S2CItemStatePacket(Map<ResourceLocation, LabItemState> states, List<ResourceLocation> pendingOnly) {

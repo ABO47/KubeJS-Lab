@@ -7,6 +7,7 @@ import net.minecraft.resources.ResourceLocation;
 
 import com.lowdragmc.lowdraglib.gui.texture.IGuiTexture;
 
+
 public final class LabAssetLibrary {
     private LabAssetLibrary() {
     }

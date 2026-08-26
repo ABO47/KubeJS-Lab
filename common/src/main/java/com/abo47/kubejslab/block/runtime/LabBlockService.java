@@ -14,10 +14,9 @@ import java.util.Set;
 
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.MinecraftServer;
 
-import com.abo47.kubejslab.KubeJSLab;
 import com.abo47.kubejslab.block.model.LabBlockAction;
 import com.abo47.kubejslab.block.model.LabBlockEditAction;
 import com.abo47.kubejslab.block.model.LabBlockFieldValues;
@@ -25,13 +24,14 @@ import com.abo47.kubejslab.block.model.LabBlockPayload;
 import com.abo47.kubejslab.block.model.LabBlockState;
 import com.abo47.kubejslab.block.model.LabBlockStatus;
 import com.abo47.kubejslab.client.ui.base.LabGuiKeys;
+import com.abo47.kubejslab.KubeJSLab;
 import com.abo47.kubejslab.lab.LabPathResolver;
 import com.abo47.kubejslab.lab.LabScriptWriter;
 import com.abo47.kubejslab.lab.LabServerCommands;
 import com.abo47.kubejslab.lab.LabStateFile;
 import com.abo47.kubejslab.lab.LabUniqueNames;
-import com.abo47.kubejslab.network.ModNetwork;
 import com.abo47.kubejslab.network.block.S2CBlockStatePacket;
+import com.abo47.kubejslab.network.ModNetwork;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
