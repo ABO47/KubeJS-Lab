@@ -15,6 +15,10 @@ public final class LabPathResolver {
 		return kubejsDir().resolve("lab").resolve("items.json");
 	}
 
+	public static Path blockStateFile() {
+		return kubejsDir().resolve("lab").resolve("blocks.json");
+	}
+
 	public static Path recipeStateFile() {
 		return kubejsDir().resolve("lab").resolve("recipes.json");
 	}

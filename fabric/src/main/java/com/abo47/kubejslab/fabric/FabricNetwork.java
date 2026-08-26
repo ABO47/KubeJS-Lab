@@ -6,6 +6,7 @@ import net.minecraft.server.level.ServerPlayer;
 
 import com.abo47.kubejslab.client.ui.LabUIFactory;
 import com.abo47.kubejslab.KubeJSLab;
+import com.abo47.kubejslab.network.block.C2SBlockEditPacket;
 import com.abo47.kubejslab.network.item.C2SItemEditPacket;
 import com.abo47.kubejslab.network.recipe.C2SRecipeEditPacket;
 
@@ -20,6 +21,8 @@ public final class FabricNetwork {
     public static final ResourceLocation STATE_SYNC = new ResourceLocation(KubeJSLab.MOD_ID, "state_sync");
     public static final ResourceLocation ITEM_EDIT = new ResourceLocation(KubeJSLab.MOD_ID, "item_edit");
     public static final ResourceLocation ITEM_STATE_SYNC = new ResourceLocation(KubeJSLab.MOD_ID, "item_state_sync");
+    public static final ResourceLocation BLOCK_EDIT = new ResourceLocation(KubeJSLab.MOD_ID, "block_edit");
+    public static final ResourceLocation BLOCK_STATE_SYNC = new ResourceLocation(KubeJSLab.MOD_ID, "block_state_sync");
 
     private static volatile boolean registered;
 
@@ -38,6 +41,10 @@ public final class FabricNetwork {
         });
         ServerPlayNetworking.registerGlobalReceiver(ITEM_EDIT, (server, player, handler, buf, responseSender) -> {
             C2SItemEditPacket packet = C2SItemEditPacket.read(buf);
+            server.execute(() -> packet.handle(player));
+        });
+        ServerPlayNetworking.registerGlobalReceiver(BLOCK_EDIT, (server, player, handler, buf, responseSender) -> {
+            C2SBlockEditPacket packet = C2SBlockEditPacket.read(buf);
             server.execute(() -> packet.handle(player));
         });
     }

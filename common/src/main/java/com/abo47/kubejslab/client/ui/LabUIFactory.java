@@ -10,6 +10,7 @@ import com.lowdragmc.lowdraglib.gui.modular.ModularUIContainer;
 import com.lowdragmc.lowdraglib.side.ForgeEventHooks;
 
 import com.abo47.kubejslab.KubeJSLab;
+import com.abo47.kubejslab.block.runtime.LabBlockService;
 import com.abo47.kubejslab.item.runtime.LabItemService;
 import com.abo47.kubejslab.network.ModNetwork;
 import com.abo47.kubejslab.recipe.runtime.LabRecipeService;
@@ -48,6 +49,7 @@ public final class LabUIFactory {
         ModNetwork.sendOpenScreen(player, serializedHolder, windowId);
         ModNetwork.sendRecipeState(player, LabRecipeService.statePacket());
         ModNetwork.sendItemState(player, LabItemService.statePacket());
+        ModNetwork.sendBlockState(player, LabBlockService.statePacket());
 
         accessor.callInitMenu(container);
         player.containerMenu = container;

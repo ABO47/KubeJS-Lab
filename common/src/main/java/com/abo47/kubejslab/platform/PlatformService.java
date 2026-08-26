@@ -9,6 +9,8 @@ import net.minecraft.world.item.ItemStack;
 
 import com.lowdragmc.lowdraglib.side.fluid.FluidStack;
 
+import com.abo47.kubejslab.network.block.C2SBlockEditPacket;
+import com.abo47.kubejslab.network.block.S2CBlockStatePacket;
 import com.abo47.kubejslab.network.item.C2SItemEditPacket;
 import com.abo47.kubejslab.network.item.S2CItemStatePacket;
 import com.abo47.kubejslab.network.recipe.C2SRecipeEditPacket;
@@ -31,6 +33,10 @@ public interface PlatformService {
     void sendItemEdit(C2SItemEditPacket packet);
 
     void sendItemState(ServerPlayer player, S2CItemStatePacket packet);
+
+    void sendBlockEdit(C2SBlockEditPacket packet);
+
+    void sendBlockState(ServerPlayer player, S2CBlockStatePacket packet);
 
     Optional<FluidStack> readFluidIngredient(IRecipeSlotView view);
 

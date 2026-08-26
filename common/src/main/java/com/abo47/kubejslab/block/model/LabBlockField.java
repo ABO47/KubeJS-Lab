@@ -1,0 +1,27 @@
+package com.abo47.kubejslab.block.model;
+
+public enum LabBlockField {
+    TYPE,
+    DISPLAY_NAME,
+    TEXTURE_ALL,
+    TEXTURE_TOP,
+    TEXTURE_BOTTOM,
+    TEXTURE_SIDES,
+    HARDNESS,
+    RESISTANCE,
+    UNBREAKABLE,
+    LIGHT_LEVEL,
+    SOUND_TYPE,
+    REQUIRES_TOOL,
+    NO_COLLISION,
+    WATERLOGGED,
+    NO_DROPS,
+    NOT_SOLID,
+    OPAQUE,
+    SLIPPERINESS,
+    SPEED_FACTOR,
+    JUMP_FACTOR,
+    TAGS,
+    DISABLE_CREATIVE_HIDE,
+    DISABLE_RECIPE_REMOVAL
+}

@@ -4,6 +4,7 @@ import net.minecraft.network.FriendlyByteBuf;
 
 import com.abo47.kubejslab.client.LabKeybindings;
 import com.abo47.kubejslab.client.ui.LabClientUIFactory;
+import com.abo47.kubejslab.network.block.S2CBlockStatePacket;
 import com.abo47.kubejslab.network.item.S2CItemStatePacket;
 import com.abo47.kubejslab.network.recipe.S2CRecipeStatePacket;
 
@@ -38,6 +39,11 @@ public final class FabricModClient implements ClientModInitializer {
 
         ClientPlayNetworking.registerGlobalReceiver(FabricNetwork.ITEM_STATE_SYNC, (client, handler, buf, responseSender) -> {
             S2CItemStatePacket packet = S2CItemStatePacket.read(buf);
+            client.execute(packet::handleClient);
+        });
+
+        ClientPlayNetworking.registerGlobalReceiver(FabricNetwork.BLOCK_STATE_SYNC, (client, handler, buf, responseSender) -> {
+            S2CBlockStatePacket packet = S2CBlockStatePacket.read(buf);
             client.execute(packet::handleClient);
         });
     }
