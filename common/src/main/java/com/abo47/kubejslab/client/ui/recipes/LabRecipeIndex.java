@@ -100,43 +100,81 @@ public final class LabRecipeIndex {
     }
 
     private static List<LabRecipeEntry> entries() {
-        ClientPacketListener connection = Minecraft.getInstance().getConnection();
-        RecipeManager manager = connection == null ? null : connection.getRecipeManager();
+        RecipeManager manager = resolveManager();
         if (manager == null) {
+            KubeJSLab.LOGGER.warn("[LabRecipeIndex] no recipe manager available (connection={})",
+                    Minecraft.getInstance().getConnection() == null ? "null" : "present");
             cachedManager = null;
             cachedCount = -1;
             entries = List.of();
             return entries;
         }
-        if (manager != cachedManager || manager.getRecipes().size() != cachedCount) {
+        int count = manager.getRecipes().size();
+        if (manager != cachedManager || count != cachedCount || (entries.isEmpty() && count > 0)) {
+            int prevSize = entries.size();
             cachedManager = manager;
-            cachedCount = manager.getRecipes().size();
+            cachedCount = count;
+            KubeJSLab.LOGGER.info("[LabRecipeIndex] rebuilding: managerRecipes={} prevEntries={} cachedCount={}", count, prevSize, cachedCount);
             try {
-                entries = build(manager, connection.registryAccess());
+                entries = build(manager, safeRegistryAccess());
                 version++;
-            } catch (RuntimeException e) {
-                cachedManager = null;
+                KubeJSLab.LOGGER.info("[LabRecipeIndex] built {} entries (filtered from {} manager recipes) version={}", entries.size(), count, version);
+            } catch (Throwable e) {
+                KubeJSLab.LOGGER.warn("[LabRecipeIndex] failed to build recipe index, will retry", e);
+                entries = List.of();
                 cachedCount = -1;
-                KubeJSLab.LOGGER.warn("[Index] failed to build recipe index, will retry", e);
             }
         }
         return entries;
     }
 
+    private static RecipeManager resolveManager() {
+        Minecraft minecraft = Minecraft.getInstance();
+        ClientPacketListener connection = minecraft.getConnection();
+        if (connection != null) {
+            RecipeManager manager = connection.getRecipeManager();
+            if (manager != null && !manager.getRecipes().isEmpty()) {
+                return manager;
+            }
+        }
+        if (minecraft.getSingleplayerServer() != null) {
+            RecipeManager serverManager = minecraft.getSingleplayerServer().getRecipeManager();
+            if (serverManager != null && !serverManager.getRecipes().isEmpty()) {
+                return serverManager;
+            }
+        }
+        return connection == null ? null : connection.getRecipeManager();
+    }
+
+    private static RegistryAccess safeRegistryAccess() {
+        try {
+            ClientPacketListener connection = Minecraft.getInstance().getConnection();
+            return connection == null ? null : connection.registryAccess();
+        } catch (Throwable e) {
+            KubeJSLab.LOGGER.warn("[LabRecipeIndex] registryAccess unavailable: {}", e.getMessage());
+            return null;
+        }
+    }
+
     private static List<LabRecipeEntry> build(RecipeManager manager, RegistryAccess registryAccess) {
         List<LabRecipeEntry> built = new ArrayList<>();
         for (Recipe<?> recipe : manager.getRecipes()) {
-            RECIPE_CACHE.put(recipe.getId(), recipe);
-            ItemStack result = resultItem(recipe, registryAccess);
-            FluidStack fluidOutput = Services.platform().fluidOutputStack(recipe);
-            if (result.isEmpty() && fluidOutput.isEmpty()) {
-                continue;
+            try {
+                RECIPE_CACHE.put(recipe.getId(), recipe);
+                ItemStack result = resultItem(recipe, registryAccess);
+                FluidStack fluidOutput = Services.platform().fluidOutputStack(recipe);
+                if (result.isEmpty() && fluidOutput.isEmpty()) {
+                    continue;
+                }
+                if (result.isEmpty()) {
+                    result = Services.platform().fluidOutputDisplay(recipe);
+                }
+                built.add(LabRecipeEntry.of(recipe.getId(), result,
+                        fluidNameOrFallback(recipe, result, fluidOutput), fluidOutput));
+            } catch (Throwable e) {
+                KubeJSLab.LOGGER.warn("[LabRecipeIndex] skipped recipe {} while building index: {}",
+                        recipe.getId(), e.getMessage());
             }
-            if (result.isEmpty()) {
-                result = Services.platform().fluidOutputDisplay(recipe);
-            }
-            built.add(LabRecipeEntry.of(recipe.getId(), result,
-                    fluidNameOrFallback(recipe, result, fluidOutput), fluidOutput));
         }
         built.sort(Comparator.comparing(LabRecipeEntry::name, String.CASE_INSENSITIVE_ORDER)
                 .thenComparing(LabRecipeEntry::id));

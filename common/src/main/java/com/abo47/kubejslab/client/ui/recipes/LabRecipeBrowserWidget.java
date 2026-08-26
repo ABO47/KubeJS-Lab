@@ -44,8 +44,18 @@ public final class LabRecipeBrowserWidget extends LabCardBrowserWidget<LabRecipe
 
     @Override
     protected List<LabRecipeIndex.LabRecipeEntry> entries() {
-        List<LabRecipeIndex.LabRecipeEntry> entries =
-                new ArrayList<>(LabRecipeIndex.search(query(), kubejsOnly(), machineRecipeIds));
+        List<LabRecipeIndex.LabRecipeEntry> base = LabRecipeIndex.search(query(), kubejsOnly(), machineRecipeIds);
+        if (base.isEmpty() && machineRecipeIds != null && !machineRecipeIds.isEmpty()) {
+            int unfiltered = LabRecipeIndex.search(query(), kubejsOnly(), null).size();
+            int total = LabRecipeIndex.search("", false, null).size() + LabRecipeIndex.search("", true, null).size();
+            com.abo47.kubejslab.KubeJSLab.LOGGER.warn(
+                    "[LabRecipeBrowserWidget] filtered 0 with machineIds {} query='{}' kubejsOnly={} -> unfiltered={} total={} machineUid={} — fallback to unfiltered",
+                    machineRecipeIds.size(), query(), kubejsOnly(), unfiltered, total, machineUid);
+            if (unfiltered > 0) {
+                base = LabRecipeIndex.search(query(), kubejsOnly(), null);
+            }
+        }
+        List<LabRecipeIndex.LabRecipeEntry> entries = new ArrayList<>(base);
         entries.addAll(LabRecipeStates.disabledEntries(machineUid).stream()
                 .filter(e -> kubejsOnly() == e.kubejs())
                 .filter(e -> query().isBlank() || e.matches(query()))
@@ -54,6 +64,12 @@ public final class LabRecipeBrowserWidget extends LabCardBrowserWidget<LabRecipe
         entries.removeIf(e -> !seen.add(e.id()));
         entries.sort(Comparator.comparing(LabRecipeIndex.LabRecipeEntry::name, String.CASE_INSENSITIVE_ORDER)
                 .thenComparing(LabRecipeIndex.LabRecipeEntry::id));
+        if (entries.isEmpty()) {
+            int total = LabRecipeIndex.search("", false, null).size() + LabRecipeIndex.search("", true, null).size();
+            com.abo47.kubejslab.KubeJSLab.LOGGER.warn(
+                    "[LabRecipeBrowserWidget] still empty after fallback: query='{}' kubejsOnly={} machineIds={} totalEntries={}",
+                    query(), kubejsOnly(), machineRecipeIds == null ? "null" : machineRecipeIds.size(), total);
+        }
         return entries;
     }
 

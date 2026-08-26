@@ -25,6 +25,20 @@ import mezz.jei.api.gui.ingredient.IRecipeSlotView;
 
 
 public final class ForgePlatformService implements PlatformService {
+    private static final boolean IE_LOADED = isClassPresent(
+            "blusunrize.immersiveengineering.api.crafting.IMultiblockRecipe");
+    private static final boolean CREATE_LOADED = isClassPresent(
+            "com.simibubi.create.content.processing.recipe.ProcessingRecipe");
+
+    private static boolean isClassPresent(String name) {
+        try {
+            Class.forName(name, false, ForgePlatformService.class.getClassLoader());
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
     @Override
     public void registerNetwork() {
         ForgeNetwork.register();
@@ -84,7 +98,7 @@ public final class ForgePlatformService implements PlatformService {
 
     @Override
     public ItemStack fluidOutputDisplay(Recipe<?> recipe) {
-        if (recipe instanceof IMultiblockRecipe multiblock) {
+        if (IE_LOADED && recipe instanceof IMultiblockRecipe multiblock) {
             List<?> outputs = multiblock.getFluidOutputs();
             if (outputs != null && !outputs.isEmpty()) {
                 net.minecraftforge.fluids.FluidStack fluid = (net.minecraftforge.fluids.FluidStack) outputs.get(0);
@@ -99,7 +113,7 @@ public final class ForgePlatformService implements PlatformService {
 
     @Override
     public FluidStack fluidOutputStack(Recipe<?> recipe) {
-        if (recipe instanceof IMultiblockRecipe multiblock) {
+        if (IE_LOADED && recipe instanceof IMultiblockRecipe multiblock) {
             List<?> outputs = multiblock.getFluidOutputs();
             if (outputs != null && !outputs.isEmpty()) {
                 net.minecraftforge.fluids.FluidStack fluid = (net.minecraftforge.fluids.FluidStack) outputs.get(0);
@@ -108,7 +122,7 @@ public final class ForgePlatformService implements PlatformService {
                         : FluidStack.create(fluid.getFluid(), fluid.getAmount(), fluid.getTag());
             }
         }
-        if (dev.architectury.platform.Platform.isModLoaded("create")
+        if (CREATE_LOADED && dev.architectury.platform.Platform.isModLoaded("create")
                 && recipe instanceof com.simibubi.create.content.processing.recipe.ProcessingRecipe<?> processing) {
             List<net.minecraftforge.fluids.FluidStack> fluidResults = processing.getFluidResults();
             if (!fluidResults.isEmpty()) {
@@ -123,7 +137,7 @@ public final class ForgePlatformService implements PlatformService {
 
     @Override
     public String fluidOutputDisplayName(Recipe<?> recipe) {
-        if (recipe instanceof IMultiblockRecipe multiblock) {
+        if (IE_LOADED && recipe instanceof IMultiblockRecipe multiblock) {
             List<?> outputs = multiblock.getFluidOutputs();
             if (outputs != null && !outputs.isEmpty()) {
                 net.minecraftforge.fluids.FluidStack fluid = (net.minecraftforge.fluids.FluidStack) outputs.get(0);

@@ -56,6 +56,7 @@ public final class LabScreen {
     private static final IGuiTexture INNER_TEXTURE =
             LabColors.bordered(LabColors.SURFACE_BASE, LabColors.BORDER_BASE);
     private static final ColorRectTexture TAB_ERASE_TEX = new ColorRectTexture(LabColors.SURFACE_BASE);
+    private static final ColorRectTexture SEPARATOR_TOP_BORDER = new ColorRectTexture(LabColors.BORDER_BASE);
 
     private static int lastLeftTab;
     private static int lastRightTab;
@@ -320,6 +321,7 @@ public final class LabScreen {
 
         private final boolean isLeft;
         private final LabTab[] tabs;
+        private final LabCarouselTabWidget carouselTab;
         private final String[] tabKeys;
         private LabPanelWidget rightPanel;
         private Runnable tabChangedListener;
@@ -368,28 +370,24 @@ public final class LabScreen {
             int tabH = LabLayout.TAB_H;
             int tabGap = LabLayout.TAB_GAP;
 
-            String[] keys = isLeft
-                    ? new String[]{LabGuiKeys.TAB_BUILT_IN, LabGuiKeys.TAB_CUSTOM}
-                    : new String[]{LabGuiKeys.TAB_RECIPE, LabGuiKeys.TAB_ITEMS, LabGuiKeys.TAB_BLOCKS, ""};
-            this.tabs = new LabTab[keys.length];
-            this.tabKeys = keys;
-
-            int tabCount = keys.length;
-            int totalTabGap = tabGap * (tabCount - 1);
-            int panelW = isLeft ? LabLayout.LEFT_PANEL_W : (LabLayout.BODY_W - LabLayout.LEFT_PANEL_W - LabLayout.GAP);
-            int areaW = Math.max(1, panelW - tabInset * 2);
-            int baseW = (areaW - totalTabGap) / tabCount;
-            int remainder = (areaW - totalTabGap) % tabCount;
-            int tabX = tabInset;
-
-            for (int i = 0; i < keys.length; i++) {
-                int w = baseW + (i < remainder ? 1 : 0);
-                tabs[i] = new LabTab(tabX, LabLayout.PANEL_INSET, w, tabH, keys[i], i == 0);
-                addWidget(tabs[i]);
-                tabX += w + tabGap;
-            }
-
             if (isLeft) {
+                String[] keys = new String[]{LabGuiKeys.TAB_BUILT_IN, LabGuiKeys.TAB_CUSTOM};
+                this.tabKeys = keys;
+                this.carouselTab = null;
+                int tabCount = keys.length;
+                int totalTabGap = tabGap * (tabCount - 1);
+                int panelW = LabLayout.LEFT_PANEL_W;
+                int areaW = Math.max(1, panelW - tabInset * 2);
+                int baseW = (areaW - totalTabGap) / tabCount;
+                int remainder = (areaW - totalTabGap) % tabCount;
+                int tabX = tabInset;
+                this.tabs = new LabTab[keys.length];
+                for (int i = 0; i < keys.length; i++) {
+                    int w = baseW + (i < remainder ? 1 : 0);
+                    tabs[i] = new LabTab(tabX, LabLayout.PANEL_INSET, w, tabH, keys[i], i == 0);
+                    addWidget(tabs[i]);
+                    tabX += w + tabGap;
+                }
                 tabs[0].setCounts(() -> {
                     LabRecipeIndex.RecipeCounts c = LabRecipeIndex.counts(false);
                     return new LabTabCounts(c.recipes(), c.disabled(), c.modified());
@@ -398,6 +396,18 @@ public final class LabScreen {
                     LabRecipeIndex.RecipeCounts c = LabRecipeIndex.counts(true);
                     return new LabTabCounts(c.recipes(), c.disabled(), c.modified());
                 }, LabGuiKeys.LAB_TAB_TOOLTIP_RECIPES);
+            } else {
+                String[] keys = new String[]{LabGuiKeys.TAB_RECIPE, LabGuiKeys.TAB_ITEMS, LabGuiKeys.TAB_BLOCKS};
+                this.tabKeys = keys;
+                this.tabs = null;
+                int panelW = LabLayout.BODY_W - LabLayout.LEFT_PANEL_W - LabLayout.GAP;
+                int areaW = Math.max(1, panelW - tabInset * 2);
+                this.carouselTab = new LabCarouselTabWidget(tabInset, LabLayout.PANEL_INSET, areaW, tabH, keys, 0);
+                carouselTab.setOnChanged(() -> {
+                    lastRightTab = carouselTab.getSelectedIndex();
+                    if (tabChangedListener != null) tabChangedListener.run();
+                });
+                addWidget(carouselTab);
             }
 
             if (isLeft) {
@@ -620,15 +630,27 @@ public final class LabScreen {
                         LabLayout.MACHINE_W, innerH);
             }
 
-            for (LabTab tab : tabs) {
-                if (!tab.isTabActive()) {
-                    continue;
+            if (isLeft && tabs != null) {
+                for (LabTab tab : tabs) {
+                    if (!tab.isTabActive()) {
+                        continue;
+                    }
+                    int eraseX = tab.getPositionX() + 1;
+                    int eraseW = tab.getSizeWidth() - 2;
+                    if (eraseW > 0) {
+                        TAB_ERASE_TEX.draw(g, mx, my, eraseX, innerTopY, eraseW, 1);
+                    }
                 }
-                int eraseX = tab.getPositionX() + 1;
-                int eraseW = tab.getSizeWidth() - 2;
+            } else if (!isLeft && carouselTab != null) {
+                int eraseX = carouselTab.getPositionX() + 1;
+                int eraseW = carouselTab.getSizeWidth() - 2;
                 if (eraseW > 0) {
                     TAB_ERASE_TEX.draw(g, mx, my, eraseX, innerTopY, eraseW, 1);
                 }
+            }
+
+            if (!isLeft) {
+                SEPARATOR_TOP_BORDER.draw(g, mx, my, innerX + LabLayout.MACHINE_W, innerTopY + 1, LabLayout.AREA_GAP, 1);
             }
 
             super.drawInBackground(g, mx, my, pt);
@@ -651,10 +673,12 @@ public final class LabScreen {
         public boolean mouseClicked(double mouseX, double mouseY, int button) {
             if (button != LabColors.MOUSE_BUTTON_LEFT) return super.mouseClicked(mouseX, mouseY, button);
 
-            for (int i = 0; i < tabs.length; i++) {
-                if (!tabKeys[i].isBlank() && tabs[i].isMouseOverElement(mouseX, mouseY)) {
-                    selectTab(i);
-                    return true;
+            if (isLeft && tabs != null) {
+                for (int i = 0; i < tabs.length; i++) {
+                    if (!tabKeys[i].isBlank() && tabs[i].isMouseOverElement(mouseX, mouseY)) {
+                        selectTab(i);
+                        return true;
+                    }
                 }
             }
 
@@ -665,19 +689,22 @@ public final class LabScreen {
         }
 
         private void selectTab(int index) {
-            if (tabs[index].isTabActive()) return;
-            for (LabTab tab : tabs) tab.setTabActive(false);
-            tabs[index].setTabActive(true);
-            if (isLeft) {
+            if (isLeft && tabs != null) {
+                if (tabs[index].isTabActive()) return;
+                for (LabTab tab : tabs) tab.setTabActive(false);
+                tabs[index].setTabActive(true);
                 lastLeftTab = index;
-            } else {
-                lastRightTab = index;
+                if (tabChangedListener != null) tabChangedListener.run();
+            } else if (!isLeft && carouselTab != null) {
+                int prev = carouselTab.getSelectedIndex();
+                if (prev == index) return;
+                carouselTab.setSelectedIndex(index);
             }
-            if (tabChangedListener != null) tabChangedListener.run();
         }
 
         void selectTabIndex(int index) {
-            if (index >= 0 && index < tabs.length && !tabKeys[index].isBlank()) {
+            if (index < 0 || index >= tabKeys.length) return;
+            if (!tabKeys[index].isBlank()) {
                 selectTab(index);
             }
         }
@@ -691,10 +718,15 @@ public final class LabScreen {
         }
 
         public int getSelectedTabIndex() {
-            for (int i = 0; i < tabs.length; i++) {
-                if (tabs[i].isTabActive()) {
-                    return i;
+            if (isLeft && tabs != null) {
+                for (int i = 0; i < tabs.length; i++) {
+                    if (tabs[i].isTabActive()) {
+                        return i;
+                    }
                 }
+                return 0;
+            } else if (!isLeft && carouselTab != null) {
+                return carouselTab.getSelectedIndex();
             }
             return 0;
         }
@@ -705,6 +737,12 @@ public final class LabScreen {
 
         void setTabChangedListener(Runnable tabChangedListener) {
             this.tabChangedListener = tabChangedListener;
+            if (!isLeft && carouselTab != null) {
+                carouselTab.setOnChanged(() -> {
+                    lastRightTab = carouselTab.getSelectedIndex();
+                    if (this.tabChangedListener != null) this.tabChangedListener.run();
+                });
+            }
         }
 
         void setMachineChangedListener(Runnable machineChangedListener) {
@@ -771,7 +809,8 @@ public final class LabScreen {
                 itemBrowser.setVisible(showItemView);
                 blockBrowser.setVisible(showBlockView);
                 if (showRecipeView) {
-                    recipeBrowser.setKubejsOnly(getSelectedTabIndex() == 1);
+                    boolean kubejsOnly = getSelectedTabIndex() == 1;
+                    recipeBrowser.setKubejsOnly(kubejsOnly);
                     recipeBrowser.setMachineFilter(rightPanel.getMachineRecipeIds());
                     recipeBrowser.setMachineUid(rightPanel.getSelectedMachineUid());
                     recipeBrowser.rebuild();
