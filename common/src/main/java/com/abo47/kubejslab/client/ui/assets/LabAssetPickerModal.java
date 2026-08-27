@@ -2,8 +2,11 @@ package com.abo47.kubejslab.client.ui.assets;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.function.Consumer;
+import java.util.List;
+
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.resources.language.I18n;
 
 import com.lowdragmc.lowdraglib.gui.texture.ColorRectTexture;
 import com.lowdragmc.lowdraglib.gui.texture.IGuiTexture;
@@ -26,14 +29,12 @@ import com.abo47.kubejslab.client.ui.base.LabIconAtlas;
 import com.abo47.kubejslab.client.ui.base.LabLayout;
 import com.abo47.kubejslab.client.ui.base.LabScrollBarWidget;
 import com.abo47.kubejslab.client.ui.base.LabScrollMath;
+import com.abo47.kubejslab.client.ui.base.LabTextFieldWidget;
 import com.abo47.kubejslab.client.ui.contextmenu.LabActionTone;
 import com.abo47.kubejslab.client.ui.contextmenu.LabContextAction;
 import com.abo47.kubejslab.client.ui.contextmenu.LabContextMenuAnimation;
 import com.abo47.kubejslab.client.ui.contextmenu.LabContextMenuPanel;
 import com.abo47.kubejslab.client.ui.picker.LabSearchFilter;
-
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.resources.language.I18n;
 
 
 public final class LabAssetPickerModal {
@@ -393,7 +394,7 @@ public final class LabAssetPickerModal {
 
     private TextFieldWidget buildSearchField() {
         int searchW = firstHeaderX() - GRID_X - HEADER_GAP;
-        TextFieldWidget field = new TextFieldWidget(GRID_X, SEARCH_Y, searchW, SEARCH_H,
+        TextFieldWidget field = new LabTextFieldWidget(GRID_X, SEARCH_Y, searchW, SEARCH_H,
                 () -> state.query, value -> {
                     state.query = value;
                     state.scroll = 0;

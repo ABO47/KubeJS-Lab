@@ -70,7 +70,7 @@ public class CrusherMachine extends ImmersiveEngineeringMachine {
     @Override
     public List<Float> outputChances(Recipe<?> original) {
         if (original instanceof CrusherRecipe crusher) {
-            List<Float> chances = new java.util.ArrayList<>();
+            List<Float> chances = new ArrayList<>();
             chances.add(1.0f);
             for (StackWithChance secondary : crusher.secondaryOutputs) {
                 chances.add(secondary.chance());

@@ -4,6 +4,7 @@ import java.util.function.Predicate;
 
 import net.minecraft.resources.ResourceLocation;
 
+
 public final class LabUniqueNames {
 	public static ResourceLocation labId(String path) {
 		return new ResourceLocation("kubejs", "lab/" + path);

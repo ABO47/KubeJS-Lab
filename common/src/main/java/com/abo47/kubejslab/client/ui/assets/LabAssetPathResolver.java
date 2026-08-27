@@ -3,10 +3,11 @@ package com.abo47.kubejslab.client.ui.assets;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
-import java.util.Locale;
 import java.util.function.Consumer;
+import java.util.Locale;
 
 import com.abo47.kubejslab.KubeJSLab;
+
 
 final class LabAssetPathResolver {
     private LabAssetPathResolver() {

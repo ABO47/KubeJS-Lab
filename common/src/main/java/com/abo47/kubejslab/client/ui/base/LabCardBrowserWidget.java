@@ -1,17 +1,17 @@
 package com.abo47.kubejslab.client.ui.base;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.function.Consumer;
+import java.util.List;
 import javax.annotation.Nonnull;
-
-import com.mojang.blaze3d.systems.RenderSystem;
 
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
 
 import com.lowdragmc.lowdraglib.gui.widget.Widget;
 import com.lowdragmc.lowdraglib.gui.widget.WidgetGroup;
+
+import com.mojang.blaze3d.systems.RenderSystem;
 
 
 public abstract class LabCardBrowserWidget<L extends LabEntryCardWidget, E> extends WidgetGroup {
@@ -75,6 +75,15 @@ public abstract class LabCardBrowserWidget<L extends LabEntryCardWidget, E> exte
         clearAllWidgets();
         cards.clear();
         List<E> entries = entries();
+        if (entries.isEmpty()) {
+            com.abo47.kubejslab.KubeJSLab.LOGGER.warn(
+                    "[LabCardBrowserWidget] rebuild empty: query='{}' kubejsOnly={} pos=({},{}) size=({},{}) visible={}",
+                    query, kubejsOnly, getSelfPositionX(), getSelfPositionY(), getSizeWidth(), getSizeHeight(), isVisible());
+        } else {
+            com.abo47.kubejslab.KubeJSLab.LOGGER.info(
+                    "[LabCardBrowserWidget] rebuild {} entries: query='{}' kubejsOnly={} visible={}",
+                    entries.size(), query, kubejsOnly, isVisible());
+        }
         int listW = getSizeWidth();
         int listH = getSizeHeight();
         int rowStep = LabLayout.CARD_ROW_STEP;

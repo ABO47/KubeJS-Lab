@@ -3,6 +3,8 @@ package com.abo47.kubejslab.network;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 
+import com.abo47.kubejslab.network.block.C2SBlockEditPacket;
+import com.abo47.kubejslab.network.block.S2CBlockStatePacket;
 import com.abo47.kubejslab.network.item.C2SItemEditPacket;
 import com.abo47.kubejslab.network.item.S2CItemStatePacket;
 import com.abo47.kubejslab.network.recipe.C2SRecipeEditPacket;
@@ -40,5 +42,13 @@ public final class ModNetwork {
 
     public static void sendItemState(ServerPlayer player, S2CItemStatePacket packet) {
         Services.platform().sendItemState(player, packet);
+    }
+
+    public static void sendBlockEdit(C2SBlockEditPacket packet) {
+        Services.platform().sendBlockEdit(packet);
+    }
+
+    public static void sendBlockState(ServerPlayer player, S2CBlockStatePacket packet) {
+        Services.platform().sendBlockState(player, packet);
     }
 }

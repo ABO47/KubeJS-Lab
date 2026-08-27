@@ -6,6 +6,7 @@ import net.minecraft.resources.ResourceLocation;
 
 import dev.architectury.platform.Platform;
 
+
 public final class LabPathResolver {
 	public static Path kubejsDir() {
 		return Platform.getGameFolder().resolve("kubejs");
@@ -13,6 +14,14 @@ public final class LabPathResolver {
 
 	public static Path itemStateFile() {
 		return kubejsDir().resolve("lab").resolve("items.json");
+	}
+
+	public static Path blockStateFile() {
+		return kubejsDir().resolve("lab").resolve("blocks.json");
+	}
+
+	public static Path colorPaletteFile() {
+		return kubejsDir().resolve("lab").resolve("palette.json");
 	}
 
 	public static Path recipeStateFile() {

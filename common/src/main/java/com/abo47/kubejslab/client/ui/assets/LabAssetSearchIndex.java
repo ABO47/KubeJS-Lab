@@ -8,8 +8,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import com.abo47.kubejslab.KubeJSLab;
 import com.abo47.kubejslab.client.ui.picker.LabSearchFilter;
+import com.abo47.kubejslab.KubeJSLab;
+
 
 final class LabAssetSearchIndex {
     private LabAssetSearchIndex() {

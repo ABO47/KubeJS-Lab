@@ -1,6 +1,9 @@
 package com.abo47.kubejslab.client.ui.assets;
 
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -13,8 +16,6 @@ import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
 
-import com.mojang.blaze3d.platform.NativeImage;
-
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
 
@@ -23,6 +24,9 @@ import com.lowdragmc.lowdraglib.gui.texture.IGuiTexture;
 import com.lowdragmc.lowdraglib.gui.texture.ResourceTexture;
 
 import com.abo47.kubejslab.KubeJSLab;
+
+import com.mojang.blaze3d.platform.NativeImage;
+
 
 final class LabAssetTextureCache {
     private static final Map<String, IGuiTexture> TEXTURE_CACHE = new HashMap<>();
@@ -157,8 +161,8 @@ final class LabAssetTextureCache {
                 int newW = Math.max(1, (int) (tileW * scale));
                 int newH = Math.max(1, (int) (tileH * scale));
                 BufferedImage scaled = new BufferedImage(newW, newH, BufferedImage.TYPE_INT_ARGB);
-                java.awt.Graphics2D g = scaled.createGraphics();
-                g.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION, java.awt.RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+                Graphics2D g = scaled.createGraphics();
+                g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
                 g.drawImage(sourceBI, 0, 0, newW, newH, null);
                 g.dispose();
                 sourceBI = scaled;
@@ -166,7 +170,7 @@ final class LabAssetTextureCache {
                 tileH = newH;
             }
             BufferedImage tiledBI = new BufferedImage(TILED_SIZE, TILED_SIZE, BufferedImage.TYPE_INT_ARGB);
-            java.awt.Graphics2D tg = tiledBI.createGraphics();
+            Graphics2D tg = tiledBI.createGraphics();
             for (int tx = 0; tx < TILED_SIZE; tx += tileW) {
                 for (int ty = 0; ty < TILED_SIZE; ty += tileH) {
                     tg.drawImage(sourceBI, tx, ty, null);
@@ -339,7 +343,7 @@ final class LabAssetTextureCache {
         }
         ByteArrayOutputStream pngOut = new ByteArrayOutputStream();
         ImageIO.write(frame, "png", pngOut);
-        try (var frameIn = new java.io.ByteArrayInputStream(pngOut.toByteArray())) {
+        try (var frameIn = new ByteArrayInputStream(pngOut.toByteArray())) {
             NativeImage image = NativeImage.read(frameIn);
             if (image == null) {
                 return;
@@ -400,7 +404,7 @@ final class LabAssetTextureCache {
             }
             ByteArrayOutputStream pngOut = new ByteArrayOutputStream();
             ImageIO.write(image, "png", pngOut);
-            try (var frameIn = new java.io.ByteArrayInputStream(pngOut.toByteArray())) {
+            try (var frameIn = new ByteArrayInputStream(pngOut.toByteArray())) {
                 NativeImage nativeImage = NativeImage.read(frameIn);
                 if (nativeImage == null) {
                     return null;

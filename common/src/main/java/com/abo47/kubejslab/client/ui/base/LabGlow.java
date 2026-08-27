@@ -1,12 +1,12 @@
 package com.abo47.kubejslab.client.ui.base;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FastColor;
 
 import com.lowdragmc.lowdraglib.gui.texture.ShaderTexture;
+
+import com.mojang.blaze3d.systems.RenderSystem;
 
 
 public final class LabGlow {

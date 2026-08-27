@@ -1,5 +1,6 @@
 package com.abo47.kubejslab.client.ui.base;
 
+import java.util.function.Supplier;
 import javax.annotation.Nonnull;
 
 import net.minecraft.client.gui.GuiGraphics;
@@ -8,8 +9,6 @@ import net.minecraft.network.chat.Component;
 import com.lowdragmc.lowdraglib.gui.texture.ColorRectTexture;
 import com.lowdragmc.lowdraglib.gui.texture.TextTexture;
 import com.lowdragmc.lowdraglib.gui.widget.Widget;
-
-import com.abo47.kubejslab.client.ui.recipes.LabRecipeIndex;
 
 
 public final class LabTab extends Widget {
@@ -21,7 +20,9 @@ public final class LabTab extends Widget {
     private final String label;
     private final TextTexture labelTex;
     private boolean active;
-    private Boolean recipeKubejs;
+    private Supplier<LabTabCounts> countsSupplier;
+    private Supplier<String> totalTooltipKeySupplier;
+    private String totalTooltipKey;
 
     public LabTab(int x, int y, int w, int h, String translationKey, boolean active) {
         super(x, y, w, h);
@@ -32,8 +33,16 @@ public final class LabTab extends Widget {
         this.active = active;
     }
 
-    public void setRecipeCategory(boolean kubejs) {
-        this.recipeKubejs = kubejs;
+    public void setCounts(Supplier<LabTabCounts> countsSupplier, String totalTooltipKey) {
+        this.countsSupplier = countsSupplier;
+        this.totalTooltipKey = totalTooltipKey;
+        this.totalTooltipKeySupplier = () -> totalTooltipKey;
+    }
+
+    public void setCounts(Supplier<LabTabCounts> countsSupplier, Supplier<String> totalTooltipKeySupplier) {
+        this.countsSupplier = countsSupplier;
+        this.totalTooltipKeySupplier = totalTooltipKeySupplier;
+        this.totalTooltipKey = null;
     }
 
     public boolean isTabActive() {
@@ -77,12 +86,14 @@ public final class LabTab extends Widget {
 
     @Override
     public void drawInForeground(@Nonnull GuiGraphics g, int mx, int my, float pt) {
-        if (recipeKubejs != null && isMouseOverElement(mx, my)) {
-            LabRecipeIndex.RecipeCounts c = LabRecipeIndex.counts(recipeKubejs);
+        if (countsSupplier != null && isMouseOverElement(mx, my)) {
+            LabTabCounts c = countsSupplier.get();
+            String key = totalTooltipKeySupplier != null ? totalTooltipKeySupplier.get() : totalTooltipKey;
+            if (key == null) key = LabGuiKeys.LAB_TAB_TOOLTIP_RECIPES;
             setHoverTooltips(
-                    Component.translatable("kubejslab.gui.lab_tab_tooltip_recipes", c.recipes()),
-                    Component.translatable("kubejslab.gui.lab_tab_tooltip_disabled", c.disabled()),
-                    Component.translatable("kubejslab.gui.lab_tab_tooltip_modified", c.modified()));
+                    Component.translatable(key, c.total()),
+                    Component.translatable(LabGuiKeys.LAB_TAB_TOOLTIP_DISABLED, c.disabled()),
+                    Component.translatable(LabGuiKeys.LAB_TAB_TOOLTIP_MODIFIED, c.modified()));
         }
         super.drawInForeground(g, mx, my, pt);
     }

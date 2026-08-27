@@ -2,6 +2,7 @@ package com.abo47.kubejslab.lab;
 
 import net.minecraft.server.MinecraftServer;
 
+
 public final class LabServerCommands {
 	public static void reload(MinecraftServer server) {
 		server.getCommands().performPrefixedCommand(server.createCommandSourceStack(), "reload");

@@ -54,7 +54,15 @@ public final class LabMachineCatalog {
         Set<ResourceLocation> ids = RECIPE_IDS.get(machine);
         if (ids == null) {
             ids = computeRecipeIds(machine);
-            RECIPE_IDS.put(machine, ids);
+            if (!ids.isEmpty()) {
+                RECIPE_IDS.put(machine, ids);
+            }
+        } else if (ids.isEmpty()) {
+            Set<ResourceLocation> recomputed = computeRecipeIds(machine);
+            if (!recomputed.isEmpty()) {
+                RECIPE_IDS.put(machine, recomputed);
+                return recomputed;
+            }
         }
         return ids;
     }

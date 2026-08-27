@@ -1,11 +1,8 @@
 package com.abo47.kubejslab.client.ui.base;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.function.Consumer;
+import java.util.List;
 import javax.annotation.Nonnull;
-
-import org.lwjgl.glfw.GLFW;
 
 import net.minecraft.client.gui.GuiGraphics;
 
@@ -14,6 +11,8 @@ import com.lowdragmc.lowdraglib.gui.texture.TextTexture;
 import com.lowdragmc.lowdraglib.gui.widget.TextFieldWidget;
 import com.lowdragmc.lowdraglib.gui.widget.Widget;
 import com.lowdragmc.lowdraglib.gui.widget.WidgetGroup;
+
+import org.lwjgl.glfw.GLFW;
 
 
 public final class LabSearchDropdownWidget extends WidgetGroup implements LabPopupProvider {
@@ -30,7 +29,7 @@ public final class LabSearchDropdownWidget extends WidgetGroup implements LabPop
 
     public LabSearchDropdownWidget(int x, int y, int w, int h) {
         super(x, y, w, h);
-        field = new TextFieldWidget(0, 0, w, h, null, text -> {
+        field = new LabTextFieldWidget(0, 0, w, h, null, text -> {
         });
         field.setClientSideWidget();
         field.setMaxStringLength(40);
@@ -80,7 +79,7 @@ public final class LabSearchDropdownWidget extends WidgetGroup implements LabPop
         int popupY = y + h + 1;
         int popupH = visibleRows * ROW_H + 2;
         g.pose().pushPose();
-        g.pose().translate(0, 0, 200);
+        g.pose().translate(0, 0, 400);
         POPUP_FILL.draw(g, mx, my, x, popupY, w, popupH);
         for (int row = 0; row < visibleRows; row++) {
             int index = row + scroll;

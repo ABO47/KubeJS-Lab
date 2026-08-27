@@ -13,6 +13,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 
+import com.abo47.kubejslab.client.ui.base.LabTabCounts;
 import com.abo47.kubejslab.client.ui.picker.LabSearchNormalizer;
 import com.abo47.kubejslab.item.model.LabCustomTier;
 import com.abo47.kubejslab.item.model.LabItemState;
@@ -49,6 +50,26 @@ public final class LabItemStates {
     public static boolean pendingRestartOf(ResourceLocation id) {
         LabItemState entry = STATE.get(id);
         return entry != null && entry.pendingRestart() || PENDING_EXTRA.contains(id);
+    }
+
+    public static LabTabCounts counts(boolean kubejs) {
+        Set<ResourceLocation> seen = new HashSet<>();
+        int total = 0;
+        for (LabItemIndex.LabItemEntry e : LabItemIndex.search("", kubejs)) {
+            if (seen.add(e.id())) total++;
+        }
+        for (LabItemIndex.LabItemEntry e : stateEntries()) {
+            if (e.kubejs() != kubejs) continue;
+            if (seen.add(e.id())) total++;
+        }
+        int disabled = 0;
+        int modified = 0;
+        for (LabItemState s : STATE.values()) {
+            if (s.id().getNamespace().equals("kubejs") != kubejs) continue;
+            if (s.status() == LabItemStatus.DISABLED) disabled++;
+            else if (s.status() == LabItemStatus.MODIFIED) modified++;
+        }
+        return new LabTabCounts(total, disabled, modified);
     }
 
     public static String nameOf(ResourceLocation id) {

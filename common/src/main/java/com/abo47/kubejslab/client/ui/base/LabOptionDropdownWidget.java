@@ -6,14 +6,14 @@ import java.util.function.Function;
 import java.util.List;
 import javax.annotation.Nonnull;
 
-import org.lwjgl.glfw.GLFW;
-
 import net.minecraft.client.gui.GuiGraphics;
 
 import com.lowdragmc.lowdraglib.gui.texture.ColorRectTexture;
 import com.lowdragmc.lowdraglib.gui.texture.TextTexture;
 import com.lowdragmc.lowdraglib.gui.widget.Widget;
 import com.lowdragmc.lowdraglib.gui.widget.WidgetGroup;
+
+import org.lwjgl.glfw.GLFW;
 
 
 public final class LabOptionDropdownWidget extends WidgetGroup implements LabPopupProvider {
@@ -113,7 +113,7 @@ public final class LabOptionDropdownWidget extends WidgetGroup implements LabPop
         int popupY = y + h + 1;
         int popupH = visibleRows * ROW_H + 2;
         g.pose().pushPose();
-        g.pose().translate(0, 0, 200);
+        g.pose().translate(0, 0, 400);
         POPUP_FILL.draw(g, mx, my, x, popupY, w, popupH);
         for (int row = 0; row < visibleRows; row++) {
             int index = row + scroll;

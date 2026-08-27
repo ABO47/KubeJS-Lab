@@ -3,12 +3,8 @@ package com.abo47.kubejslab.client.ui.base;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import com.lowdragmc.lowdraglib.gui.widget.TextFieldWidget;
 
-
-public class LabNumberFieldWidget extends TextFieldWidget {
-
-    private boolean handlingTextChange;
+public class LabNumberFieldWidget extends LabTextFieldWidget {
 
     public LabNumberFieldWidget(int xPosition, int yPosition, int width, int height,
             Supplier<String> textSupplier, Consumer<String> textResponder) {
@@ -32,15 +28,7 @@ public class LabNumberFieldWidget extends TextFieldWidget {
 
     @Override
     protected void onTextChanged(String newTextString) {
-        if (handlingTextChange) {
-            return;
-        }
-        handlingTextChange = true;
-        try {
-            super.onTextChanged(sanitize(newTextString));
-        } finally {
-            handlingTextChange = false;
-        }
+        super.onTextChanged(sanitize(newTextString));
         setTextColor(LabColors.TEXT_PRIMARY);
     }
 
@@ -59,15 +47,26 @@ public class LabNumberFieldWidget extends TextFieldWidget {
         try {
             value = Double.parseDouble(raw.replace(',', '.'));
         } catch (NumberFormatException ignored) {
-            return true;
+            value = 0;
+            fractional = false;
         }
         double step = fractional ? 0.25 : 1;
         double next = value + delta * step;
         if (next < 0) {
             next = 0;
         }
-        String formatted = fractional ? String.valueOf(next) : Integer.toString((int) Math.round(next));
+        String formatted;
+        if (fractional) {
+            formatted = String.valueOf(next);
+            if (formatted.contains(".")) {
+                formatted = formatted.replaceAll("0+$", "").replaceAll("\\.$", "");
+                if (formatted.isEmpty()) formatted = "0";
+            }
+        } else {
+            formatted = Integer.toString((int) Math.round(next));
+        }
         setCurrentString(sanitize(formatted));
+        setFocus(true);
         return true;
     }
 }

@@ -7,6 +7,8 @@ import net.minecraft.server.level.ServerPlayer;
 
 import com.lowdragmc.lowdraglib.side.fluid.FluidStack;
 
+import com.abo47.kubejslab.network.block.C2SBlockEditPacket;
+import com.abo47.kubejslab.network.block.S2CBlockStatePacket;
 import com.abo47.kubejslab.network.item.C2SItemEditPacket;
 import com.abo47.kubejslab.network.item.S2CItemStatePacket;
 import com.abo47.kubejslab.network.recipe.C2SRecipeEditPacket;
@@ -62,6 +64,20 @@ public final class FabricPlatformService implements PlatformService {
         FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
         packet.write(buf);
         ServerPlayNetworking.send(player, FabricNetwork.ITEM_STATE_SYNC, buf);
+    }
+
+    @Override
+    public void sendBlockEdit(C2SBlockEditPacket packet) {
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        packet.write(buf);
+        ClientPlayNetworking.send(FabricNetwork.BLOCK_EDIT, buf);
+    }
+
+    @Override
+    public void sendBlockState(ServerPlayer player, S2CBlockStatePacket packet) {
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        packet.write(buf);
+        ServerPlayNetworking.send(player, FabricNetwork.BLOCK_STATE_SYNC, buf);
     }
 
     @Override

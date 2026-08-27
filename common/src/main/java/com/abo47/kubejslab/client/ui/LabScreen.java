@@ -1,4 +1,5 @@
 package com.abo47.kubejslab.client.ui;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import javax.annotation.Nonnull;
@@ -22,15 +23,21 @@ import com.lowdragmc.lowdraglib.gui.widget.TextFieldWidget;
 import com.lowdragmc.lowdraglib.gui.widget.WidgetGroup;
 import com.lowdragmc.lowdraglib.utils.Position;
 
-import com.abo47.kubejslab.client.ui.base.*;
+import com.abo47.kubejslab.block.model.LabBlockEditAction;
+import com.abo47.kubejslab.block.model.LabBlockField;
+import com.abo47.kubejslab.block.model.LabBlockFieldValues;
+import com.abo47.kubejslab.block.model.LabBlockState;
+import com.abo47.kubejslab.block.runtime.LabBlockService;
 import com.abo47.kubejslab.client.ui.assets.LabAssetPickerModal;
+import com.abo47.kubejslab.client.ui.assets.LabColorPickerModal;
+import com.abo47.kubejslab.client.ui.base.*;
+import com.abo47.kubejslab.client.ui.blocks.*;
 import com.abo47.kubejslab.client.ui.contextmenu.*;
 import com.abo47.kubejslab.client.ui.items.*;
 import com.abo47.kubejslab.client.ui.machines.*;
 import com.abo47.kubejslab.client.ui.picker.*;
 import com.abo47.kubejslab.client.ui.recipes.*;
 import com.abo47.kubejslab.item.model.LabItemEditAction;
-import com.abo47.kubejslab.item.model.LabItemField;
 import com.abo47.kubejslab.item.model.LabItemFieldValues;
 import com.abo47.kubejslab.item.model.LabItemState;
 import com.abo47.kubejslab.lab.LabPathResolver;
@@ -50,6 +57,7 @@ public final class LabScreen {
     private static final IGuiTexture INNER_TEXTURE =
             LabColors.bordered(LabColors.SURFACE_BASE, LabColors.BORDER_BASE);
     private static final ColorRectTexture TAB_ERASE_TEX = new ColorRectTexture(LabColors.SURFACE_BASE);
+    private static final ColorRectTexture SEPARATOR_TOP_BORDER = new ColorRectTexture(LabColors.BORDER_BASE);
 
     private static int lastLeftTab;
     private static int lastRightTab;
@@ -92,6 +100,24 @@ public final class LabScreen {
         leftPanel.getRecipeBrowser().setRecipeRightClickListener(
                 (entry, mouseX, mouseY) -> root.openContextMenu(entry, mouseX, mouseY));
         rightPanel.setMachineChangedListener(updateViews);
+        rightPanel.itemTypeDropdown.setOnSelect(value -> {
+            if ("all".equals(value)) {
+                rightPanel.refreshItemPreview();
+            } else {
+                rightPanel.itemSettings.setType(value);
+                rightPanel.refreshItemPreview();
+            }
+            updateViews.run();
+        });
+        rightPanel.blockTypeDropdown.setOnSelect(value -> {
+            if ("all".equals(value)) {
+                rightPanel.refreshBlockPreview();
+            } else {
+                rightPanel.blockSettings.setType(value);
+                rightPanel.refreshBlockPreview();
+            }
+            updateViews.run();
+        });
         rightPanel.settingsWidget.setCategoryContextRequester((option, mx, my) -> root.openActionsMenu(
                 List.of(new LabContextAction(I18n.get(LabGuiKeys.LAB_RECIPE_DELETE), "delete", LabActionTone.DANGER,
                         () -> rightPanel.settingsWidget.deleteBlueprintCategory(option))), mx, my));
@@ -100,7 +126,9 @@ public final class LabScreen {
                         () -> rightPanel.settingsWidget.deleteCustomMold(option))), mx, my));
 
         WidgetGroup assetLayer = new WidgetGroup(0, 0, LabLayout.ROOT_W, LabLayout.ROOT_H);
+        assetLayer.setVisible(false);
         root.addWidget(assetLayer);
+        root.setModalLayer(assetLayer);
         rightPanel.itemSettings.setOnTexturePick(() -> {
             rightPanel.itemSettings.closeAllPopups();
             LabAssetPickerModal.open(assetLayer,
@@ -111,12 +139,35 @@ public final class LabScreen {
                         rightPanel.refreshItemPreview();
                     });
         });
+        rightPanel.blockSettings.setOnTexturePick(field -> {
+            rightPanel.blockSettings.closeAllPopups();
+            if (field == LabBlockField.DUST_COLOR) {
+                LabColorPickerModal.open(assetLayer,
+                        I18n.get(LabGuiKeys.LAB_BLOCK_DUST_COLOR),
+                        rightPanel.blockSettings.getDustColor(),
+                        hex -> rightPanel.blockSettings.setDustValue(hex));
+                return;
+            }
+            LabAssetPickerModal.open(assetLayer,
+                    LabPathResolver.kubejsDir().resolve("assets").resolve("kubejs").resolve("textures"),
+                    I18n.get(LabGuiKeys.LAB_ITEM_TEXTURE),
+                    path -> {
+                        rightPanel.blockSettings.setTextureValue(field, path);
+                        rightPanel.refreshBlockPreview();
+                    });
+        });
         leftPanel.getItemBrowser().setItemClickListener(entry -> {
             leftPanel.selectItem(entry);
             rightPanel.showItemSettings(entry);
         });
         leftPanel.getItemBrowser().setItemRightClickListener(
                 (entry, mouseX, mouseY) -> root.openItemContextMenu(entry, mouseX, mouseY));
+        leftPanel.getBlockBrowser().setBlockClickListener(entry -> {
+            leftPanel.selectBlock(entry);
+            rightPanel.showBlockSettings(entry);
+        });
+        leftPanel.getBlockBrowser().setBlockRightClickListener(
+                (entry, mouseX, mouseY) -> root.openBlockContextMenu(entry, mouseX, mouseY));
 
         return new ModularUI(root, IUIHolder.EMPTY, player);
     }
@@ -149,6 +200,7 @@ public final class LabScreen {
         private LabPanelWidget rightPanel;
         private final WidgetGroup contextMenuLayer =
                 new WidgetGroup(0, 0, LabLayout.ROOT_W, LabLayout.ROOT_H);
+        private WidgetGroup modalLayer;
         private boolean menuOpen;
         private List<LabContextAction> menuActions = List.of();
         private int menuX;
@@ -168,6 +220,23 @@ public final class LabScreen {
 
         void attachMenuLayer() {
             addWidget(contextMenuLayer);
+        }
+
+        void setModalLayer(WidgetGroup modalLayer) {
+            this.modalLayer = modalLayer;
+        }
+
+        boolean isModalOpen() {
+            return modalLayer != null && modalLayer.isVisible();
+        }
+
+        @Override
+        public void drawInForeground(@Nonnull GuiGraphics g, int mx, int my, float pt) {
+            if (isModalOpen()) {
+                modalLayer.drawInForeground(g, mx, my, pt);
+                return;
+            }
+            super.drawInForeground(g, mx, my, pt);
         }
 
         LabPanelWidget getLeftPanel() {
@@ -217,6 +286,21 @@ public final class LabScreen {
             }), mx, my);
         }
 
+        void openBlockContextMenu(LabBlockIndex.LabBlockEntry entry, double mx, double my) {
+            rightPanel.selectBlock(entry);
+            openActionsMenu(LabBlockActions.forEntry(entry, new LabBlockActions.BlockActionCallbacks() {
+                @Override
+                public void openModify(LabBlockIndex.LabBlockEntry target) {
+                    rightPanel.enterBlockModifyMode(target);
+                }
+
+                @Override
+                public void send(LabBlockEditAction action, @Nonnull ResourceLocation targetId) {
+                    rightPanel.blockSaver.send(action, targetId);
+                }
+            }), mx, my);
+        }
+
         void openActionsMenu(List<LabContextAction> actions, double mx, double my) {
             menuActions = actions;
             menuW = LabContextMenuPanel.menuWidth(actions);
@@ -256,28 +340,39 @@ public final class LabScreen {
 
         private final boolean isLeft;
         private final LabTab[] tabs;
+        private final LabCarouselTabWidget carouselTab;
+        private final String[] tabKeys;
         private LabPanelWidget rightPanel;
         private Runnable tabChangedListener;
         private Runnable machineChangedListener;
         private TextFieldWidget searchField;
         private LabRecipeBrowserWidget recipeBrowser;
         private LabItemBrowserWidget itemBrowser;
+        private LabBlockBrowserWidget blockBrowser;
         LabMachineDropdownWidget machineDropdown;
         LabMachineLayoutWidget machineLayout;
         LabRecipeSettingsWidget settingsWidget;
         LabItemSettingsWidget itemSettings;
         LabOptionDropdownWidget itemTypeDropdown;
         LabItemPreviewWidget itemPreview;
+        LabBlockSettingsWidget blockSettings;
+        LabOptionDropdownWidget blockTypeDropdown;
+        LabBlockPreviewWidget blockPreview;
         final LabRecipeSaver saver;
         final LabItemSaver itemSaver;
+        final LabBlockSaver blockSaver;
         private PlayerInventoryWidget inventory;
         EditMode mode = EditMode.NEW;
         EditMode itemMode = EditMode.NEW;
+        EditMode blockMode = EditMode.NEW;
         LabRecipeIndex.LabRecipeEntry modifyTarget;
         LabItemIndex.LabItemEntry itemModifyTarget;
         LabItemIndex.LabItemEntry itemSelection;
+        LabBlockIndex.LabBlockEntry blockModifyTarget;
+        LabBlockIndex.LabBlockEntry blockSelection;
         private TextTexture modeLabel;
         private TextTexture itemModeLabel;
+        private TextTexture blockModeLabel;
         private int columnX;
         private int columnW;
         private int modeLabelY;
@@ -294,29 +389,68 @@ public final class LabScreen {
             int tabH = LabLayout.TAB_H;
             int tabGap = LabLayout.TAB_GAP;
 
-            String[] keys = isLeft
-                    ? new String[]{LabGuiKeys.TAB_BUILT_IN, LabGuiKeys.TAB_CUSTOM}
-                    : new String[]{LabGuiKeys.TAB_RECIPE, LabGuiKeys.TAB_ITEMS, "", ""};
-            this.tabs = new LabTab[keys.length];
-
-            int tabCount = keys.length;
-            int totalTabGap = tabGap * (tabCount - 1);
-            int panelW = isLeft ? LabLayout.LEFT_PANEL_W : (LabLayout.BODY_W - LabLayout.LEFT_PANEL_W - LabLayout.GAP);
-            int areaW = Math.max(1, panelW - tabInset * 2);
-            int baseW = (areaW - totalTabGap) / tabCount;
-            int remainder = (areaW - totalTabGap) % tabCount;
-            int tabX = tabInset;
-
-            for (int i = 0; i < keys.length; i++) {
-                int w = baseW + (i < remainder ? 1 : 0);
-                tabs[i] = new LabTab(tabX, LabLayout.PANEL_INSET, w, tabH, keys[i], i == 0);
-                addWidget(tabs[i]);
-                tabX += w + tabGap;
-            }
-
             if (isLeft) {
-                tabs[0].setRecipeCategory(false);
-                tabs[1].setRecipeCategory(true);
+                String[] keys = new String[]{LabGuiKeys.TAB_BUILT_IN, LabGuiKeys.TAB_CUSTOM};
+                this.tabKeys = keys;
+                this.carouselTab = null;
+                int tabCount = keys.length;
+                int totalTabGap = tabGap * (tabCount - 1);
+                int panelW = LabLayout.LEFT_PANEL_W;
+                int areaW = Math.max(1, panelW - tabInset * 2);
+                int baseW = (areaW - totalTabGap) / tabCount;
+                int remainder = (areaW - totalTabGap) % tabCount;
+                int tabX = tabInset;
+                this.tabs = new LabTab[keys.length];
+                for (int i = 0; i < keys.length; i++) {
+                    int w = baseW + (i < remainder ? 1 : 0);
+                    tabs[i] = new LabTab(tabX, LabLayout.PANEL_INSET, w, tabH, keys[i], i == 0);
+                    addWidget(tabs[i]);
+                    tabX += w + tabGap;
+                }
+                tabs[0].setCounts(() -> {
+                    if (rightPanel != null) {
+                        int rt = rightPanel.getSelectedTabIndex();
+                        if (rt == 1) return LabItemStates.counts(false);
+                        if (rt == 2) return LabBlockStates.counts(false);
+                    }
+                    LabRecipeIndex.RecipeCounts c = LabRecipeIndex.counts(false);
+                    return new LabTabCounts(c.recipes(), c.disabled(), c.modified());
+                }, () -> {
+                    if (rightPanel != null) {
+                        int rt = rightPanel.getSelectedTabIndex();
+                        if (rt == 1) return LabGuiKeys.LAB_TAB_TOOLTIP_ITEMS;
+                        if (rt == 2) return LabGuiKeys.LAB_TAB_TOOLTIP_BLOCKS;
+                    }
+                    return LabGuiKeys.LAB_TAB_TOOLTIP_RECIPES;
+                });
+                tabs[1].setCounts(() -> {
+                    if (rightPanel != null) {
+                        int rt = rightPanel.getSelectedTabIndex();
+                        if (rt == 1) return LabItemStates.counts(true);
+                        if (rt == 2) return LabBlockStates.counts(true);
+                    }
+                    LabRecipeIndex.RecipeCounts c = LabRecipeIndex.counts(true);
+                    return new LabTabCounts(c.recipes(), c.disabled(), c.modified());
+                }, () -> {
+                    if (rightPanel != null) {
+                        int rt = rightPanel.getSelectedTabIndex();
+                        if (rt == 1) return LabGuiKeys.LAB_TAB_TOOLTIP_ITEMS;
+                        if (rt == 2) return LabGuiKeys.LAB_TAB_TOOLTIP_BLOCKS;
+                    }
+                    return LabGuiKeys.LAB_TAB_TOOLTIP_RECIPES;
+                });
+            } else {
+                String[] keys = new String[]{LabGuiKeys.TAB_RECIPE, LabGuiKeys.TAB_ITEMS, LabGuiKeys.TAB_BLOCKS};
+                this.tabKeys = keys;
+                this.tabs = null;
+                int panelW = LabLayout.BODY_W - LabLayout.LEFT_PANEL_W - LabLayout.GAP;
+                int areaW = Math.max(1, panelW - tabInset * 2);
+                this.carouselTab = new LabCarouselTabWidget(tabInset, LabLayout.PANEL_INSET, areaW, tabH, keys, 0);
+                carouselTab.setOnChanged(() -> {
+                    lastRightTab = carouselTab.getSelectedIndex();
+                    if (tabChangedListener != null) tabChangedListener.run();
+                });
+                addWidget(carouselTab);
             }
 
             if (isLeft) {
@@ -326,6 +460,7 @@ public final class LabScreen {
             }
             this.saver = new LabRecipeSaver(this);
             this.itemSaver = new LabItemSaver(this);
+            this.blockSaver = new LabBlockSaver(this);
         }
 
         private void buildLeftContent() {
@@ -333,7 +468,7 @@ public final class LabScreen {
             int innerTop = LabLayout.PANEL_INSET + LabLayout.TAB_H;
             int searchY = innerTop + LabLayout.SEARCH_GAP;
 
-            searchField = new TextFieldWidget(
+            searchField = new LabTextFieldWidget(
                     LabLayout.PANEL_INSET + LabLayout.LIST_INSET,
                     searchY,
                     innerW - LabLayout.LIST_INSET * 2,
@@ -357,6 +492,9 @@ public final class LabScreen {
             itemBrowser = new LabItemBrowserWidget(LabLayout.PANEL_INSET, browserY, innerW, browserH);
             itemBrowser.setVisible(false);
             addWidget(itemBrowser);
+            blockBrowser = new LabBlockBrowserWidget(LabLayout.PANEL_INSET, browserY, innerW, browserH);
+            blockBrowser.setVisible(false);
+            addWidget(blockBrowser);
         }
 
         private void buildRightContent() {
@@ -407,12 +545,19 @@ public final class LabScreen {
             settingsWidget.setClientSideWidget();
             settingsWidget.setOnClear(() -> {
                 machineLayout.clearPhantoms();
-                if (mode != EditMode.MODIFY || modifyTarget == null) return;
-                LabRecipeIndex.LabRecipeEntry target = modifyTarget;
-                saver.sendRecipeEdit(LabRecipeEditAction.RESET, target.id(),
-                        emptyPayload(target, getSelectedMachineUid()));
-                exitModifyMode();
-                showRecipe(target);
+                if (mode == EditMode.MODIFY && modifyTarget != null) {
+                    LabRecipeIndex.LabRecipeEntry target = modifyTarget;
+                    saver.sendRecipeEdit(LabRecipeEditAction.RESET, target.id(),
+                            emptyPayload(target, getSelectedMachineUid()));
+                    exitModifyMode();
+                    showRecipe(target);
+                } else {
+                    // go back to default
+                    settingsWidget.applyValues(LabRecipeFieldValues.defaults());
+                    settingsWidget.setOutputRows(List.of());
+                    exitModifyMode();
+                }
+                settingsWidget.resetScroll();
             });
             settingsWidget.setOnSave(() -> saver.saveRecipe());
             settingsWidget.setGridSizeListener(() -> machineLayout
@@ -425,10 +570,21 @@ public final class LabScreen {
 
             itemTypeDropdown = new LabOptionDropdownWidget(columnX, searchY, columnW, LabLayout.SEARCH_H);
             itemTypeDropdown.setClientSideWidget();
-            itemTypeDropdown.setOptions(LabItemSettingsWidget.types());
+            {
+                List<String> opts = new ArrayList<>();
+                opts.add("all");
+                opts.addAll(LabItemSettingsWidget.types());
+                itemTypeDropdown.setOptions(opts);
+                itemTypeDropdown.setLabelMapper(v -> "all".equals(v) ? "All" : v);
+                itemTypeDropdown.setSelected("all");
+            }
             itemTypeDropdown.setOnSelect(value -> {
-                itemSettings.setType(value);
-                refreshItemPreview();
+                if ("all".equals(value)) {
+                    refreshItemPreview();
+                } else {
+                    itemSettings.setType(value);
+                    refreshItemPreview();
+                }
             });
             itemTypeDropdown.setVisible(false);
             addWidget(itemTypeDropdown);
@@ -461,10 +617,70 @@ public final class LabScreen {
                 itemSettings.setType("basic");
                 itemTypeDropdown.setSelected("basic");
                 refreshItemPreview();
+                // ensure disabled state is recomputed from defaults (type=basic, no builtInOnly)
+                itemSettings.setFields(itemSettings.fullFields());
+                itemSettings.resetScroll();
             });
             itemSettings.setOnSave(() -> itemSaver.saveItem());
             itemSettings.setVisible(false);
             addWidget(itemSettings);
+
+            blockTypeDropdown = new LabOptionDropdownWidget(columnX, searchY, columnW, LabLayout.SEARCH_H);
+            blockTypeDropdown.setClientSideWidget();
+            {
+                List<String> opts = new ArrayList<>();
+                opts.add("all");
+                opts.addAll(LabBlockService.TYPES);
+                blockTypeDropdown.setOptions(opts);
+                blockTypeDropdown.setLabelMapper(v -> "all".equals(v) ? "All" : v);
+                blockTypeDropdown.setSelected("all");
+            }
+            blockTypeDropdown.setOnSelect(value -> {
+                if ("all".equals(value)) {
+                    refreshBlockPreview();
+                } else {
+                    blockSettings.setType(value);
+                    refreshBlockPreview();
+                }
+            });
+            blockTypeDropdown.setVisible(false);
+            addWidget(blockTypeDropdown);
+
+            blockModeLabel = new TextTexture(
+                    () -> I18n.get(blockMode == EditMode.MODIFY ? LabGuiKeys.LAB_MODE_MODIFY : LabGuiKeys.LAB_MODE_NEW))
+                    .setType(TextTexture.TextType.LEFT_HIDE)
+                    .setWidth(columnW)
+                    .setColor(LabColors.TEXT_MUTED);
+
+            blockPreview = new LabBlockPreviewWidget(
+                    columnX,
+                    layoutY,
+                    columnW,
+                    invY - layoutY - LabLayout.MACHINE_GAP - LabLayout.MACHINE_PAD);
+            blockPreview.setVisible(false);
+            addWidget(blockPreview);
+
+            blockSettings = new LabBlockSettingsWidget(settingsX, searchY, LabLayout.MACHINE_W, settingsH);
+            blockSettings.setClientSideWidget();
+            blockSettings.setOnClear(() -> {
+                if (blockMode == EditMode.MODIFY && blockModifyTarget != null) {
+                    LabBlockIndex.LabBlockEntry target = blockModifyTarget;
+                    blockSaver.send(LabBlockEditAction.RESET, target.id());
+                    exitBlockModifyMode();
+                }
+                blockSettings.setBuiltInOnly(false);
+                blockSettings.applyValues(LabBlockFieldValues.defaults());
+                blockSettings.applyTags(List.of());
+                blockSettings.applyActions(List.of());
+                blockSettings.setType("basic");
+                blockTypeDropdown.setSelected("basic");
+                refreshBlockPreview();
+                blockSettings.setFields(blockSettings.fullFields());
+                blockSettings.resetScroll();
+            });
+            blockSettings.setOnSave(() -> blockSaver.saveBlock());
+            blockSettings.setVisible(false);
+            addWidget(blockSettings);
         }
 
         @Override
@@ -492,15 +708,27 @@ public final class LabScreen {
                         LabLayout.MACHINE_W, innerH);
             }
 
-            for (LabTab tab : tabs) {
-                if (!tab.isTabActive()) {
-                    continue;
+            if (isLeft && tabs != null) {
+                for (LabTab tab : tabs) {
+                    if (!tab.isTabActive()) {
+                        continue;
+                    }
+                    int eraseX = tab.getPositionX() + 1;
+                    int eraseW = tab.getSizeWidth() - 2;
+                    if (eraseW > 0) {
+                        TAB_ERASE_TEX.draw(g, mx, my, eraseX, innerTopY, eraseW, 1);
+                    }
                 }
-                int eraseX = tab.getPositionX() + 1;
-                int eraseW = tab.getSizeWidth() - 2;
+            } else if (!isLeft && carouselTab != null) {
+                int eraseX = carouselTab.getPositionX() + 1;
+                int eraseW = carouselTab.getSizeWidth() - 2;
                 if (eraseW > 0) {
                     TAB_ERASE_TEX.draw(g, mx, my, eraseX, innerTopY, eraseW, 1);
                 }
+            }
+
+            if (!isLeft) {
+                SEPARATOR_TOP_BORDER.draw(g, mx, my, innerX + LabLayout.MACHINE_W, innerTopY + 1, LabLayout.AREA_GAP, 1);
             }
 
             super.drawInBackground(g, mx, my, pt);
@@ -513,16 +741,22 @@ public final class LabScreen {
                 itemModeLabel.draw(g, mx, my, getPositionX() + columnX, getPositionY() + modeLabelY,
                         columnW, LabLayout.MODE_LABEL_H);
             }
+            if (!isLeft && blockModeLabel != null && blockTypeDropdown.isVisible()) {
+                blockModeLabel.draw(g, mx, my, getPositionX() + columnX, getPositionY() + modeLabelY,
+                        columnW, LabLayout.MODE_LABEL_H);
+            }
         }
 
         @Override
         public boolean mouseClicked(double mouseX, double mouseY, int button) {
             if (button != LabColors.MOUSE_BUTTON_LEFT) return super.mouseClicked(mouseX, mouseY, button);
 
-            for (int i = 0; i < tabs.length; i++) {
-                if (tabs[i].isMouseOverElement(mouseX, mouseY)) {
-                    selectTab(i);
-                    return true;
+            if (isLeft && tabs != null) {
+                for (int i = 0; i < tabs.length; i++) {
+                    if (!tabKeys[i].isBlank() && tabs[i].isMouseOverElement(mouseX, mouseY)) {
+                        selectTab(i);
+                        return true;
+                    }
                 }
             }
 
@@ -533,19 +767,22 @@ public final class LabScreen {
         }
 
         private void selectTab(int index) {
-            if (tabs[index].isTabActive()) return;
-            for (LabTab tab : tabs) tab.setTabActive(false);
-            tabs[index].setTabActive(true);
-            if (isLeft) {
+            if (isLeft && tabs != null) {
+                if (tabs[index].isTabActive()) return;
+                for (LabTab tab : tabs) tab.setTabActive(false);
+                tabs[index].setTabActive(true);
                 lastLeftTab = index;
-            } else {
-                lastRightTab = index;
+                if (tabChangedListener != null) tabChangedListener.run();
+            } else if (!isLeft && carouselTab != null) {
+                int prev = carouselTab.getSelectedIndex();
+                if (prev == index) return;
+                carouselTab.setSelectedIndex(index);
             }
-            if (tabChangedListener != null) tabChangedListener.run();
         }
 
         void selectTabIndex(int index) {
-            if (index >= 0 && index < tabs.length) {
+            if (index < 0 || index >= tabKeys.length) return;
+            if (!tabKeys[index].isBlank()) {
                 selectTab(index);
             }
         }
@@ -559,10 +796,15 @@ public final class LabScreen {
         }
 
         public int getSelectedTabIndex() {
-            for (int i = 0; i < tabs.length; i++) {
-                if (tabs[i].isTabActive()) {
-                    return i;
+            if (isLeft && tabs != null) {
+                for (int i = 0; i < tabs.length; i++) {
+                    if (tabs[i].isTabActive()) {
+                        return i;
+                    }
                 }
+                return 0;
+            } else if (!isLeft && carouselTab != null) {
+                return carouselTab.getSelectedIndex();
             }
             return 0;
         }
@@ -573,6 +815,12 @@ public final class LabScreen {
 
         void setTabChangedListener(Runnable tabChangedListener) {
             this.tabChangedListener = tabChangedListener;
+            if (!isLeft && carouselTab != null) {
+                carouselTab.setOnChanged(() -> {
+                    lastRightTab = carouselTab.getSelectedIndex();
+                    if (this.tabChangedListener != null) this.tabChangedListener.run();
+                });
+            }
         }
 
         void setMachineChangedListener(Runnable machineChangedListener) {
@@ -633,18 +881,29 @@ public final class LabScreen {
             if (isLeft) {
                 boolean showRecipeView = rightPanel != null && rightPanel.getSelectedTabIndex() == 0;
                 boolean showItemView = rightPanel != null && rightPanel.getSelectedTabIndex() == 1;
-                searchField.setVisible(showRecipeView || showItemView);
+                boolean showBlockView = rightPanel != null && rightPanel.getSelectedTabIndex() == 2;
+                searchField.setVisible(showRecipeView || showItemView || showBlockView);
                 recipeBrowser.setVisible(showRecipeView);
                 itemBrowser.setVisible(showItemView);
+                blockBrowser.setVisible(showBlockView);
                 if (showRecipeView) {
-                    recipeBrowser.setKubejsOnly(getSelectedTabIndex() == 1);
+                    boolean kubejsOnly = getSelectedTabIndex() == 1;
+                    recipeBrowser.setKubejsOnly(kubejsOnly);
                     recipeBrowser.setMachineFilter(rightPanel.getMachineRecipeIds());
                     recipeBrowser.setMachineUid(rightPanel.getSelectedMachineUid());
                     recipeBrowser.rebuild();
                 }
                 if (showItemView) {
                     itemBrowser.setKubejsOnly(getSelectedTabIndex() == 1);
+                    String type = rightPanel != null && rightPanel.itemTypeDropdown != null ? rightPanel.itemTypeDropdown.getSelected() : null;
+                    itemBrowser.setTypeFilter(type);
                     itemBrowser.rebuild();
+                }
+                if (showBlockView) {
+                    blockBrowser.setKubejsOnly(getSelectedTabIndex() == 1);
+                    String type = rightPanel != null && rightPanel.blockTypeDropdown != null ? rightPanel.blockTypeDropdown.getSelected() : null;
+                    blockBrowser.setTypeFilter(type);
+                    blockBrowser.rebuild();
                 }
             } else {
                 boolean recipeTabActive = getSelectedTabIndex() == 0;
@@ -657,15 +916,20 @@ public final class LabScreen {
                     LabRecipeMachine support = machine == null ? null : LabRecipeMachines.get(machine.recipeTypeUid());
                     settingsWidget.setFields(support == null ? List.of() : support.fields());
                 }
-                boolean itemTabActive = !recipeTabActive;
+                boolean itemTabActive = getSelectedTabIndex() == 1;
                 itemTypeDropdown.setVisible(itemTabActive);
                 itemPreview.setVisible(itemTabActive);
                 itemSettings.setVisible(itemTabActive);
                 if (itemTabActive) {
-                    List<LabItemField> fields = itemModifyTarget == null
-                            ? itemSettings.fullFields()
-                            : (itemModifyTarget.kubejs() ? itemSettings.fullFields() : itemSettings.builtInFields());
-                    itemSettings.setFields(fields);
+                    itemSettings.setFields(itemSettings.fullFields());
+                }
+                boolean blockTabActive = getSelectedTabIndex() == 2;
+                blockTypeDropdown.setVisible(blockTabActive);
+                blockPreview.setVisible(blockTabActive);
+                blockSettings.setVisible(blockTabActive);
+                if (blockTabActive) {
+                    blockSettings.setBuiltInOnly(blockModifyTarget != null && !blockModifyTarget.kubejs());
+                    blockSettings.setFields(blockSettings.fullFields());
                 }
             }
         }
@@ -716,10 +980,7 @@ public final class LabScreen {
 
         void showItemSettings(LabItemIndex.LabItemEntry entry) {
             itemSelection = entry;
-            List<LabItemField> fields = entry.kubejs()
-                    ? itemSettings.fullFields()
-                    : itemSettings.builtInFields();
-            itemSettings.setFields(fields);
+            itemSettings.setFields(itemSettings.fullFields());
             LabItemState state = LabItemStates.stateOf(entry.id());
             String type = state != null && state.type() != null && !state.type().isBlank()
                     ? state.type()
@@ -783,10 +1044,74 @@ public final class LabScreen {
             if (itemBrowser != null) {
                 itemBrowser.setQuery(value);
             }
+            if (blockBrowser != null) {
+                blockBrowser.setQuery(value);
+            }
         }
 
         LabItemBrowserWidget getItemBrowser() {
             return itemBrowser;
+        }
+
+        LabBlockBrowserWidget getBlockBrowser() {
+            return blockBrowser;
+        }
+
+        void selectBlock(LabBlockIndex.LabBlockEntry entry) {
+            if (blockBrowser == null) {
+                return;
+            }
+            blockBrowser.setSelectedBlockId(entry.id());
+        }
+
+        void enterBlockModifyMode(LabBlockIndex.LabBlockEntry entry) {
+            blockMode = EditMode.MODIFY;
+            blockModifyTarget = entry;
+            showBlockSettings(entry);
+        }
+
+        void exitBlockModifyMode() {
+            if (blockMode != EditMode.MODIFY) return;
+            blockMode = EditMode.NEW;
+            blockModifyTarget = null;
+            refreshBlockModeLabel();
+        }
+
+        void showBlockSettings(LabBlockIndex.LabBlockEntry entry) {
+            blockSelection = entry;
+            blockSettings.setBuiltInOnly(!entry.kubejs());
+            blockSettings.setFields(blockSettings.fullFields());
+            LabBlockState state = LabBlockStates.stateOf(entry.id());
+            String type = state != null && state.type() != null && !state.type().isBlank()
+                    ? state.type()
+                    : LabBlockIndex.typeOf(entry.id());
+            blockSettings.setType(type);
+            blockTypeDropdown.setSelected(type);
+            if (state != null) {
+                blockSettings.applyValues(state.values());
+                blockSettings.applyTags(state.tags());
+                blockSettings.applyActions(state.actions());
+            } else {
+                blockSettings.applyValues(LabBlockIndex.prefillValues(entry.id()));
+                blockSettings.applyTags(List.of());
+                blockSettings.applyActions(List.of());
+            }
+            refreshBlockModeLabel();
+            refreshBlockPreview();
+        }
+
+        private void refreshBlockModeLabel() {
+            if (blockModeLabel == null) return;
+            blockModeLabel.setColor(blockMode == EditMode.MODIFY ? LabColors.INTERACTIVE : LabColors.TEXT_MUTED);
+        }
+
+        private void refreshBlockPreview() {
+            if (blockSettings == null || blockPreview == null) {
+                return;
+            }
+            ItemStack previewStack = blockSelection != null ? blockSelection.stack() : ItemStack.EMPTY;
+            blockPreview.setBlock(blockSettings.getType(), previewStack);
+            blockPreview.setTexture(blockSettings.getAllTexture());
         }
     }
 }

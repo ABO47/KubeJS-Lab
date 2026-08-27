@@ -1,7 +1,6 @@
 package com.abo47.kubejslab.item.model;
 
 import java.util.List;
-
 import javax.annotation.Nullable;
 
 import net.minecraft.resources.ResourceLocation;

@@ -5,10 +5,8 @@ import java.util.function.Supplier;
 
 import org.lwjgl.glfw.GLFW;
 
-import com.lowdragmc.lowdraglib.gui.widget.TextFieldWidget;
 
-
-public final class LabCommitFieldWidget extends TextFieldWidget {
+public final class LabCommitFieldWidget extends LabTextFieldWidget {
     private final Consumer<String> onCommit;
 
     public LabCommitFieldWidget(int x, int y, int w, int h, Supplier<String> supplier, Consumer<String> onCommit) {

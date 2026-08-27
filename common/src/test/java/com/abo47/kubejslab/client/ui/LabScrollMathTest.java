@@ -1,9 +1,10 @@
 package com.abo47.kubejslab.client.ui;
 import com.abo47.kubejslab.client.ui.base.LabScrollMath;
 
+import org.junit.jupiter.api.Test;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import org.junit.jupiter.api.Test;
 
 class LabScrollMathTest {
     @Test

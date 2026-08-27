@@ -2,7 +2,6 @@ package com.abo47.kubejslab.client.ui.items;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.annotation.Nullable;
 
 import net.minecraft.resources.ResourceLocation;
