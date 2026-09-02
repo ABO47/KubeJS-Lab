@@ -13,6 +13,8 @@ import com.abo47.kubejslab.network.block.C2SBlockEditPacket;
 import com.abo47.kubejslab.network.block.S2CBlockStatePacket;
 import com.abo47.kubejslab.network.item.C2SItemEditPacket;
 import com.abo47.kubejslab.network.item.S2CItemStatePacket;
+import com.abo47.kubejslab.network.loot.C2SLootEditPacket;
+import com.abo47.kubejslab.network.loot.S2CLootStatePacket;
 import com.abo47.kubejslab.network.recipe.C2SRecipeEditPacket;
 import com.abo47.kubejslab.network.recipe.S2CRecipeStatePacket;
 
@@ -37,6 +39,10 @@ public interface PlatformService {
     void sendBlockEdit(C2SBlockEditPacket packet);
 
     void sendBlockState(ServerPlayer player, S2CBlockStatePacket packet);
+
+    void sendLootEdit(C2SLootEditPacket packet);
+
+    void sendLootState(ServerPlayer player, S2CLootStatePacket packet);
 
     Optional<FluidStack> readFluidIngredient(IRecipeSlotView view);
 

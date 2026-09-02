@@ -7,6 +7,8 @@ import com.abo47.kubejslab.network.block.C2SBlockEditPacket;
 import com.abo47.kubejslab.network.block.S2CBlockStatePacket;
 import com.abo47.kubejslab.network.item.C2SItemEditPacket;
 import com.abo47.kubejslab.network.item.S2CItemStatePacket;
+import com.abo47.kubejslab.network.loot.C2SLootEditPacket;
+import com.abo47.kubejslab.network.loot.S2CLootStatePacket;
 import com.abo47.kubejslab.network.recipe.C2SRecipeEditPacket;
 import com.abo47.kubejslab.network.recipe.S2CRecipeStatePacket;
 import com.abo47.kubejslab.platform.Services;
@@ -50,5 +52,13 @@ public final class ModNetwork {
 
     public static void sendBlockState(ServerPlayer player, S2CBlockStatePacket packet) {
         Services.platform().sendBlockState(player, packet);
+    }
+
+    public static void sendLootEdit(C2SLootEditPacket packet) {
+        Services.platform().sendLootEdit(packet);
+    }
+
+    public static void sendLootState(ServerPlayer player, S2CLootStatePacket packet) {
+        Services.platform().sendLootState(player, packet);
     }
 }

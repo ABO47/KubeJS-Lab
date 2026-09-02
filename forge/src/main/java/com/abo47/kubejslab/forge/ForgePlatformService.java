@@ -15,6 +15,8 @@ import com.abo47.kubejslab.network.block.C2SBlockEditPacket;
 import com.abo47.kubejslab.network.block.S2CBlockStatePacket;
 import com.abo47.kubejslab.network.item.C2SItemEditPacket;
 import com.abo47.kubejslab.network.item.S2CItemStatePacket;
+import com.abo47.kubejslab.network.loot.C2SLootEditPacket;
+import com.abo47.kubejslab.network.loot.S2CLootStatePacket;
 import com.abo47.kubejslab.network.recipe.C2SRecipeEditPacket;
 import com.abo47.kubejslab.network.recipe.S2CRecipeStatePacket;
 import com.abo47.kubejslab.platform.PlatformService;
@@ -84,6 +86,16 @@ public final class ForgePlatformService implements PlatformService {
 
     @Override
     public void sendBlockState(ServerPlayer player, S2CBlockStatePacket packet) {
+        ForgeNetwork.sendToClient(packet, player);
+    }
+
+    @Override
+    public void sendLootEdit(C2SLootEditPacket packet) {
+        ForgeNetwork.sendToServer(packet);
+    }
+
+    @Override
+    public void sendLootState(ServerPlayer player, S2CLootStatePacket packet) {
         ForgeNetwork.sendToClient(packet, player);
     }
 

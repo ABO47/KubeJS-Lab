@@ -28,6 +28,10 @@ public final class LabPathResolver {
 		return kubejsDir().resolve("lab").resolve("recipes.json");
 	}
 
+	public static Path lootStateFile() {
+		return kubejsDir().resolve("lab").resolve("loot.json");
+	}
+
 	public static Path legacyStateFile() {
 		return kubejsDir().resolve("lab").resolve("state.json");
 	}

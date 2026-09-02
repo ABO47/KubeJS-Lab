@@ -34,6 +34,7 @@ import com.abo47.kubejslab.client.ui.base.*;
 import com.abo47.kubejslab.client.ui.blocks.*;
 import com.abo47.kubejslab.client.ui.contextmenu.*;
 import com.abo47.kubejslab.client.ui.items.*;
+import com.abo47.kubejslab.client.ui.loot.*;
 import com.abo47.kubejslab.client.ui.machines.*;
 import com.abo47.kubejslab.client.ui.picker.*;
 import com.abo47.kubejslab.client.ui.recipes.*;
@@ -41,6 +42,10 @@ import com.abo47.kubejslab.item.model.LabItemEditAction;
 import com.abo47.kubejslab.item.model.LabItemFieldValues;
 import com.abo47.kubejslab.item.model.LabItemState;
 import com.abo47.kubejslab.lab.LabPathResolver;
+import com.abo47.kubejslab.loot.model.LabLootEditAction;
+import com.abo47.kubejslab.loot.model.LabLootFieldValues;
+import com.abo47.kubejslab.loot.model.LabLootState;
+import com.abo47.kubejslab.loot.runtime.LabLootService;
 import com.abo47.kubejslab.recipe.LabRecipeMachine;
 import com.abo47.kubejslab.recipe.LabRecipeMachines;
 import com.abo47.kubejslab.recipe.model.LabRecipeEditAction;
@@ -168,6 +173,12 @@ public final class LabScreen {
         });
         leftPanel.getBlockBrowser().setBlockRightClickListener(
                 (entry, mouseX, mouseY) -> root.openBlockContextMenu(entry, mouseX, mouseY));
+        leftPanel.getLootBrowser().setLootClickListener(entry -> {
+            leftPanel.selectLoot(entry);
+            rightPanel.showLootSettings(entry);
+        });
+        leftPanel.getLootBrowser().setLootRightClickListener(
+                (entry, mouseX, mouseY) -> root.openLootContextMenu(entry, mouseX, mouseY));
 
         return new ModularUI(root, IUIHolder.EMPTY, player);
     }
@@ -301,6 +312,21 @@ public final class LabScreen {
             }), mx, my);
         }
 
+        void openLootContextMenu(LabLootIndex.LabLootEntry entry, double mx, double my) {
+            rightPanel.selectLoot(entry);
+            openActionsMenu(LabLootActions.forEntry(entry, new LabLootActions.LootActionCallbacks() {
+                @Override
+                public void openModify(LabLootIndex.LabLootEntry target) {
+                    rightPanel.enterLootModifyMode(target);
+                }
+
+                @Override
+                public void send(LabLootEditAction action, @Nonnull ResourceLocation targetId) {
+                    rightPanel.lootSaver.send(action, targetId);
+                }
+            }), mx, my);
+        }
+
         void openActionsMenu(List<LabContextAction> actions, double mx, double my) {
             menuActions = actions;
             menuW = LabContextMenuPanel.menuWidth(actions);
@@ -349,6 +375,7 @@ public final class LabScreen {
         private LabRecipeBrowserWidget recipeBrowser;
         private LabItemBrowserWidget itemBrowser;
         private LabBlockBrowserWidget blockBrowser;
+        private LabLootBrowserWidget lootBrowser;
         LabMachineDropdownWidget machineDropdown;
         LabMachineLayoutWidget machineLayout;
         LabRecipeSettingsWidget settingsWidget;
@@ -358,21 +385,28 @@ public final class LabScreen {
         LabBlockSettingsWidget blockSettings;
         LabOptionDropdownWidget blockTypeDropdown;
         LabBlockPreviewWidget blockPreview;
+        LabOptionDropdownWidget lootTypeDropdown;
+        LabLootSettingsWidget lootSettings;
         final LabRecipeSaver saver;
         final LabItemSaver itemSaver;
         final LabBlockSaver blockSaver;
+        final LabLootSaver lootSaver;
         private PlayerInventoryWidget inventory;
         EditMode mode = EditMode.NEW;
         EditMode itemMode = EditMode.NEW;
         EditMode blockMode = EditMode.NEW;
+        EditMode lootMode = EditMode.NEW;
         LabRecipeIndex.LabRecipeEntry modifyTarget;
         LabItemIndex.LabItemEntry itemModifyTarget;
         LabItemIndex.LabItemEntry itemSelection;
         LabBlockIndex.LabBlockEntry blockModifyTarget;
         LabBlockIndex.LabBlockEntry blockSelection;
+        ResourceLocation lootModifyTarget;
+        LabLootIndex.LabLootEntry lootSelection;
         private TextTexture modeLabel;
         private TextTexture itemModeLabel;
         private TextTexture blockModeLabel;
+        private TextTexture lootModeLabel;
         private int columnX;
         private int columnW;
         private int modeLabelY;
@@ -412,6 +446,7 @@ public final class LabScreen {
                         int rt = rightPanel.getSelectedTabIndex();
                         if (rt == 1) return LabItemStates.counts(false);
                         if (rt == 2) return LabBlockStates.counts(false);
+                        if (rt == 3) return LabLootStates.counts(false);
                     }
                     LabRecipeIndex.RecipeCounts c = LabRecipeIndex.counts(false);
                     return new LabTabCounts(c.recipes(), c.disabled(), c.modified());
@@ -420,6 +455,7 @@ public final class LabScreen {
                         int rt = rightPanel.getSelectedTabIndex();
                         if (rt == 1) return LabGuiKeys.LAB_TAB_TOOLTIP_ITEMS;
                         if (rt == 2) return LabGuiKeys.LAB_TAB_TOOLTIP_BLOCKS;
+                        if (rt == 3) return LabGuiKeys.LAB_TAB_TOOLTIP_LOOT;
                     }
                     return LabGuiKeys.LAB_TAB_TOOLTIP_RECIPES;
                 });
@@ -428,6 +464,7 @@ public final class LabScreen {
                         int rt = rightPanel.getSelectedTabIndex();
                         if (rt == 1) return LabItemStates.counts(true);
                         if (rt == 2) return LabBlockStates.counts(true);
+                        if (rt == 3) return LabLootStates.counts(true);
                     }
                     LabRecipeIndex.RecipeCounts c = LabRecipeIndex.counts(true);
                     return new LabTabCounts(c.recipes(), c.disabled(), c.modified());
@@ -436,11 +473,12 @@ public final class LabScreen {
                         int rt = rightPanel.getSelectedTabIndex();
                         if (rt == 1) return LabGuiKeys.LAB_TAB_TOOLTIP_ITEMS;
                         if (rt == 2) return LabGuiKeys.LAB_TAB_TOOLTIP_BLOCKS;
+                        if (rt == 3) return LabGuiKeys.LAB_TAB_TOOLTIP_LOOT;
                     }
                     return LabGuiKeys.LAB_TAB_TOOLTIP_RECIPES;
                 });
             } else {
-                String[] keys = new String[]{LabGuiKeys.TAB_RECIPE, LabGuiKeys.TAB_ITEMS, LabGuiKeys.TAB_BLOCKS};
+                String[] keys = new String[]{LabGuiKeys.TAB_RECIPE, LabGuiKeys.TAB_ITEMS, LabGuiKeys.TAB_BLOCKS, LabGuiKeys.TAB_LOOT};
                 this.tabKeys = keys;
                 this.tabs = null;
                 int panelW = LabLayout.BODY_W - LabLayout.LEFT_PANEL_W - LabLayout.GAP;
@@ -461,6 +499,7 @@ public final class LabScreen {
             this.saver = new LabRecipeSaver(this);
             this.itemSaver = new LabItemSaver(this);
             this.blockSaver = new LabBlockSaver(this);
+            this.lootSaver = new LabLootSaver(this);
         }
 
         private void buildLeftContent() {
@@ -495,6 +534,9 @@ public final class LabScreen {
             blockBrowser = new LabBlockBrowserWidget(LabLayout.PANEL_INSET, browserY, innerW, browserH);
             blockBrowser.setVisible(false);
             addWidget(blockBrowser);
+            lootBrowser = new LabLootBrowserWidget(LabLayout.PANEL_INSET, browserY, innerW, browserH);
+            lootBrowser.setVisible(false);
+            addWidget(lootBrowser);
         }
 
         private void buildRightContent() {
@@ -681,6 +723,53 @@ public final class LabScreen {
             blockSettings.setOnSave(() -> blockSaver.saveBlock());
             blockSettings.setVisible(false);
             addWidget(blockSettings);
+
+            lootTypeDropdown = new LabOptionDropdownWidget(columnX, searchY, columnW, LabLayout.SEARCH_H);
+            lootTypeDropdown.setClientSideWidget();
+            {
+                List<String> opts = new ArrayList<>();
+                opts.add("all");
+                opts.add(LabLootService.LOOT_TYPE_BLOCK);
+                opts.add(LabLootService.LOOT_TYPE_ENTITY);
+                opts.add(LabLootService.LOOT_TYPE_CHEST);
+                opts.add(LabLootService.LOOT_TYPE_FISHING);
+                opts.add(LabLootService.LOOT_TYPE_GIFT);
+                opts.add(LabLootService.LOOT_TYPE_GENERIC);
+                lootTypeDropdown.setOptions(opts);
+                lootTypeDropdown.setLabelMapper(v -> "all".equals(v) ? "All" : v);
+                lootTypeDropdown.setSelected("all");
+            }
+            lootTypeDropdown.setOnSelect(value -> {
+                if (lootBrowser != null) {
+                    lootBrowser.setLootTypeFilter("all".equals(value) ? null : value);
+                    lootBrowser.rebuild();
+                }
+            });
+            lootTypeDropdown.setVisible(false);
+            addWidget(lootTypeDropdown);
+
+            lootModeLabel = new TextTexture(
+                    () -> I18n.get(lootMode == EditMode.MODIFY ? LabGuiKeys.LAB_MODE_MODIFY : LabGuiKeys.LAB_MODE_NEW))
+                    .setType(TextTexture.TextType.LEFT_HIDE)
+                    .setWidth(columnW)
+                    .setColor(LabColors.TEXT_MUTED);
+
+            lootSettings = new LabLootSettingsWidget(settingsX, searchY, LabLayout.MACHINE_W, settingsH);
+            lootSettings.setClientSideWidget();
+            lootSettings.setClearHandler(() -> {
+                if (lootMode == EditMode.MODIFY && lootModifyTarget != null) {
+                    ResourceLocation target = lootModifyTarget;
+                    lootSaver.send(LabLootEditAction.RESET, target);
+                    exitLootModifyMode();
+                }
+                lootSettings.applyValues(LabLootFieldValues.defaults());
+                lootSettings.setLootType(LabLootService.LOOT_TYPE_BLOCK);
+                lootSettings.setFields(List.of());
+                lootSettings.resetScroll();
+            });
+            lootSettings.setSaveHandler(() -> lootSaver.saveLoot());
+            lootSettings.setVisible(false);
+            addWidget(lootSettings);
         }
 
         @Override
@@ -743,6 +832,10 @@ public final class LabScreen {
             }
             if (!isLeft && blockModeLabel != null && blockTypeDropdown.isVisible()) {
                 blockModeLabel.draw(g, mx, my, getPositionX() + columnX, getPositionY() + modeLabelY,
+                        columnW, LabLayout.MODE_LABEL_H);
+            }
+            if (!isLeft && lootModeLabel != null && lootTypeDropdown.isVisible()) {
+                lootModeLabel.draw(g, mx, my, getPositionX() + columnX, getPositionY() + modeLabelY,
                         columnW, LabLayout.MODE_LABEL_H);
             }
         }
@@ -882,10 +975,12 @@ public final class LabScreen {
                 boolean showRecipeView = rightPanel != null && rightPanel.getSelectedTabIndex() == 0;
                 boolean showItemView = rightPanel != null && rightPanel.getSelectedTabIndex() == 1;
                 boolean showBlockView = rightPanel != null && rightPanel.getSelectedTabIndex() == 2;
-                searchField.setVisible(showRecipeView || showItemView || showBlockView);
+                boolean showLootView = rightPanel != null && rightPanel.getSelectedTabIndex() == 3;
+                searchField.setVisible(showRecipeView || showItemView || showBlockView || showLootView);
                 recipeBrowser.setVisible(showRecipeView);
                 itemBrowser.setVisible(showItemView);
                 blockBrowser.setVisible(showBlockView);
+                lootBrowser.setVisible(showLootView);
                 if (showRecipeView) {
                     boolean kubejsOnly = getSelectedTabIndex() == 1;
                     recipeBrowser.setKubejsOnly(kubejsOnly);
@@ -904,6 +999,12 @@ public final class LabScreen {
                     String type = rightPanel != null && rightPanel.blockTypeDropdown != null ? rightPanel.blockTypeDropdown.getSelected() : null;
                     blockBrowser.setTypeFilter(type);
                     blockBrowser.rebuild();
+                }
+                if (showLootView) {
+                    lootBrowser.setKubejsOnly(getSelectedTabIndex() == 1);
+                    String type = rightPanel != null && rightPanel.lootTypeDropdown != null ? rightPanel.lootTypeDropdown.getSelected() : null;
+                    lootBrowser.setLootTypeFilter(type);
+                    lootBrowser.rebuild();
                 }
             } else {
                 boolean recipeTabActive = getSelectedTabIndex() == 0;
@@ -930,6 +1031,14 @@ public final class LabScreen {
                 if (blockTabActive) {
                     blockSettings.setBuiltInOnly(blockModifyTarget != null && !blockModifyTarget.kubejs());
                     blockSettings.setFields(blockSettings.fullFields());
+                }
+                boolean lootTabActive = getSelectedTabIndex() == 3;
+                lootTypeDropdown.setVisible(lootTabActive);
+                lootSettings.setVisible(lootTabActive);
+                if (lootTabActive) {
+                    if (lootSettings != null) {
+                        lootSettings.setFields(List.of());
+                    }
                 }
             }
         }
@@ -1047,6 +1156,9 @@ public final class LabScreen {
             if (blockBrowser != null) {
                 blockBrowser.setQuery(value);
             }
+            if (lootBrowser != null) {
+                lootBrowser.setQuery(value);
+            }
         }
 
         LabItemBrowserWidget getItemBrowser() {
@@ -1055,6 +1167,10 @@ public final class LabScreen {
 
         LabBlockBrowserWidget getBlockBrowser() {
             return blockBrowser;
+        }
+
+        LabLootBrowserWidget getLootBrowser() {
+            return lootBrowser;
         }
 
         void selectBlock(LabBlockIndex.LabBlockEntry entry) {
@@ -1112,6 +1228,57 @@ public final class LabScreen {
             ItemStack previewStack = blockSelection != null ? blockSelection.stack() : ItemStack.EMPTY;
             blockPreview.setBlock(blockSettings.getType(), previewStack);
             blockPreview.setTexture(blockSettings.getAllTexture());
+        }
+
+        void selectLoot(LabLootIndex.LabLootEntry entry) {
+            if (lootBrowser == null) {
+                return;
+            }
+            lootBrowser.setSelectedLootId(entry.id());
+        }
+
+        void enterLootModifyMode(LabLootIndex.LabLootEntry entry) {
+            lootMode = EditMode.MODIFY;
+            lootModifyTarget = entry.id();
+            showLootSettings(entry);
+        }
+
+        void exitLootModifyMode() {
+            if (lootMode != EditMode.MODIFY) return;
+            lootMode = EditMode.NEW;
+            lootModifyTarget = null;
+            refreshLootModeLabel();
+        }
+
+        void showLootSettings(LabLootIndex.LabLootEntry entry) {
+            lootSelection = entry;
+            LabLootState state = LabLootStates.stateOf(entry.id());
+            String lootType = state != null && state.lootType() != null && !state.lootType().isBlank()
+                    ? state.lootType()
+                    : entry.lootType();
+            lootSettings.setLootType(lootType);
+            lootTypeDropdown.setSelected("all");
+            if (state != null) {
+                lootSettings.applyValues(state.values());
+            } else {
+                LabLootFieldValues defaults = LabLootFieldValues.defaults();
+                lootSettings.applyValues(new LabLootFieldValues(entry.id().toString(), "", defaults.poolRollsType(),
+                        defaults.poolRollsValue(), defaults.poolRollsMin(), defaults.poolRollsMax(), defaults.poolRollsN(),
+                        defaults.poolRollsP(), defaults.entryType(), defaults.entryItem(),
+                        defaults.entryTag(), defaults.entryLootTable(), defaults.entryCountType(),
+                        defaults.entryCountValue(), defaults.entryCountMin(), defaults.entryCountMax(),
+                        defaults.entryWeight(), defaults.entryQuality(),
+                        defaults.poolSurvivesExplosion(), defaults.poolRandomChance(), defaults.poolKilledByPlayer(),
+                        defaults.poolFurnaceSmelt(), defaults.poolLootingEnchant(), defaults.poolLootingCount(),
+                        defaults.poolLootingLimit()));
+            }
+            lootSettings.setFields(List.of());
+            refreshLootModeLabel();
+        }
+
+        private void refreshLootModeLabel() {
+            if (lootModeLabel == null) return;
+            lootModeLabel.setColor(lootMode == EditMode.MODIFY ? LabColors.INTERACTIVE : LabColors.TEXT_MUTED);
         }
     }
 }

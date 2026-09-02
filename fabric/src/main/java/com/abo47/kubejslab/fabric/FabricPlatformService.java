@@ -11,6 +11,8 @@ import com.abo47.kubejslab.network.block.C2SBlockEditPacket;
 import com.abo47.kubejslab.network.block.S2CBlockStatePacket;
 import com.abo47.kubejslab.network.item.C2SItemEditPacket;
 import com.abo47.kubejslab.network.item.S2CItemStatePacket;
+import com.abo47.kubejslab.network.loot.C2SLootEditPacket;
+import com.abo47.kubejslab.network.loot.S2CLootStatePacket;
 import com.abo47.kubejslab.network.recipe.C2SRecipeEditPacket;
 import com.abo47.kubejslab.network.recipe.S2CRecipeStatePacket;
 import com.abo47.kubejslab.platform.PlatformService;
@@ -78,6 +80,20 @@ public final class FabricPlatformService implements PlatformService {
         FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
         packet.write(buf);
         ServerPlayNetworking.send(player, FabricNetwork.BLOCK_STATE_SYNC, buf);
+    }
+
+    @Override
+    public void sendLootEdit(C2SLootEditPacket packet) {
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        packet.write(buf);
+        ClientPlayNetworking.send(FabricNetwork.LOOT_EDIT, buf);
+    }
+
+    @Override
+    public void sendLootState(ServerPlayer player, S2CLootStatePacket packet) {
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        packet.write(buf);
+        ServerPlayNetworking.send(player, FabricNetwork.LOOT_STATE_SYNC, buf);
     }
 
     @Override

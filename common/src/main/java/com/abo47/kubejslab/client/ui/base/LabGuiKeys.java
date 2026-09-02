@@ -6,9 +6,11 @@ public final class LabGuiKeys {
     public static final String TAB_RECIPE = "kubejslab.gui.lab_tab_recipe";
     public static final String TAB_ITEMS = "kubejslab.gui.lab_tab_items";
     public static final String TAB_BLOCKS = "kubejslab.gui.lab_tab_blocks";
+    public static final String TAB_LOOT = "kubejslab.gui.lab_tab_loot";
     public static final String LAB_TAB_TOOLTIP_RECIPES = "kubejslab.gui.lab_tab_tooltip_recipes";
     public static final String LAB_TAB_TOOLTIP_ITEMS = "kubejslab.gui.lab_tab_tooltip_items";
     public static final String LAB_TAB_TOOLTIP_BLOCKS = "kubejslab.gui.lab_tab_tooltip_blocks";
+    public static final String LAB_TAB_TOOLTIP_LOOT = "kubejslab.gui.lab_tab_tooltip_loot";
     public static final String LAB_TAB_TOOLTIP_DISABLED = "kubejslab.gui.lab_tab_tooltip_disabled";
     public static final String LAB_TAB_TOOLTIP_MODIFIED = "kubejslab.gui.lab_tab_tooltip_modified";
     public static final String LAB_BLOCK_MODIFY = "kubejslab.gui.lab_block_modify";
@@ -180,6 +182,37 @@ public final class LabGuiKeys {
     public static final String LAB_ASSETS_DELETE = "kubejslab.gui.lab_assets_delete";
     public static final String LAB_ASSETS_CONFIRM = "kubejslab.gui.lab_assets_confirm";
     public static final String LAB_COLOR_SAVE_PALETTE = "kubejslab.gui.lab_color_save_palette";
+    public static final String LAB_LOOT_MODIFY = "kubejslab.gui.lab_loot_modify";
+    public static final String LAB_LOOT_DISABLE = "kubejslab.gui.lab_loot_disable";
+    public static final String LAB_LOOT_RESET = "kubejslab.gui.lab_loot_reset";
+    public static final String LAB_LOOT_DELETE = "kubejslab.gui.lab_loot_delete";
+    public static final String LAB_LOOT_ENABLE = "kubejslab.gui.lab_loot_enable";
+    public static final String LAB_LOOT_CLEAR = "kubejslab.gui.lab_loot_clear";
+    public static final String LAB_LOOT_SAVE = "kubejslab.gui.lab_loot_save";
+    public static final String LAB_LOOT_TYPE = "kubejslab.gui.lab_loot_type";
+    public static final String LAB_LOOT_TARGET_ID = "kubejslab.gui.lab_loot_target_id";
+    public static final String LAB_LOOT_CUSTOM_ID = "kubejslab.gui.lab_loot_custom_id";
+    public static final String LAB_LOOT_POOL_ROLLS_TYPE = "kubejslab.gui.lab_loot_pool_rolls_type";
+    public static final String LAB_LOOT_POOL_ROLLS_VALUE = "kubejslab.gui.lab_loot_pool_rolls_value";
+    public static final String LAB_LOOT_POOL_ROLLS_MIN = "kubejslab.gui.lab_loot_pool_rolls_min";
+    public static final String LAB_LOOT_POOL_ROLLS_MAX = "kubejslab.gui.lab_loot_pool_rolls_max";
+    public static final String LAB_LOOT_POOL_ROLLS_N = "kubejslab.gui.lab_loot_pool_rolls_n";
+    public static final String LAB_LOOT_POOL_ROLLS_P = "kubejslab.gui.lab_loot_pool_rolls_p";
+    public static final String LAB_LOOT_ENTRY_TYPE = "kubejslab.gui.lab_loot_entry_type";
+    public static final String LAB_LOOT_ENTRY_ITEM = "kubejslab.gui.lab_loot_entry_item";
+    public static final String LAB_LOOT_ENTRY_TAG = "kubejslab.gui.lab_loot_entry_tag";
+    public static final String LAB_LOOT_ENTRY_LOOT_TABLE = "kubejslab.gui.lab_loot_entry_loot_table";
+    public static final String LAB_LOOT_ENTRY_COUNT_TYPE = "kubejslab.gui.lab_loot_entry_count_type";
+    public static final String LAB_LOOT_ENTRY_COUNT_VALUE = "kubejslab.gui.lab_loot_entry_count_value";
+    public static final String LAB_LOOT_ENTRY_COUNT_MIN = "kubejslab.gui.lab_loot_entry_count_min";
+    public static final String LAB_LOOT_ENTRY_COUNT_MAX = "kubejslab.gui.lab_loot_entry_count_max";
+    public static final String LAB_LOOT_ENTRY_WEIGHT = "kubejslab.gui.lab_loot_entry_weight";
+    public static final String LAB_LOOT_ENTRY_QUALITY = "kubejslab.gui.lab_loot_entry_quality";
+    public static final String LAB_LOOT_SURVIVES_EXPLOSION = "kubejslab.gui.lab_loot_survives_explosion";
+    public static final String LAB_LOOT_RANDOM_CHANCE = "kubejslab.gui.lab_loot_random_chance";
+    public static final String LAB_LOOT_KILLED_BY_PLAYER = "kubejslab.gui.lab_loot_killed_by_player";
+    public static final String LAB_LOOT_FURNACE_SMELT = "kubejslab.gui.lab_loot_furnace_smelt";
+    public static final String LAB_LOOT_LOOTING_ENCHANT = "kubejslab.gui.lab_loot_looting_enchant";
 
     private LabGuiKeys() {
     }
