@@ -195,6 +195,8 @@ public final class LabGuiKeys {
     public static final String LAB_LOOT_POOL = "kubejslab.gui.lab_loot_pool";
     public static final String LAB_LOOT_ENTRY = "kubejslab.gui.lab_loot_entry";
     public static final String LAB_LOOT_ADD = "kubejslab.gui.lab_loot_add";
+    public static final String LAB_LOOT_NEW_POOL = "kubejslab.gui.lab_loot_new_pool";
+    public static final String LAB_LOOT_PICK_HINT = "kubejslab.gui.lab_loot_pick_hint";
     public static final String LAB_LOOT_ADD_ENTRY = "kubejslab.gui.lab_loot_add_entry";
     public static final String LAB_LOOT_REMOVE = "kubejslab.gui.lab_loot_remove";
     public static final String LAB_LOOT_TIP_PREFIX = "kubejslab.gui.lab_loot_tip_";

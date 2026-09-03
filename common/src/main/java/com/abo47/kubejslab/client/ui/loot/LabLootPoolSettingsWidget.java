@@ -45,7 +45,7 @@ public final class LabLootPoolSettingsWidget extends LabRowCardSettingsWidget {
     private final PoolState pool = new PoolState();
     private String lootType = LabLootService.LOOT_TYPE_BLOCK;
     private final List<Widget> dynamicWidgets = new ArrayList<>();
-    private EntryState armedEntry;
+    private LabPick pendingPick;
 
     private final class PickSlot extends Widget {
         private final EntryState entry;
@@ -59,7 +59,7 @@ public final class LabLootPoolSettingsWidget extends LabRowCardSettingsWidget {
         @Override
         public boolean mouseClicked(double mouseX, double mouseY, int button) {
             if (button == 0 && isMouseOverElement(mouseX, mouseY)) {
-                toggleArmed(entry);
+                paintPending(entry);
                 return true;
             }
             return false;
@@ -74,7 +74,7 @@ public final class LabLootPoolSettingsWidget extends LabRowCardSettingsWidget {
             if (!icon.isEmpty()) {
                 new ItemStackTexture(icon).draw(g, mx, my, x + 1, y + 1, 13, 13);
             }
-            if (armedEntry == entry) {
+            if (pendingPick != null) {
                 LabColors.bordered(0, LabColors.INTERACTIVE).draw(g, mx, my, x, y, 15, 15);
             } else if (isMouseOverElement(mx, my)) {
                 LabGlow.drawGlow(g, mx, my, x, y, 15, 15);
@@ -83,27 +83,29 @@ public final class LabLootPoolSettingsWidget extends LabRowCardSettingsWidget {
         }
     }
 
-    private void toggleArmed(EntryState entry) {
-        armedEntry = armedEntry == entry ? null : entry;
-    }
-
-    public boolean consumePick(LabPick pick) {
-        if (armedEntry == null || !pool.entries.contains(armedEntry)) {
-            armedEntry = null;
-            return false;
-        }
-        if (pick instanceof LabPick.Item item) {
-            armedEntry.item = BuiltInRegistries.ITEM.getKey(item.stack().getItem()).toString();
-            armedEntry.typeDropdown.setSelected("item");
-        } else if (pick instanceof LabPick.Tag tag) {
-            armedEntry.tag = tag.tag().toString();
-            armedEntry.typeDropdown.setSelected("tag");
-        } else {
+    public boolean offerPick(LabPick pick) {
+        if (pick instanceof LabPick.Item || pick instanceof LabPick.Tag) {
+            pendingPick = pick;
             return true;
         }
-        armedEntry = null;
+        return false;
+    }
+
+    private void paintPending(EntryState entry) {
+        if (pendingPick == null || !pool.entries.contains(entry)) {
+            return;
+        }
+        if (pendingPick instanceof LabPick.Item item) {
+            entry.item = BuiltInRegistries.ITEM.getKey(item.stack().getItem()).toString();
+            entry.typeDropdown.setSelected("item");
+        } else if (pendingPick instanceof LabPick.Tag tag) {
+            entry.tag = tag.tag().toString();
+            entry.typeDropdown.setSelected("tag");
+        } else {
+            return;
+        }
+        pendingPick = null;
         rebuildRows();
-        return true;
     }
 
     private static ItemStack slotIcon(EntryState entry) {
@@ -129,13 +131,21 @@ public final class LabLootPoolSettingsWidget extends LabRowCardSettingsWidget {
     private List<Component> slotTips(EntryState entry) {
         String entryType = entry.typeDropdown == null || entry.typeDropdown.getSelected() == null ? "item"
                 : entry.typeDropdown.getSelected();
-        String current = "tag".equals(entryType)
-                ? (entry.tag.isBlank() ? "—" : "#" + entry.tag)
-                : (entry.item.isBlank() ? "—" : entry.item);
-        if (armedEntry == entry) {
-            return List.of(Component.literal(current), Component.literal("Pick an item or tag…"));
+        if ("tag".equals(entryType) && !entry.tag.isBlank()) {
+            List<ItemStack> previews = LabPickerEntries.tagPreviews(ResourceLocation.tryParse(entry.tag));
+            if (!previews.isEmpty()) {
+                return List.of(Component.literal("#" + entry.tag),
+                        Component.literal(previews.get(0).getHoverName().getString()));
+            }
+            return List.of(Component.literal("#" + entry.tag));
         }
-        return List.of(Component.literal(current), Component.literal("Click, then pick an item or tag"));
+        if (!"tag".equals(entryType)) {
+            ItemStack icon = slotIcon(entry);
+            if (!icon.isEmpty()) {
+                return List.of(icon.getHoverName());
+            }
+        }
+        return List.of(Component.translatable(LabGuiKeys.LAB_LOOT_PICK_HINT));
     }
 
     private static final class EntryState {
@@ -451,9 +461,6 @@ public final class LabLootPoolSettingsWidget extends LabRowCardSettingsWidget {
             return;
         }
         syncLiveText();
-        if (armedEntry == entry) {
-            armedEntry = null;
-        }
         pool.entries.remove(entry);
         rebuildStateWidgets();
         rebuildRows();

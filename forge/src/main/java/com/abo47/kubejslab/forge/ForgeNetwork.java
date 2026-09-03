@@ -15,6 +15,7 @@ import com.abo47.kubejslab.network.loot.C2SLootEditPacket;
 import com.abo47.kubejslab.network.loot.C2SLootPrefillPacket;
 import com.abo47.kubejslab.network.loot.S2CLootPrefillPacket;
 import com.abo47.kubejslab.network.loot.S2CLootStatePacket;
+import com.abo47.kubejslab.network.loot.S2CLootTableListPacket;
 import com.abo47.kubejslab.network.recipe.C2SRecipeEditPacket;
 import com.abo47.kubejslab.network.recipe.S2CRecipeStatePacket;
 
@@ -152,6 +153,13 @@ public final class ForgeNetwork {
         CHANNEL.registerMessage(11, S2CLootPrefillPacket.class,
                 S2CLootPrefillPacket::write,
                 S2CLootPrefillPacket::read,
+                (packet, ctx) -> {
+                    ctx.get().enqueueWork(packet::handleClient);
+                    ctx.get().setPacketHandled(true);
+                });
+        CHANNEL.registerMessage(12, S2CLootTableListPacket.class,
+                S2CLootTableListPacket::write,
+                S2CLootTableListPacket::read,
                 (packet, ctx) -> {
                     ctx.get().enqueueWork(packet::handleClient);
                     ctx.get().setPacketHandled(true);

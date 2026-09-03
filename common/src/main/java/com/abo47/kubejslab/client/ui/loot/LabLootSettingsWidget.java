@@ -186,7 +186,7 @@ public final class LabLootSettingsWidget extends LabRowCardSettingsWidget {
         for (int i = 0; i < pools.size(); i++) {
             rows.add(plainRow(poolTitle(i), editButtons.get(i), false));
         }
-        rows.add(plainRow(Component.translatable(LabGuiKeys.LAB_LOOT_POOL).getString(), addPoolButton,
+        rows.add(plainRow(Component.translatable(LabGuiKeys.LAB_LOOT_NEW_POOL).getString(), addPoolButton,
                 pools.size() >= MAX_POOLS));
 
         setRows(rows);

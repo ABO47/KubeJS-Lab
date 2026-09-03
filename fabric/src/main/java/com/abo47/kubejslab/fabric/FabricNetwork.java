@@ -30,6 +30,8 @@ public final class FabricNetwork {
     public static final ResourceLocation LOOT_PREFILL = new ResourceLocation(KubeJSLab.MOD_ID, "loot_prefill");
     public static final ResourceLocation LOOT_PREFILL_SYNC =
             new ResourceLocation(KubeJSLab.MOD_ID, "loot_prefill_sync");
+    public static final ResourceLocation LOOT_TABLES_SYNC =
+            new ResourceLocation(KubeJSLab.MOD_ID, "loot_tables_sync");
 
     private static volatile boolean registered;
 

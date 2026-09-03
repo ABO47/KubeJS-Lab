@@ -24,6 +24,7 @@ import com.abo47.kubejslab.client.ui.base.LabColors;
 import com.abo47.kubejslab.client.ui.base.LabCommitFieldWidget;
 import com.abo47.kubejslab.client.ui.base.LabGuiKeys;
 import com.abo47.kubejslab.client.ui.base.LabLayout;
+import com.abo47.kubejslab.client.ui.base.LabModalHeader;
 import com.abo47.kubejslab.client.ui.base.LabScrollBarWidget;
 import com.abo47.kubejslab.client.ui.contextmenu.LabActionTone;
 import com.abo47.kubejslab.client.ui.contextmenu.LabContextAction;
@@ -105,8 +106,8 @@ public final class LabColorPickerModal {
         this.panel.setBackground(LabColors.bordered(
                 LabColors.withAlpha(LabColors.SURFACE_BASE, 252), LabColors.BORDER_ACCENT));
         layer.addWidget(panel);
-        panel.addWidget(titleLabel(title));
-        addHeaderClose(MODAL_W - 24, 3);
+        panel.addWidget(LabModalHeader.titleLabel(title, 8, LabModalHeader.contentW(MODAL_W, 8)));
+        panel.addWidget(LabModalHeader.closeButton(LabModalHeader.closeX(MODAL_W), this::close));
 
         WidgetGroup left = new WidgetGroup(PREVIEW_X, BODY_Y, LEFT_W, bodyH);
         left.setBackground(LabColors.bordered(
@@ -154,19 +155,6 @@ public final class LabColorPickerModal {
             rebuildPalette();
         }));
         rebuildPalette();
-    }
-
-    private WidgetGroup titleLabel(String title) {
-        return new WidgetGroup(8, 6, MODAL_W - 50, 9) {
-            private final TextTexture tex = new TextTexture(title, LabColors.TEXT_PRIMARY)
-                    .setType(TextTexture.TextType.LEFT_HIDE)
-                    .setWidth(MODAL_W - 50);
-
-            @Override
-            public void drawInBackground(GuiGraphics g, int mx, int my, float pt) {
-                tex.draw(g, mx, my, getPositionX(), getPositionY(), getSizeWidth(), getSizeHeight());
-            }
-        };
     }
 
     private void rebuildPalette() {
@@ -287,25 +275,6 @@ public final class LabColorPickerModal {
             panel.removeWidget(contextMenu);
             contextMenu = null;
         }
-    }
-
-    private void addHeaderClose(int x, int y) {
-        com.lowdragmc.lowdraglib.gui.texture.ResourceTexture icon =
-                com.abo47.kubejslab.client.ui.base.LabIconAtlas.iconTexture("close", LabColors.ERROR);
-        IGuiTexture face = new IGuiTexture() {
-            @Override
-            public void draw(GuiGraphics g, int mx, int my, float x0, float y0, int w0, int h0) {
-                LabColors.bordered(LabColors.SURFACE_PANEL_ALT, LabColors.BORDER_BASE)
-                        .draw(g, mx, my, x0, y0, w0, h0);
-                icon.draw(g, mx, my, x0 + 2, y0 + 2, w0 - 4, h0 - 4);
-            }
-        };
-        ButtonWidget button = new ButtonWidget(x, y, 16, 16, face, cd -> close());
-        button.setClientSideWidget();
-        button.setHoverTexture((g, mx, my, x0, y0, w0, h0) ->
-                com.abo47.kubejslab.client.ui.base.LabGlow.drawGlow(g, mx, my,
-                        (int) x0, (int) y0, (int) w0, (int) h0));
-        panel.addWidget(button);
     }
 
     private TextFieldWidget buildHexField(int x, int y, int w, int h) {

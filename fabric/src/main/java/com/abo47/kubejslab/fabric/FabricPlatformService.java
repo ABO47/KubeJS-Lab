@@ -15,6 +15,7 @@ import com.abo47.kubejslab.network.loot.C2SLootEditPacket;
 import com.abo47.kubejslab.network.loot.C2SLootPrefillPacket;
 import com.abo47.kubejslab.network.loot.S2CLootPrefillPacket;
 import com.abo47.kubejslab.network.loot.S2CLootStatePacket;
+import com.abo47.kubejslab.network.loot.S2CLootTableListPacket;
 import com.abo47.kubejslab.network.recipe.C2SRecipeEditPacket;
 import com.abo47.kubejslab.network.recipe.S2CRecipeStatePacket;
 import com.abo47.kubejslab.platform.PlatformService;
@@ -110,6 +111,13 @@ public final class FabricPlatformService implements PlatformService {
         FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
         packet.write(buf);
         ServerPlayNetworking.send(player, FabricNetwork.LOOT_PREFILL_SYNC, buf);
+    }
+
+    @Override
+    public void sendLootTableList(ServerPlayer player, S2CLootTableListPacket packet) {
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        packet.write(buf);
+        ServerPlayNetworking.send(player, FabricNetwork.LOOT_TABLES_SYNC, buf);
     }
 
     @Override

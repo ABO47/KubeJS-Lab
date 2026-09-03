@@ -12,7 +12,10 @@ import com.lowdragmc.lowdraglib.side.ForgeEventHooks;
 import com.abo47.kubejslab.block.runtime.LabBlockService;
 import com.abo47.kubejslab.item.runtime.LabItemService;
 import com.abo47.kubejslab.KubeJSLab;
+import com.abo47.kubejslab.loot.runtime.LabLootService;
+import com.abo47.kubejslab.loot.runtime.LabLootTables;
 import com.abo47.kubejslab.network.ModNetwork;
+import com.abo47.kubejslab.network.loot.S2CLootTableListPacket;
 import com.abo47.kubejslab.recipe.runtime.LabRecipeService;
 
 import dev.architectury.platform.Platform;
@@ -50,6 +53,8 @@ public final class LabUIFactory {
         ModNetwork.sendRecipeState(player, LabRecipeService.statePacket());
         ModNetwork.sendItemState(player, LabItemService.statePacket());
         ModNetwork.sendBlockState(player, LabBlockService.statePacket());
+        ModNetwork.sendLootState(player, LabLootService.statePacket());
+        ModNetwork.sendLootTableList(player, new S2CLootTableListPacket(LabLootTables.scan(player.getServer())));
 
         accessor.callInitMenu(container);
         player.containerMenu = container;

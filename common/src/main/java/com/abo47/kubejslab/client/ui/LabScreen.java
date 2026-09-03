@@ -92,12 +92,11 @@ public final class LabScreen {
         root.attachMenuLayer();
         LabPickerWindowWidget picker = LabPickerWindowWidget.create();
         picker.setPickListener(pick -> {
-            if (rightPanel.poolModal != null && rightPanel.poolModal.consumePick(pick)) {
+            if (rightPanel.poolModal != null && rightPanel.poolModal.offerPick(pick)) {
                 return;
             }
             rightPanel.machineLayout.setPendingPick(pick);
         });
-        root.addWidget(picker);
 
         leftPanel.setRightPanel(rightPanel);
         Runnable updateViews = () -> {
@@ -142,6 +141,7 @@ public final class LabScreen {
         assetLayer.setVisible(false);
         root.addWidget(assetLayer);
         root.setModalLayer(assetLayer);
+        root.addWidget(picker);
         rightPanel.itemSettings.setOnTexturePick(() -> {
             rightPanel.itemSettings.closeAllPopups();
             LabAssetPickerModal.open(assetLayer,

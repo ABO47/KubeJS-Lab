@@ -3,8 +3,10 @@ package com.abo47.kubejslab.client.ui.loot;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
@@ -42,7 +44,37 @@ public final class LabLootIndex {
         }
     }
 
+    private static final Set<ResourceLocation> SCANNED = new HashSet<>();
+
     private LabLootIndex() {
+    }
+
+    public static void setScannedTables(List<ResourceLocation> tables) {
+        for (ResourceLocation id : SCANNED) {
+            ENTRIES.remove(id);
+        }
+        SCANNED.clear();
+        if (tables == null) {
+            return;
+        }
+        for (ResourceLocation id : tables) {
+            String path = id.getPath();
+            if (path.startsWith("blocks/") || path.startsWith("entities/")) {
+                continue;
+            }
+            String type = LabLootService.LOOT_TYPE_GENERIC;
+            if (path.startsWith("chests/")) {
+                type = LabLootService.LOOT_TYPE_CHEST;
+            } else if (path.equals("gameplay/fishing") || path.startsWith("gameplay/fishing/")) {
+                type = LabLootService.LOOT_TYPE_FISHING;
+            } else if (path.equals("gameplay/hero_of_the_village")) {
+                type = LabLootService.LOOT_TYPE_GIFT;
+            }
+            ENTRIES.put(id, new LabLootEntry(id, path, type, id.getNamespace().equals("kubejs"),
+                    LabSearchNormalizer.normalizeUserSearch(id.toString()),
+                    LabSearchNormalizer.normalizeUserSearch(path)));
+            SCANNED.add(id);
+        }
     }
 
     public static List<LabLootEntry> search(String query, boolean kubejsOnly) {

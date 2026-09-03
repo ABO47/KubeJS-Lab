@@ -8,6 +8,7 @@ import com.abo47.kubejslab.network.block.S2CBlockStatePacket;
 import com.abo47.kubejslab.network.item.S2CItemStatePacket;
 import com.abo47.kubejslab.network.loot.S2CLootPrefillPacket;
 import com.abo47.kubejslab.network.loot.S2CLootStatePacket;
+import com.abo47.kubejslab.network.loot.S2CLootTableListPacket;
 import com.abo47.kubejslab.network.recipe.S2CRecipeStatePacket;
 
 import io.netty.buffer.Unpooled;
@@ -56,6 +57,11 @@ public final class FabricModClient implements ClientModInitializer {
 
         ClientPlayNetworking.registerGlobalReceiver(FabricNetwork.LOOT_PREFILL_SYNC, (client, handler, buf, responseSender) -> {
             S2CLootPrefillPacket packet = S2CLootPrefillPacket.read(buf);
+            client.execute(packet::handleClient);
+        });
+
+        ClientPlayNetworking.registerGlobalReceiver(FabricNetwork.LOOT_TABLES_SYNC, (client, handler, buf, responseSender) -> {
+            S2CLootTableListPacket packet = S2CLootTableListPacket.read(buf);
             client.execute(packet::handleClient);
         });
     }

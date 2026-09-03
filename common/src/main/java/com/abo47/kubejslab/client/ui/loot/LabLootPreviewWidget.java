@@ -123,6 +123,12 @@ public final class LabLootPreviewWidget extends WidgetGroup {
                 return new ItemStack(block);
             }
         }
+        if (LabLootService.LOOT_TYPE_FISHING.equals(lootType)) {
+            return new ItemStack(Items.FISHING_ROD);
+        }
+        if (LabLootService.LOOT_TYPE_GIFT.equals(lootType)) {
+            return new ItemStack(Items.EMERALD);
+        }
         return new ItemStack(Items.CHEST);
     }
 
