@@ -4,6 +4,7 @@ import javax.annotation.Nonnull;
 
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Block;
@@ -27,15 +28,20 @@ public final class LabLootCardWidget extends LabEntryCardWidget {
     private static final int BADGE_X = 16;
     private static final int BADGE_Y = 3;
     private static final int BADGE_SIZE = 9;
+    private static final int ENTITY_ICON = 22;
 
     private final ResourceTexture pendingIcon =
             LabIconAtlas.iconTexture("repeat", LabActionTone.NEUTRAL);
+    private final ResourceLocation entityId;
+    private final boolean isEntity;
     private LabLootStatus status = LabLootStatus.NORMAL;
     private boolean pending;
 
     public LabLootCardWidget(int x, int y, int w, int h, LabLootIndex.LabLootEntry entry,
             Runnable onClick, CardRightClick onRightClick) {
         super(x, y, w, h, iconFor(entry), entry.name(), entry.id().toString(), onClick, onRightClick);
+        this.isEntity = LabLootService.LOOT_TYPE_ENTITY.equals(entry.lootType());
+        this.entityId = isEntity ? entry.id() : null;
     }
 
     private static ItemStack iconFor(LabLootIndex.LabLootEntry entry) {
@@ -54,6 +60,20 @@ public final class LabLootCardWidget extends LabEntryCardWidget {
 
     public void setPending(boolean pending) {
         this.pending = pending;
+    }
+
+    @Override
+    protected void drawIcon(GuiGraphics g, int mx, int my) {
+        if (isEntity && entityId != null) {
+            int x = getPositionX() + 2;
+            int y = getPositionY() + (getSizeHeight() - ENTITY_ICON) / 2;
+            if (!LabLootPreviewWidget.renderEntity(g, x + ENTITY_ICON / 2, y + ENTITY_ICON / 2, ENTITY_ICON, ENTITY_ICON,
+                    entityId)) {
+                super.drawIcon(g, mx, my);
+            }
+            return;
+        }
+        super.drawIcon(g, mx, my);
     }
 
     @Override

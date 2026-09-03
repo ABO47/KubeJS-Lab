@@ -179,6 +179,7 @@ public final class LabScreen {
         });
         leftPanel.getLootBrowser().setLootRightClickListener(
                 (entry, mouseX, mouseY) -> root.openLootContextMenu(entry, mouseX, mouseY));
+        rightPanel.lootTypeDropdown.setOnSelect(value -> updateViews.run());
 
         return new ModularUI(root, IUIHolder.EMPTY, player);
     }
@@ -386,6 +387,7 @@ public final class LabScreen {
         LabOptionDropdownWidget blockTypeDropdown;
         LabBlockPreviewWidget blockPreview;
         LabOptionDropdownWidget lootTypeDropdown;
+        LabLootPreviewWidget lootPreview;
         LabLootSettingsWidget lootSettings;
         final LabRecipeSaver saver;
         final LabItemSaver itemSaver;
@@ -739,12 +741,6 @@ public final class LabScreen {
                 lootTypeDropdown.setLabelMapper(v -> "all".equals(v) ? "All" : v);
                 lootTypeDropdown.setSelected("all");
             }
-            lootTypeDropdown.setOnSelect(value -> {
-                if (lootBrowser != null) {
-                    lootBrowser.setLootTypeFilter("all".equals(value) ? null : value);
-                    lootBrowser.rebuild();
-                }
-            });
             lootTypeDropdown.setVisible(false);
             addWidget(lootTypeDropdown);
 
@@ -754,6 +750,14 @@ public final class LabScreen {
                     .setWidth(columnW)
                     .setColor(LabColors.TEXT_MUTED);
 
+            lootPreview = new LabLootPreviewWidget(
+                    columnX,
+                    layoutY,
+                    columnW,
+                    invY - layoutY - LabLayout.MACHINE_GAP - LabLayout.MACHINE_PAD);
+            lootPreview.setVisible(false);
+            addWidget(lootPreview);
+
             lootSettings = new LabLootSettingsWidget(settingsX, searchY, LabLayout.MACHINE_W, settingsH);
             lootSettings.setClientSideWidget();
             lootSettings.setClearHandler(() -> {
@@ -762,10 +766,14 @@ public final class LabScreen {
                     lootSaver.send(LabLootEditAction.RESET, target);
                     exitLootModifyMode();
                 }
-                lootSettings.applyValues(LabLootFieldValues.defaults());
-                lootSettings.setLootType(LabLootService.LOOT_TYPE_BLOCK);
-                lootSettings.setFields(List.of());
-                lootSettings.resetScroll();
+                if (lootSelection != null) {
+                    showLootSettings(lootSelection);
+                } else {
+                    lootSettings.applyValues(LabLootFieldValues.defaults());
+                    lootSettings.setLootType(LabLootService.LOOT_TYPE_BLOCK);
+                    lootSettings.setFields(List.of());
+                    lootSettings.resetScroll();
+                }
             });
             lootSettings.setSaveHandler(() -> lootSaver.saveLoot());
             lootSettings.setVisible(false);
@@ -1034,6 +1042,7 @@ public final class LabScreen {
                 }
                 boolean lootTabActive = getSelectedTabIndex() == 3;
                 lootTypeDropdown.setVisible(lootTabActive);
+                lootPreview.setVisible(lootTabActive);
                 lootSettings.setVisible(lootTabActive);
                 if (lootTabActive) {
                     if (lootSettings != null) {
@@ -1261,24 +1270,24 @@ public final class LabScreen {
             if (state != null) {
                 lootSettings.applyValues(state.values());
             } else {
-                LabLootFieldValues defaults = LabLootFieldValues.defaults();
-                lootSettings.applyValues(new LabLootFieldValues(entry.id().toString(), "", defaults.poolRollsType(),
-                        defaults.poolRollsValue(), defaults.poolRollsMin(), defaults.poolRollsMax(), defaults.poolRollsN(),
-                        defaults.poolRollsP(), defaults.entryType(), defaults.entryItem(),
-                        defaults.entryTag(), defaults.entryLootTable(), defaults.entryCountType(),
-                        defaults.entryCountValue(), defaults.entryCountMin(), defaults.entryCountMax(),
-                        defaults.entryWeight(), defaults.entryQuality(),
-                        defaults.poolSurvivesExplosion(), defaults.poolRandomChance(), defaults.poolKilledByPlayer(),
-                        defaults.poolFurnaceSmelt(), defaults.poolLootingEnchant(), defaults.poolLootingCount(),
-                        defaults.poolLootingLimit()));
+                lootSettings.applyValues(LabLootIndex.prefillValues(entry.id(), lootType));
             }
             lootSettings.setFields(List.of());
             refreshLootModeLabel();
+            refreshLootPreview();
         }
 
         private void refreshLootModeLabel() {
             if (lootModeLabel == null) return;
             lootModeLabel.setColor(lootMode == EditMode.MODIFY ? LabColors.INTERACTIVE : LabColors.TEXT_MUTED);
+        }
+
+        private void refreshLootPreview() {
+            if (lootPreview == null) {
+                return;
+            }
+            lootPreview.setEntry(lootSelection == null ? null : lootSelection.id(),
+                    lootSelection == null ? null : lootSelection.lootType());
         }
     }
 }
