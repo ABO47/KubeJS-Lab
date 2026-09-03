@@ -45,7 +45,10 @@ import com.abo47.kubejslab.lab.LabPathResolver;
 import com.abo47.kubejslab.loot.model.LabLootEditAction;
 import com.abo47.kubejslab.loot.model.LabLootFieldValues;
 import com.abo47.kubejslab.loot.model.LabLootState;
+import com.abo47.kubejslab.loot.runtime.LabLootPrefill;
 import com.abo47.kubejslab.loot.runtime.LabLootService;
+import com.abo47.kubejslab.network.ModNetwork;
+import com.abo47.kubejslab.network.loot.C2SLootPrefillPacket;
 import com.abo47.kubejslab.recipe.LabRecipeMachine;
 import com.abo47.kubejslab.recipe.LabRecipeMachines;
 import com.abo47.kubejslab.recipe.model.LabRecipeEditAction;
@@ -88,7 +91,12 @@ public final class LabScreen {
         root.addWidget(rightPanel);
         root.attachMenuLayer();
         LabPickerWindowWidget picker = LabPickerWindowWidget.create();
-        picker.setPickListener(pick -> rightPanel.machineLayout.setPendingPick(pick));
+        picker.setPickListener(pick -> {
+            if (rightPanel.poolModal != null && rightPanel.poolModal.consumePick(pick)) {
+                return;
+            }
+            rightPanel.machineLayout.setPendingPick(pick);
+        });
         root.addWidget(picker);
 
         leftPanel.setRightPanel(rightPanel);
@@ -180,6 +188,20 @@ public final class LabScreen {
         leftPanel.getLootBrowser().setLootRightClickListener(
                 (entry, mouseX, mouseY) -> root.openLootContextMenu(entry, mouseX, mouseY));
         rightPanel.lootTypeDropdown.setOnSelect(value -> updateViews.run());
+        rightPanel.lootSettings.setOnEditPool((index, snapshot, lootType) -> {
+            rightPanel.lootSettings.closeAllPopups();
+            rightPanel.poolModal = LabLootPoolModal.open(assetLayer,
+                    rightPanel.lootSettings.poolTitle(index), snapshot, lootType,
+                    () -> {
+                        rightPanel.lootSettings.deletePoolAt(index);
+                        rightPanel.refreshLootPreview();
+                    },
+                    values -> {
+                        rightPanel.lootSettings.applyPoolEdit(index, values);
+                        rightPanel.refreshLootPreview();
+                    });
+            rightPanel.poolModal.setOnClose(() -> rightPanel.poolModal = null);
+        });
 
         return new ModularUI(root, IUIHolder.EMPTY, player);
     }
@@ -205,6 +227,26 @@ public final class LabScreen {
             root.getLeftPanel().updateRecipeView();
             root.getRightPanel().updateRecipeView();
         }
+    }
+
+    public static void applyLootPrefill(ResourceLocation id, String lootType, LabLootFieldValues values) {
+        if (!(Minecraft.getInstance().screen instanceof LabGuiContainer gui)) {
+            return;
+        }
+        if (!(gui.modularUI.mainGroup instanceof LabRootWidget root)) {
+            return;
+        }
+        LabPanelWidget rightPanel = root.getRightPanel();
+        if (rightPanel.lootSelection == null || !rightPanel.lootSelection.id().equals(id)) {
+            return;
+        }
+        if (LabLootStates.stateOf(id) != null) {
+            return;
+        }
+        rightPanel.lootSettings.setLootType(lootType);
+        rightPanel.lootSettings.applyValues(values);
+        rightPanel.lootSettings.setFields(List.of());
+        rightPanel.refreshLootPreview();
     }
 
     public static final class LabRootWidget extends WidgetGroup {
@@ -389,6 +431,7 @@ public final class LabScreen {
         LabOptionDropdownWidget lootTypeDropdown;
         LabLootPreviewWidget lootPreview;
         LabLootSettingsWidget lootSettings;
+        LabLootPoolModal poolModal;
         final LabRecipeSaver saver;
         final LabItemSaver itemSaver;
         final LabBlockSaver blockSaver;
@@ -766,16 +809,14 @@ public final class LabScreen {
                     lootSaver.send(LabLootEditAction.RESET, target);
                     exitLootModifyMode();
                 }
-                if (lootSelection != null) {
-                    showLootSettings(lootSelection);
-                } else {
-                    lootSettings.applyValues(LabLootFieldValues.defaults());
-                    lootSettings.setLootType(LabLootService.LOOT_TYPE_BLOCK);
-                    lootSettings.setFields(List.of());
-                    lootSettings.resetScroll();
-                }
+                lootSettings.applyValues(LabLootFieldValues.defaults());
+                lootSettings.setLootType(LabLootService.LOOT_TYPE_BLOCK);
+                refreshLootPreview();
+                lootSettings.setFields(List.of());
+                lootSettings.resetScroll();
             });
             lootSettings.setSaveHandler(() -> lootSaver.saveLoot());
+            lootSettings.setPreviewListener(this::refreshLootPreview);
             lootSettings.setVisible(false);
             addWidget(lootSettings);
         }
@@ -1270,7 +1311,8 @@ public final class LabScreen {
             if (state != null) {
                 lootSettings.applyValues(state.values());
             } else {
-                lootSettings.applyValues(LabLootIndex.prefillValues(entry.id(), lootType));
+                lootSettings.applyValues(LabLootPrefill.blankFor(entry.id()));
+                ModNetwork.sendLootPrefill(new C2SLootPrefillPacket(entry.id(), lootType));
             }
             lootSettings.setFields(List.of());
             refreshLootModeLabel();
@@ -1286,8 +1328,16 @@ public final class LabScreen {
             if (lootPreview == null) {
                 return;
             }
-            lootPreview.setEntry(lootSelection == null ? null : lootSelection.id(),
-                    lootSelection == null ? null : lootSelection.lootType());
+            ResourceLocation id = lootSelection == null ? null : lootSelection.id();
+            String type = lootSelection == null ? null : lootSelection.lootType();
+            LabLootFieldValues values = lootSettings == null ? null : lootSettings.getValues();
+            if (id == null && values != null && !values.targetId().isBlank()) {
+                id = ResourceLocation.tryParse(values.targetId());
+            }
+            if ((type == null || type.isBlank()) && lootSettings != null) {
+                type = lootSettings.getLootType();
+            }
+            lootPreview.setEntry(id, type, values);
         }
     }
 }

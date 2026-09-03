@@ -9,6 +9,7 @@ import com.abo47.kubejslab.KubeJSLab;
 import com.abo47.kubejslab.network.block.C2SBlockEditPacket;
 import com.abo47.kubejslab.network.item.C2SItemEditPacket;
 import com.abo47.kubejslab.network.loot.C2SLootEditPacket;
+import com.abo47.kubejslab.network.loot.C2SLootPrefillPacket;
 import com.abo47.kubejslab.network.recipe.C2SRecipeEditPacket;
 
 import io.netty.buffer.Unpooled;
@@ -26,6 +27,9 @@ public final class FabricNetwork {
     public static final ResourceLocation BLOCK_STATE_SYNC = new ResourceLocation(KubeJSLab.MOD_ID, "block_state_sync");
     public static final ResourceLocation LOOT_EDIT = new ResourceLocation(KubeJSLab.MOD_ID, "loot_edit");
     public static final ResourceLocation LOOT_STATE_SYNC = new ResourceLocation(KubeJSLab.MOD_ID, "loot_state_sync");
+    public static final ResourceLocation LOOT_PREFILL = new ResourceLocation(KubeJSLab.MOD_ID, "loot_prefill");
+    public static final ResourceLocation LOOT_PREFILL_SYNC =
+            new ResourceLocation(KubeJSLab.MOD_ID, "loot_prefill_sync");
 
     private static volatile boolean registered;
 
@@ -52,6 +56,10 @@ public final class FabricNetwork {
         });
         ServerPlayNetworking.registerGlobalReceiver(LOOT_EDIT, (server, player, handler, buf, responseSender) -> {
             C2SLootEditPacket packet = C2SLootEditPacket.read(buf);
+            server.execute(() -> packet.handle(player));
+        });
+        ServerPlayNetworking.registerGlobalReceiver(LOOT_PREFILL, (server, player, handler, buf, responseSender) -> {
+            C2SLootPrefillPacket packet = C2SLootPrefillPacket.read(buf);
             server.execute(() -> packet.handle(player));
         });
     }

@@ -24,6 +24,9 @@ import net.minecraft.world.level.block.Block;
 import com.lowdragmc.lowdraglib.gui.texture.ItemStackTexture;
 import com.lowdragmc.lowdraglib.gui.widget.WidgetGroup;
 
+import com.abo47.kubejslab.loot.model.LabLootEntryValues;
+import com.abo47.kubejslab.loot.model.LabLootFieldValues;
+import com.abo47.kubejslab.loot.model.LabLootPoolValues;
 import com.abo47.kubejslab.loot.runtime.LabLootService;
 
 
@@ -31,10 +34,12 @@ public final class LabLootPreviewWidget extends WidgetGroup {
     private static final int FRONT_ENTITY_YAW = 205;
     private static final double FILL = 0.82D;
     private static final double MAX_SCALE = 96.0D;
+    private static final int BADGE_SIZE = 22;
+    private static final int BADGE_PAD = 4;
 
     private ResourceLocation entryId;
     private String lootType = LabLootService.LOOT_TYPE_BLOCK;
-    private long animTick;
+    private String dropItem = "";
 
     public LabLootPreviewWidget(int x, int y, int w, int h) {
         super(x, y, w, h);
@@ -42,9 +47,27 @@ public final class LabLootPreviewWidget extends WidgetGroup {
     }
 
     public void setEntry(ResourceLocation id, String lootType) {
+        setEntry(id, lootType, null);
+    }
+
+    public void setEntry(ResourceLocation id, String lootType, LabLootFieldValues values) {
         this.entryId = id;
         this.lootType = lootType == null || lootType.isBlank() ? LabLootService.LOOT_TYPE_BLOCK : lootType;
-        animTick = System.nanoTime();
+        this.dropItem = firstDropItem(values);
+    }
+
+    private static String firstDropItem(LabLootFieldValues values) {
+        if (values == null) {
+            return "";
+        }
+        for (LabLootPoolValues pool : values.pools()) {
+            for (LabLootEntryValues entry : pool.entries()) {
+                if ("item".equals(entry.type()) && entry.item() != null && !entry.item().isBlank()) {
+                    return entry.item();
+                }
+            }
+        }
+        return "";
     }
 
     @Override
@@ -54,6 +77,15 @@ public final class LabLootPreviewWidget extends WidgetGroup {
         int pw = getSizeWidth();
         int ph = getSizeHeight();
 
+        ItemStack drop = dropStack();
+        if (!drop.isEmpty()) {
+            int size = Math.max(32, Math.min(pw, ph) - 16);
+            int iconX = px + (pw - size) / 2;
+            int iconY = py + (ph - size) / 2;
+            new ItemStackTexture(drop).draw(g, mx, my, iconX, iconY, size, size);
+            drawSourceBadge(g, px + pw - BADGE_SIZE - BADGE_PAD, py + ph - BADGE_SIZE - BADGE_PAD);
+            return;
+        }
         if (LabLootService.LOOT_TYPE_ENTITY.equals(lootType)) {
             drawEntity(g, px, py, pw, ph);
             return;
@@ -62,6 +94,26 @@ public final class LabLootPreviewWidget extends WidgetGroup {
         int iconX = px + (pw - size) / 2;
         int iconY = py + (ph - size) / 2;
         new ItemStackTexture(stackFor()).draw(g, mx, my, iconX, iconY, size, size);
+    }
+
+    private ItemStack dropStack() {
+        if (dropItem == null || dropItem.isBlank()) {
+            return ItemStack.EMPTY;
+        }
+        ResourceLocation id = ResourceLocation.tryParse(dropItem);
+        if (id == null || !BuiltInRegistries.ITEM.containsKey(id)) {
+            return ItemStack.EMPTY;
+        }
+        return new ItemStack(BuiltInRegistries.ITEM.get(id));
+    }
+
+    private void drawSourceBadge(GuiGraphics g, int x, int y) {
+        if (LabLootService.LOOT_TYPE_ENTITY.equals(lootType) && entryId != null) {
+            if (renderEntity(g, x + BADGE_SIZE / 2, y + BADGE_SIZE / 2, BADGE_SIZE, BADGE_SIZE, entryId)) {
+                return;
+            }
+        }
+        new ItemStackTexture(stackFor()).draw(g, 0, 0, x, y, BADGE_SIZE, BADGE_SIZE);
     }
 
     private ItemStack stackFor() {

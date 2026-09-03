@@ -6,5 +6,6 @@ public enum LabLootEditAction {
     DISABLE,
     ENABLE,
     RESET,
-    DELETE
+    DELETE,
+    DUPLICATE
 }

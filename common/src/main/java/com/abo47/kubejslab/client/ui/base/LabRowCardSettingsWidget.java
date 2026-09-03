@@ -106,6 +106,10 @@ public abstract class LabRowCardSettingsWidget extends WidgetGroup {
         popupDropdowns.add(dropdown);
     }
 
+    protected void removePopupDropdown(LabPopupProvider dropdown) {
+        popupDropdowns.remove(dropdown);
+    }
+
     public void closeAllPopups() {
         for (LabPopupProvider dropdown : popupDropdowns) {
             dropdown.closePopup();
@@ -114,6 +118,7 @@ public abstract class LabRowCardSettingsWidget extends WidgetGroup {
 
     public void resetScroll() {
         scrollOffset = 0;
+        relayoutFields();
     }
 
     public void setOnClear(Runnable onClear) {

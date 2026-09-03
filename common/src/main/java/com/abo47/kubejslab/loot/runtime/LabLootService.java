@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -21,7 +22,9 @@ import com.abo47.kubejslab.lab.LabStateFile;
 import com.abo47.kubejslab.lab.LabUniqueNames;
 import com.abo47.kubejslab.loot.model.LabLootAction;
 import com.abo47.kubejslab.loot.model.LabLootEditAction;
+import com.abo47.kubejslab.loot.model.LabLootEntryValues;
 import com.abo47.kubejslab.loot.model.LabLootFieldValues;
+import com.abo47.kubejslab.loot.model.LabLootPoolValues;
 import com.abo47.kubejslab.loot.model.LabLootPayload;
 import com.abo47.kubejslab.loot.model.LabLootState;
 import com.abo47.kubejslab.loot.model.LabLootStatus;
@@ -60,6 +63,7 @@ public final class LabLootService {
             switch (action) {
                 case SAVE_NEW -> saveNew(payload);
                 case MODIFY -> modify(targetId, payload);
+                case DUPLICATE -> duplicate(targetId);
                 case DISABLE -> disable(targetId);
                 case ENABLE -> enable(targetId);
                 case RESET -> reset(targetId);
@@ -76,7 +80,7 @@ public final class LabLootService {
             e.printStackTrace();
         } catch (RuntimeException e) {
             e.printStackTrace();
-            player.sendSystemMessage(net.minecraft.network.chat.Component.literal("Failed to save loot: " + e.getMessage()));
+            player.sendSystemMessage(Component.literal("Failed to save loot: " + e.getMessage()));
         }
     }
 
@@ -130,6 +134,30 @@ public final class LabLootService {
                 payload.tags(), payload.actions()));
         PENDING.add(targetId);
         KubeJSLab.LOGGER.info("[LabLootService] MODIFY wrote {}", targetId);
+    }
+
+    private static void duplicate(ResourceLocation targetId) {
+        if (targetId == null) {
+            return;
+        }
+        LabLootSaveEntry source = STATE.get(targetId);
+        if (source == null) {
+            throw new IllegalArgumentException("Source loot not found: " + targetId);
+        }
+        String baseName = LabUniqueNames.slugify(source.name());
+        if (baseName.isBlank()) {
+            baseName = LabUniqueNames.slugify(source.values().targetId());
+        }
+        if (baseName.isBlank()) {
+            baseName = "loot";
+        }
+        ResourceLocation id = LabUniqueNames.uniqueId(LabUniqueNames.labId(baseName + "_copy"),
+                existing -> STATE.containsKey(existing) || SESSION_CREATED_IDS.contains(existing));
+        STATE.put(id, new LabLootSaveEntry(source.lootType(), LabLootStatus.CREATED, source.name(), false,
+                source.values(), source.tags(), source.actions()));
+        SESSION_CREATED_IDS.add(id);
+        PENDING.add(id);
+        KubeJSLab.LOGGER.info("[LabLootService] DUPLICATE created {}", id);
     }
 
     private static void disable(ResourceLocation targetId) {
@@ -233,6 +261,9 @@ public final class LabLootService {
         }
         String customId = v.customId();
         String entryId = customId == null || customId.isBlank() ? targetId : customId;
+        if (v.pools().isEmpty()) {
+            return;
+        }
         String methodName = methodNameFor(type);
         if (LOOT_TYPE_ENTITY.equals(type)) {
             sb.append("    event.").append(methodName)
@@ -241,69 +272,73 @@ public final class LabLootService {
         } else {
             sb.append("    event.").append(methodName).append("('").append(js(entryId)).append("', loot => {\n");
         }
-        sb.append("        loot.addPool(pool => {\n");
-        writeRolls(sb, v);
-        writeEntry(sb, v);
-        writePoolFunctions(sb, v);
-        writePoolConditions(sb, v);
-        sb.append("        });\n");
+        for (LabLootPoolValues pool : v.pools()) {
+            sb.append("        loot.addPool(pool => {\n");
+            writeRolls(sb, pool);
+            for (LabLootEntryValues entry : pool.entries()) {
+                writeEntry(sb, entry);
+            }
+            writePoolFunctions(sb, pool);
+            writePoolConditions(sb, pool);
+            sb.append("        });\n");
+        }
         sb.append("    });\n");
     }
 
-    private static void writeRolls(StringBuilder sb, LabLootFieldValues v) {
-        String type = v.poolRollsType() == null ? "constant" : v.poolRollsType();
+    private static void writeRolls(StringBuilder sb, LabLootPoolValues p) {
+        String type = p.rollsType() == null ? "constant" : p.rollsType();
         switch (type) {
-            case "uniform" -> sb.append("            pool.setUniformRolls(").append(fmt(v.poolRollsMin())).append(", ")
-                    .append(fmt(v.poolRollsMax())).append(");\n");
-            case "binomial" -> sb.append("            pool.setBinomialRolls(").append(v.poolRollsN()).append(", ")
-                    .append(fmt(v.poolRollsP())).append(");\n");
+            case "uniform" -> sb.append("            pool.setUniformRolls(").append(fmt(p.rollsMin())).append(", ")
+                    .append(fmt(p.rollsMax())).append(");\n");
+            case "binomial" -> sb.append("            pool.setBinomialRolls(").append(p.rollsN()).append(", ")
+                    .append(fmt(p.rollsP())).append(");\n");
             default -> {
-                if (v.poolRollsValue() != 1f) {
-                    sb.append("            pool.setUniformRolls(").append(fmt(v.poolRollsValue())).append(", ")
-                            .append(fmt(v.poolRollsValue())).append(");\n");
+                if (p.rollsValue() != 1f) {
+                    sb.append("            pool.setUniformRolls(").append(fmt(p.rollsValue())).append(", ")
+                            .append(fmt(p.rollsValue())).append(");\n");
                 }
             }
         }
     }
 
-    private static void writeEntry(StringBuilder sb, LabLootFieldValues v) {
-        String type = v.entryType() == null ? "item" : v.entryType();
+    private static void writeEntry(StringBuilder sb, LabLootEntryValues e) {
+        String type = e.type() == null ? "item" : e.type();
         switch (type) {
             case "empty" -> {
-                sb.append("            pool.addEmpty(").append(v.entryWeight()).append(");\n");
+                sb.append("            pool.addEmpty(").append(e.weight()).append(");\n");
             }
             case "tag" -> {
-                String tag = v.entryTag();
+                String tag = e.tag();
                 if (tag != null && !tag.isBlank()) {
                     sb.append("            pool.addTag('").append(js(tag)).append("', true);\n");
                 }
             }
             case "loot_table" -> {
-                String lootTable = v.entryLootTable();
+                String lootTable = e.lootTable();
                 if (lootTable != null && !lootTable.isBlank()) {
                     sb.append("            pool.addLootTable('").append(js(lootTable)).append("');\n");
                 }
             }
             default -> {
-                String item = v.entryItem();
+                String item = e.item();
                 if (item != null && !item.isBlank()) {
-                    String countType = v.entryCountType() == null ? "constant" : v.entryCountType();
-                    boolean hasUniform = "uniform".equals(countType) && v.entryCountMin() != v.entryCountMax();
+                    String countType = e.countType() == null ? "constant" : e.countType();
+                    boolean hasUniform = "uniform".equals(countType) && e.countMin() != e.countMax();
                     sb.append("            pool.addItem(Item.of('").append(js(item));
-                    if ("constant".equals(countType) && v.entryCountValue() > 1f) {
-                        sb.append("', ").append(fmt(v.entryCountValue()));
+                    if ("constant".equals(countType) && e.countValue() > 1f) {
+                        sb.append("', ").append(fmt(e.countValue()));
                     }
-                    sb.append("'), ").append(v.entryWeight());
+                    sb.append("'), ").append(e.weight());
                     if ("uniform".equals(countType)) {
                         if (hasUniform) {
-                            sb.append(", [").append(fmt(v.entryCountMin())).append(", ").append(fmt(v.entryCountMax()))
+                            sb.append(", [").append(fmt(e.countMin())).append(", ").append(fmt(e.countMax()))
                                     .append("]");
                         } else {
-                            sb.append(", ").append(fmt(v.entryCountMin()));
+                            sb.append(", ").append(fmt(e.countMin()));
                         }
                     }
-                    if (v.entryQuality() > 0) {
-                        sb.append(").quality(").append(v.entryQuality());
+                    if (e.quality() > 0) {
+                        sb.append(").quality(").append(e.quality());
                     }
                     sb.append(");\n");
                 }
@@ -311,24 +346,24 @@ public final class LabLootService {
         }
     }
 
-    private static void writePoolFunctions(StringBuilder sb, LabLootFieldValues v) {
-        if (v.poolSurvivesExplosion()) {
+    private static void writePoolFunctions(StringBuilder sb, LabLootPoolValues p) {
+        if (p.survivesExplosion()) {
             sb.append("            pool.survivesExplosion();\n");
         }
-        if (v.poolFurnaceSmelt()) {
+        if (p.furnaceSmelt()) {
             sb.append("            pool.furnaceSmelt();\n");
         }
-        if (v.poolRandomChance() < 1f) {
-            sb.append("            pool.randomChance(").append(fmt(v.poolRandomChance())).append(");\n");
+        if (p.randomChance() < 1f) {
+            sb.append("            pool.randomChance(").append(fmt(p.randomChance())).append(");\n");
         }
-        if (v.poolLootingEnchant()) {
-            sb.append("            pool.lootingEnchant(").append(fmt(v.poolLootingCount())).append(", ")
-                    .append(v.poolLootingLimit()).append(");\n");
+        if (p.lootingEnchant()) {
+            sb.append("            pool.lootingEnchant(").append(fmt(p.lootingCount())).append(", ")
+                    .append(p.lootingLimit()).append(");\n");
         }
     }
 
-    private static void writePoolConditions(StringBuilder sb, LabLootFieldValues v) {
-        if (v.poolKilledByPlayer()) {
+    private static void writePoolConditions(StringBuilder sb, LabLootPoolValues p) {
+        if (p.killedByPlayer()) {
             sb.append("            pool.killedByPlayer();\n");
         }
     }
@@ -397,32 +432,92 @@ public final class LabLootService {
     }
 
     private static LabLootFieldValues readValues(JsonObject obj) {
-        return new LabLootFieldValues(
-                obj.get("targetId").getAsString(),
-                obj.get("customId").getAsString(),
+        String targetId = obj.has("targetId") ? obj.get("targetId").getAsString() : "";
+        String customId = obj.has("customId") ? obj.get("customId").getAsString() : "";
+        List<LabLootPoolValues> pools = new ArrayList<>();
+        if (obj.has("pools") && obj.get("pools").isJsonArray()) {
+            for (JsonElement poolEl : obj.getAsJsonArray("pools")) {
+                if (!poolEl.isJsonObject()) {
+                    continue;
+                }
+                pools.add(readPool(poolEl.getAsJsonObject()));
+            }
+        } else if (obj.has("poolRollsType")) {
+            pools.add(readLegacyPool(obj));
+        }
+        if (pools.isEmpty()) {
+            pools.add(LabLootPoolValues.defaults());
+        }
+        return new LabLootFieldValues(targetId, customId, pools);
+    }
+
+    private static LabLootPoolValues readPool(JsonObject obj) {
+        List<LabLootEntryValues> entries = new ArrayList<>();
+        if (obj.has("entries") && obj.get("entries").isJsonArray()) {
+            for (JsonElement entryEl : obj.getAsJsonArray("entries")) {
+                if (!entryEl.isJsonObject()) {
+                    continue;
+                }
+                JsonObject e = entryEl.getAsJsonObject();
+                entries.add(new LabLootEntryValues(
+                        e.has("type") ? e.get("type").getAsString() : "item",
+                        e.has("item") ? e.get("item").getAsString() : "",
+                        e.has("tag") ? e.get("tag").getAsString() : "",
+                        e.has("lootTable") ? e.get("lootTable").getAsString() : "",
+                        e.has("countType") ? e.get("countType").getAsString() : "constant",
+                        e.has("countValue") ? e.get("countValue").getAsFloat() : 1f,
+                        e.has("countMin") ? e.get("countMin").getAsFloat() : 0f,
+                        e.has("countMax") ? e.get("countMax").getAsFloat() : 0f,
+                        e.has("weight") ? e.get("weight").getAsInt() : 1,
+                        e.has("quality") ? e.get("quality").getAsInt() : 0));
+            }
+        }
+        if (entries.isEmpty()) {
+            entries.add(LabLootEntryValues.defaults());
+        }
+        return new LabLootPoolValues(
+                obj.has("rollsType") ? obj.get("rollsType").getAsString() : "constant",
+                obj.has("rollsValue") ? obj.get("rollsValue").getAsFloat() : 1f,
+                obj.has("rollsMin") ? obj.get("rollsMin").getAsFloat() : 0f,
+                obj.has("rollsMax") ? obj.get("rollsMax").getAsFloat() : 0f,
+                obj.has("rollsN") ? obj.get("rollsN").getAsInt() : 0,
+                obj.has("rollsP") ? obj.get("rollsP").getAsFloat() : 0.5f,
+                !obj.has("survivesExplosion") || obj.get("survivesExplosion").getAsBoolean(),
+                obj.has("randomChance") ? obj.get("randomChance").getAsFloat() : 1f,
+                obj.has("killedByPlayer") && obj.get("killedByPlayer").getAsBoolean(),
+                obj.has("furnaceSmelt") && obj.get("furnaceSmelt").getAsBoolean(),
+                obj.has("lootingEnchant") && obj.get("lootingEnchant").getAsBoolean(),
+                obj.has("lootingCount") ? obj.get("lootingCount").getAsFloat() : 0f,
+                obj.has("lootingLimit") ? obj.get("lootingLimit").getAsInt() : 0,
+                entries);
+    }
+
+    private static LabLootPoolValues readLegacyPool(JsonObject obj) {
+        return new LabLootPoolValues(
                 obj.get("poolRollsType").getAsString(),
                 obj.get("poolRollsValue").getAsFloat(),
                 obj.get("poolRollsMin").getAsFloat(),
                 obj.get("poolRollsMax").getAsFloat(),
                 obj.get("poolRollsN").getAsInt(),
                 obj.get("poolRollsP").getAsFloat(),
-                obj.get("entryType").getAsString(),
-                obj.get("entryItem").getAsString(),
-                obj.get("entryTag").getAsString(),
-                obj.get("entryLootTable").getAsString(),
-                obj.get("entryCountType").getAsString(),
-                obj.get("entryCountValue").getAsFloat(),
-                obj.get("entryCountMin").getAsFloat(),
-                obj.get("entryCountMax").getAsFloat(),
-                obj.get("entryWeight").getAsInt(),
-                obj.get("entryQuality").getAsInt(),
                 obj.get("poolSurvivesExplosion").getAsBoolean(),
                 obj.get("poolRandomChance").getAsFloat(),
                 obj.get("poolKilledByPlayer").getAsBoolean(),
                 obj.get("poolFurnaceSmelt").getAsBoolean(),
                 obj.get("poolLootingEnchant").getAsBoolean(),
                 obj.get("poolLootingCount").getAsFloat(),
-                obj.get("poolLootingLimit").getAsInt());
+                obj.get("poolLootingLimit").getAsInt(),
+                List.of(new LabLootEntryValues(
+                        obj.get("entryType").getAsString(),
+                        obj.get("entryItem").getAsString(),
+                        obj.get("entryTag").getAsString(),
+                        obj.get("entryLootTable").getAsString(),
+                        obj.get("entryCountType").getAsString(),
+                        obj.get("entryCountValue").getAsFloat(),
+                        obj.get("entryCountMin").getAsFloat(),
+                        obj.get("entryCountMax").getAsFloat(),
+                        obj.get("entryWeight").getAsInt(),
+                        obj.get("entryQuality").getAsInt())));
     }
 
     private static void saveState() throws IOException {
@@ -455,29 +550,41 @@ public final class LabLootService {
     private static void writeValues(JsonObject obj, LabLootFieldValues v) {
         obj.addProperty("targetId", v.targetId());
         obj.addProperty("customId", v.customId());
-        obj.addProperty("poolRollsType", v.poolRollsType());
-        obj.addProperty("poolRollsValue", v.poolRollsValue());
-        obj.addProperty("poolRollsMin", v.poolRollsMin());
-        obj.addProperty("poolRollsMax", v.poolRollsMax());
-        obj.addProperty("poolRollsN", v.poolRollsN());
-        obj.addProperty("poolRollsP", v.poolRollsP());
-        obj.addProperty("entryType", v.entryType());
-        obj.addProperty("entryItem", v.entryItem());
-        obj.addProperty("entryTag", v.entryTag());
-        obj.addProperty("entryLootTable", v.entryLootTable());
-        obj.addProperty("entryCountType", v.entryCountType());
-        obj.addProperty("entryCountValue", v.entryCountValue());
-        obj.addProperty("entryCountMin", v.entryCountMin());
-        obj.addProperty("entryCountMax", v.entryCountMax());
-        obj.addProperty("entryWeight", v.entryWeight());
-        obj.addProperty("entryQuality", v.entryQuality());
-        obj.addProperty("poolSurvivesExplosion", v.poolSurvivesExplosion());
-        obj.addProperty("poolRandomChance", v.poolRandomChance());
-        obj.addProperty("poolKilledByPlayer", v.poolKilledByPlayer());
-        obj.addProperty("poolFurnaceSmelt", v.poolFurnaceSmelt());
-        obj.addProperty("poolLootingEnchant", v.poolLootingEnchant());
-        obj.addProperty("poolLootingCount", v.poolLootingCount());
-        obj.addProperty("poolLootingLimit", v.poolLootingLimit());
+        JsonArray pools = new JsonArray();
+        for (LabLootPoolValues p : v.pools()) {
+            JsonObject pool = new JsonObject();
+            pool.addProperty("rollsType", p.rollsType());
+            pool.addProperty("rollsValue", p.rollsValue());
+            pool.addProperty("rollsMin", p.rollsMin());
+            pool.addProperty("rollsMax", p.rollsMax());
+            pool.addProperty("rollsN", p.rollsN());
+            pool.addProperty("rollsP", p.rollsP());
+            pool.addProperty("survivesExplosion", p.survivesExplosion());
+            pool.addProperty("randomChance", p.randomChance());
+            pool.addProperty("killedByPlayer", p.killedByPlayer());
+            pool.addProperty("furnaceSmelt", p.furnaceSmelt());
+            pool.addProperty("lootingEnchant", p.lootingEnchant());
+            pool.addProperty("lootingCount", p.lootingCount());
+            pool.addProperty("lootingLimit", p.lootingLimit());
+            JsonArray entries = new JsonArray();
+            for (LabLootEntryValues e : p.entries()) {
+                JsonObject entry = new JsonObject();
+                entry.addProperty("type", e.type());
+                entry.addProperty("item", e.item());
+                entry.addProperty("tag", e.tag());
+                entry.addProperty("lootTable", e.lootTable());
+                entry.addProperty("countType", e.countType());
+                entry.addProperty("countValue", e.countValue());
+                entry.addProperty("countMin", e.countMin());
+                entry.addProperty("countMax", e.countMax());
+                entry.addProperty("weight", e.weight());
+                entry.addProperty("quality", e.quality());
+                entries.add(entry);
+            }
+            pool.add("entries", entries);
+            pools.add(pool);
+        }
+        obj.add("pools", pools);
     }
 
     private static String fmt(float f) {

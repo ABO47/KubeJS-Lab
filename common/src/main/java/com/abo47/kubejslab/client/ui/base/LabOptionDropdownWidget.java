@@ -93,19 +93,33 @@ public final class LabOptionDropdownWidget extends WidgetGroup implements LabPop
     }
 
     @Override
+    public void drawInBackground(@Nonnull GuiGraphics g, int mx, int my, float pt) {
+        super.drawInBackground(g, mx, my, pt);
+        drawSelected(g, mx, my);
+    }
+
+    private void drawSelected(@Nonnull GuiGraphics g, int mx, int my) {
+        if (selected == null) {
+            return;
+        }
+        int x = getPositionX();
+        int y = getPositionY();
+        int w = getSizeWidth();
+        int h = getSizeHeight();
+        if (selectedTex == null) {
+            selectedTex = new TextTexture(labelMapper.apply(selected), LabColors.TEXT_PRIMARY)
+                    .setWidth(w - 12)
+                    .setType(TextTexture.TextType.LEFT_HIDE);
+        }
+        selectedTex.draw(g, mx, my, x + 6, y, w - 14, h);
+    }
+
+    @Override
     public void drawInForeground(@Nonnull GuiGraphics g, int mx, int my, float pt) {
         int x = getPositionX();
         int y = getPositionY();
         int w = getSizeWidth();
         int h = getSizeHeight();
-        if (selected != null) {
-            if (selectedTex == null) {
-                selectedTex = new TextTexture(labelMapper.apply(selected), LabColors.TEXT_PRIMARY)
-                        .setWidth(w - 12)
-                        .setType(TextTexture.TextType.LEFT_HIDE);
-            }
-            selectedTex.draw(g, mx, my, x + 6, y, w - 14, h);
-        }
         if (!open) {
             return;
         }
@@ -160,6 +174,9 @@ public final class LabOptionDropdownWidget extends WidgetGroup implements LabPop
                 return true;
             }
             open = false;
+            if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT && Widget.isMouseOver(x, y, w, h, mouseX, mouseY)) {
+                return true;
+            }
             return super.mouseClicked(mouseX, mouseY, button);
         }
         if (Widget.isMouseOver(x, y, w, h, mouseX, mouseY) && button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {

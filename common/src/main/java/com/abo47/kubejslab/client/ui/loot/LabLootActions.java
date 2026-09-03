@@ -37,6 +37,8 @@ public final class LabLootActions {
                     () -> callbacks.send(LabLootEditAction.ENABLE, entry.id())));
         }
         if (labMade) {
+            actions.add(LabActions.action(LabGuiKeys.LAB_LOOT_DUPLICATE, "copy", LabActionTone.NEUTRAL,
+                    () -> callbacks.send(LabLootEditAction.DUPLICATE, entry.id())));
             actions.add(LabActions.action(LabGuiKeys.LAB_LOOT_DELETE, "delete", LabActionTone.DANGER,
                     () -> callbacks.send(LabLootEditAction.DELETE, entry.id())));
         }

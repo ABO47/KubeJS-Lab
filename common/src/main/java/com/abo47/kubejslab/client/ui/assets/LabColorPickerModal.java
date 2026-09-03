@@ -106,7 +106,7 @@ public final class LabColorPickerModal {
                 LabColors.withAlpha(LabColors.SURFACE_BASE, 252), LabColors.BORDER_ACCENT));
         layer.addWidget(panel);
         panel.addWidget(titleLabel(title));
-        addHeaderClose(MODAL_W - 25, 3);
+        addHeaderClose(MODAL_W - 24, 3);
 
         WidgetGroup left = new WidgetGroup(PREVIEW_X, BODY_Y, LEFT_W, bodyH);
         left.setBackground(LabColors.bordered(

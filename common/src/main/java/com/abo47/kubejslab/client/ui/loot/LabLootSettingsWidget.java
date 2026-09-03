@@ -8,20 +8,24 @@ import net.minecraft.network.chat.Component;
 
 import com.lowdragmc.lowdraglib.gui.texture.TextTexture;
 import com.lowdragmc.lowdraglib.gui.widget.TextFieldWidget;
+import com.lowdragmc.lowdraglib.gui.widget.Widget;
 
+import com.abo47.kubejslab.client.ui.base.LabActionButton;
 import com.abo47.kubejslab.client.ui.base.LabColors;
 import com.abo47.kubejslab.client.ui.base.LabCommitFieldWidget;
 import com.abo47.kubejslab.client.ui.base.LabGuiKeys;
 import com.abo47.kubejslab.client.ui.base.LabOptionDropdownWidget;
 import com.abo47.kubejslab.client.ui.base.LabRowCardSettingsWidget;
-import com.abo47.kubejslab.client.ui.base.LabToggleSwitchWidget;
 import com.abo47.kubejslab.loot.model.LabLootAction;
 import com.abo47.kubejslab.loot.model.LabLootField;
 import com.abo47.kubejslab.loot.model.LabLootFieldValues;
+import com.abo47.kubejslab.loot.model.LabLootPoolValues;
 import com.abo47.kubejslab.loot.runtime.LabLootService;
 
 
 public final class LabLootSettingsWidget extends LabRowCardSettingsWidget {
+    public static final int MAX_POOLS = 6;
+
     private static final List<String> LOOT_TYPES = List.of(
             LabLootService.LOOT_TYPE_BLOCK,
             LabLootService.LOOT_TYPE_ENTITY,
@@ -29,187 +33,74 @@ public final class LabLootSettingsWidget extends LabRowCardSettingsWidget {
             LabLootService.LOOT_TYPE_FISHING,
             LabLootService.LOOT_TYPE_GIFT,
             LabLootService.LOOT_TYPE_GENERIC);
-    private static final List<String> ROLLS_TYPES = List.of("constant", "uniform", "binomial");
-    private static final List<String> ENTRY_TYPES = List.of("item", "tag", "empty", "loot_table");
-    private static final List<String> COUNT_TYPES = List.of("constant", "uniform");
+
+    public interface PoolEditHandler {
+        void edit(int index, LabLootPoolValues snapshot, String lootType);
+    }
 
     private final LabOptionDropdownWidget lootTypeDropdown;
     private final TextFieldWidget targetIdField;
     private final TextFieldWidget customIdField;
-    private final LabOptionDropdownWidget poolRollsTypeDropdown;
-    private final TextFieldWidget poolRollsValueField;
-    private final TextFieldWidget poolRollsMinField;
-    private final TextFieldWidget poolRollsMaxField;
-    private final TextFieldWidget poolRollsNField;
-    private final TextFieldWidget poolRollsPField;
-    private final LabOptionDropdownWidget entryTypeDropdown;
-    private final TextFieldWidget entryItemField;
-    private final TextFieldWidget entryTagField;
-    private final TextFieldWidget entryLootTableField;
-    private final LabOptionDropdownWidget entryCountTypeDropdown;
-    private final TextFieldWidget entryCountValueField;
-    private final TextFieldWidget entryCountMinField;
-    private final TextFieldWidget entryCountMaxField;
-    private final TextFieldWidget entryWeightField;
-    private final TextFieldWidget entryQualityField;
-    private final LabToggleSwitchWidget poolSurvivesExplosionToggle;
-    private final TextFieldWidget poolRandomChanceField;
-    private final LabToggleSwitchWidget poolKilledByPlayerToggle;
-    private final LabToggleSwitchWidget poolFurnaceSmeltToggle;
-    private final LabToggleSwitchWidget poolLootingEnchantToggle;
-    private final TextFieldWidget poolLootingCountField;
-    private final TextFieldWidget poolLootingLimitField;
+    private final List<LabActionButton> editButtons = new ArrayList<>();
+    private final LabActionButton addPoolButton;
 
     private String targetId = "";
     private String customId = "";
-    private String poolRollsValueText = "1";
-    private String poolRollsMinText = "0";
-    private String poolRollsMaxText = "0";
-    private String poolRollsNText = "1";
-    private String poolRollsPText = "0.5";
-    private String entryItem = "";
-    private String entryTag = "";
-    private String entryLootTable = "";
-    private String entryCountValueText = "1";
-    private String entryCountMinText = "0";
-    private String entryCountMaxText = "0";
-    private String entryWeightText = "1";
-    private String entryQualityText = "0";
-    private boolean poolSurvivesExplosion = true;
-    private String poolRandomChanceText = "1";
-    private boolean poolKilledByPlayer = false;
-    private boolean poolFurnaceSmelt = false;
-    private boolean poolLootingEnchant = false;
-    private String poolLootingCountText = "0";
-    private String poolLootingLimitText = "0";
-
-    private List<LabLootField> fields = List.of();
+    private final List<LabLootPoolValues> pools = new ArrayList<>();
+    private PoolEditHandler editHandler;
+    private Runnable previewListener;
 
     public LabLootSettingsWidget(int x, int y, int w, int h) {
         super(x, y, w, h, Component.translatable(LabGuiKeys.LAB_LOOT_CLEAR).getString(),
                 Component.translatable(LabGuiKeys.LAB_LOOT_SAVE).getString());
 
-        int pad = 6;
-        int labelW = w - pad * 2 - CONTROL_W - 4;
-
         lootTypeDropdown = new LabOptionDropdownWidget(0, 0, CONTROL_W, FIELD_H);
         lootTypeDropdown.setOptions(LOOT_TYPES);
-        lootTypeDropdown.setOnSelect(value -> rebuildRows());
+        lootTypeDropdown.setOnSelect(value -> {
+            rebuildRows();
+            firePreview();
+        });
         addWidget(lootTypeDropdown);
         addPopupDropdown(lootTypeDropdown);
 
-        targetIdField = commitField(this::commitTargetId);
+        targetIdField = commitField(v -> {
+            targetId = v;
+            firePreview();
+        });
         addWidget(targetIdField);
 
-        customIdField = commitField(this::commitCustomId);
+        customIdField = commitField(v -> {
+            customId = v;
+            firePreview();
+        });
         addWidget(customIdField);
 
-        poolRollsTypeDropdown = new LabOptionDropdownWidget(0, 0, CONTROL_W, FIELD_H);
-        poolRollsTypeDropdown.setOptions(ROLLS_TYPES);
-        poolRollsTypeDropdown.setOnSelect(value -> rebuildRows());
-        addWidget(poolRollsTypeDropdown);
-        addPopupDropdown(poolRollsTypeDropdown);
+        for (int i = 0; i < MAX_POOLS; i++) {
+            int index = i;
+            LabActionButton edit = new LabActionButton(0, 0, CONTROL_W, FIELD_H,
+                    Component.translatable(LabGuiKeys.LAB_LOOT_EDIT).getString(), () -> openPool(index));
+            addWidget(edit);
+            editButtons.add(edit);
+        }
+        addPoolButton = new LabActionButton(0, 0, CONTROL_W, FIELD_H,
+                Component.translatable(LabGuiKeys.LAB_LOOT_ADD).getString(), this::addPool);
+        addWidget(addPoolButton);
 
-        poolRollsValueField = numberField(0, 0, () -> poolRollsValueText, v -> poolRollsValueText = v,
-                poolRollsValueText);
-        addWidget(poolRollsValueField);
-
-        poolRollsMinField = numberField(0, 0, () -> poolRollsMinText, v -> poolRollsMinText = v, poolRollsMinText);
-        addWidget(poolRollsMinField);
-
-        poolRollsMaxField = numberField(0, 0, () -> poolRollsMaxText, v -> poolRollsMaxText = v, poolRollsMaxText);
-        addWidget(poolRollsMaxField);
-
-        poolRollsNField = numberField(0, 0, () -> poolRollsNText, v -> poolRollsNText = v, poolRollsNText);
-        addWidget(poolRollsNField);
-
-        poolRollsPField = numberField(0, 0, () -> poolRollsPText, v -> poolRollsPText = v, poolRollsPText);
-        addWidget(poolRollsPField);
-
-        entryTypeDropdown = new LabOptionDropdownWidget(0, 0, CONTROL_W, FIELD_H);
-        entryTypeDropdown.setOptions(ENTRY_TYPES);
-        entryTypeDropdown.setOnSelect(value -> rebuildRows());
-        addWidget(entryTypeDropdown);
-        addPopupDropdown(entryTypeDropdown);
-
-        entryItemField = commitField(this::commitEntryItem);
-        addWidget(entryItemField);
-
-        entryTagField = commitField(this::commitEntryTag);
-        addWidget(entryTagField);
-
-        entryLootTableField = commitField(this::commitEntryLootTable);
-        addWidget(entryLootTableField);
-
-        entryCountTypeDropdown = new LabOptionDropdownWidget(0, 0, CONTROL_W, FIELD_H);
-        entryCountTypeDropdown.setOptions(COUNT_TYPES);
-        entryCountTypeDropdown.setOnSelect(value -> rebuildRows());
-        addWidget(entryCountTypeDropdown);
-        addPopupDropdown(entryCountTypeDropdown);
-
-        entryCountValueField = numberField(0, 0, () -> entryCountValueText, v -> entryCountValueText = v,
-                entryCountValueText);
-        addWidget(entryCountValueField);
-
-        entryCountMinField = numberField(0, 0, () -> entryCountMinText, v -> entryCountMinText = v, entryCountMinText);
-        addWidget(entryCountMinField);
-
-        entryCountMaxField = numberField(0, 0, () -> entryCountMaxText, v -> entryCountMaxText = v, entryCountMaxText);
-        addWidget(entryCountMaxField);
-
-        entryWeightField = numberField(0, 0, () -> entryWeightText, v -> entryWeightText = v, entryWeightText);
-        addWidget(entryWeightField);
-
-        entryQualityField = numberField(0, 0, () -> entryQualityText, v -> entryQualityText = v, entryQualityText);
-        addWidget(entryQualityField);
-
-        poolSurvivesExplosionToggle = new LabToggleSwitchWidget(0, 0,
-                () -> poolSurvivesExplosion, v -> poolSurvivesExplosion = v, null);
-        addWidget(poolSurvivesExplosionToggle);
-
-        poolRandomChanceField = numberField(0, 0, () -> poolRandomChanceText, v -> poolRandomChanceText = v,
-                poolRandomChanceText, 4);
-        addWidget(poolRandomChanceField);
-
-        poolKilledByPlayerToggle = new LabToggleSwitchWidget(0, 0,
-                () -> poolKilledByPlayer, v -> poolKilledByPlayer = v, null);
-        addWidget(poolKilledByPlayerToggle);
-
-        poolFurnaceSmeltToggle = new LabToggleSwitchWidget(0, 0,
-                () -> poolFurnaceSmelt, v -> poolFurnaceSmelt = v, null);
-        addWidget(poolFurnaceSmeltToggle);
-
-        poolLootingEnchantToggle = new LabToggleSwitchWidget(0, 0,
-                () -> poolLootingEnchant, v -> poolLootingEnchant = v, null);
-        addWidget(poolLootingEnchantToggle);
-
-        poolLootingCountField = numberField(0, 0, () -> poolLootingCountText, v -> poolLootingCountText = v,
-                poolLootingCountText, 4);
-        addWidget(poolLootingCountField);
-
-        poolLootingLimitField = numberField(0, 0, () -> poolLootingLimitText, v -> poolLootingLimitText = v,
-                poolLootingLimitText);
-        addWidget(poolLootingLimitField);
+        pools.add(LabLootPoolValues.defaults());
     }
 
-    private void commitTargetId(String value) {
-        targetId = value;
+    public void setPreviewListener(Runnable r) {
+        previewListener = r;
     }
 
-    private void commitCustomId(String value) {
-        customId = value;
+    public void setOnEditPool(PoolEditHandler handler) {
+        editHandler = handler;
     }
 
-    private void commitEntryItem(String value) {
-        entryItem = value;
-    }
-
-    private void commitEntryTag(String value) {
-        entryTag = value;
-    }
-
-    private void commitEntryLootTable(String value) {
-        entryLootTable = value;
+    private void firePreview() {
+        if (previewListener != null) {
+            previewListener.run();
+        }
     }
 
     public void setLootType(String type) {
@@ -222,165 +113,102 @@ public final class LabLootSettingsWidget extends LabRowCardSettingsWidget {
     }
 
     public void setFields(List<LabLootField> fields) {
-        this.fields = fields == null ? List.of() : fields;
         rebuildRows();
+    }
+
+    private void openPool(int index) {
+        if (index < 0 || index >= pools.size() || editHandler == null) {
+            return;
+        }
+        editHandler.edit(index, pools.get(index), getLootType());
+    }
+
+    private void addPool() {
+        if (pools.size() >= MAX_POOLS) {
+            return;
+        }
+        syncLiveText();
+        pools.add(LabLootPoolValues.defaults());
+        rebuildRows();
+        firePreview();
+        openPool(pools.size() - 1);
+    }
+
+    public void deletePoolAt(int index) {
+        if (index < 0 || index >= pools.size()) {
+            return;
+        }
+        if (pools.size() > 1) {
+            pools.remove(index);
+        } else {
+            pools.set(0, LabLootPoolValues.defaults());
+        }
+        rebuildRows();
+        firePreview();
+    }
+
+    public void applyPoolEdit(int index, LabLootPoolValues values) {
+        if (index < 0 || index >= pools.size() || values == null) {
+            return;
+        }
+        pools.set(index, values);
+        rebuildRows();
+        firePreview();
+    }
+
+    public String poolTitle(int index) {
+        String base = Component.translatable(LabGuiKeys.LAB_LOOT_POOL).getString();
+        return pools.size() <= 1 ? base : base + " " + (index + 1);
+    }
+
+    private FieldRow row(LabLootField field, String labelKey, Widget control) {
+        FieldRow r = new FieldRow(
+                new TextTexture(Component.translatable(labelKey).getString(), LabColors.TEXT_PRIMARY)
+                        .setType(TextTexture.TextType.LEFT),
+                control, null);
+        control.setHoverTooltips(List.of(Component.translatable(LabLootTooltips.key(field))));
+        return r;
+    }
+
+    private FieldRow plainRow(String labelText, Widget control, boolean disabled) {
+        return new FieldRow(
+                new TextTexture(labelText, LabColors.TEXT_PRIMARY).setType(TextTexture.TextType.LEFT), control,
+                null, disabled);
     }
 
     private void rebuildRows() {
         List<FieldRow> rows = new ArrayList<>();
-        String lootType = getLootType();
-        String rollsType = poolRollsTypeDropdown.getSelected() == null ? "constant"
-                : poolRollsTypeDropdown.getSelected();
-        String entryType = entryTypeDropdown.getSelected() == null ? "item" : entryTypeDropdown.getSelected();
-        String countType = entryCountTypeDropdown.getSelected() == null ? "constant"
-                : entryCountTypeDropdown.getSelected();
 
-        rows.add(new FieldRow(
-                new TextTexture(Component.translatable(LabGuiKeys.LAB_LOOT_TYPE).getString(), LabColors.TEXT_PRIMARY),
-                lootTypeDropdown, null));
-        rows.add(new FieldRow(
-                new TextTexture(Component.translatable(LabGuiKeys.LAB_LOOT_TARGET_ID).getString(), LabColors.TEXT_PRIMARY),
-                targetIdField, null));
-        rows.add(new FieldRow(
-                new TextTexture(Component.translatable(LabGuiKeys.LAB_LOOT_CUSTOM_ID).getString(), LabColors.TEXT_PRIMARY),
-                customIdField, null));
+        rows.add(row(LabLootField.LOOT_TYPE, LabGuiKeys.LAB_LOOT_TYPE, lootTypeDropdown));
+        rows.add(row(LabLootField.TARGET_ID, LabGuiKeys.LAB_LOOT_TARGET_ID, targetIdField));
+        rows.add(row(LabLootField.CUSTOM_ID, LabGuiKeys.LAB_LOOT_CUSTOM_ID, customIdField));
 
-        rows.add(new FieldRow(
-                new TextTexture(Component.translatable(LabGuiKeys.LAB_LOOT_POOL_ROLLS_TYPE).getString(),
-                        LabColors.TEXT_PRIMARY),
-                poolRollsTypeDropdown, null));
-        if ("uniform".equals(rollsType)) {
-            rows.add(new FieldRow(
-                    new TextTexture(Component.translatable(LabGuiKeys.LAB_LOOT_POOL_ROLLS_MIN).getString(),
-                            LabColors.TEXT_PRIMARY),
-                    poolRollsMinField, null));
-            rows.add(new FieldRow(
-                    new TextTexture(Component.translatable(LabGuiKeys.LAB_LOOT_POOL_ROLLS_MAX).getString(),
-                            LabColors.TEXT_PRIMARY),
-                    poolRollsMaxField, null));
-        } else if ("binomial".equals(rollsType)) {
-            rows.add(new FieldRow(
-                    new TextTexture(Component.translatable(LabGuiKeys.LAB_LOOT_POOL_ROLLS_N).getString(),
-                            LabColors.TEXT_PRIMARY),
-                    poolRollsNField, null));
-            rows.add(new FieldRow(
-                    new TextTexture(Component.translatable(LabGuiKeys.LAB_LOOT_POOL_ROLLS_P).getString(),
-                            LabColors.TEXT_PRIMARY),
-                    poolRollsPField, null));
-        } else {
-            rows.add(new FieldRow(
-                    new TextTexture(Component.translatable(LabGuiKeys.LAB_LOOT_POOL_ROLLS_VALUE).getString(),
-                            LabColors.TEXT_PRIMARY),
-                    poolRollsValueField, null));
+        for (int i = 0; i < pools.size(); i++) {
+            rows.add(plainRow(poolTitle(i), editButtons.get(i), false));
         }
-        rows.add(new FieldRow(
-                new TextTexture(Component.translatable(LabGuiKeys.LAB_LOOT_ENTRY_TYPE).getString(), LabColors.TEXT_PRIMARY),
-                entryTypeDropdown, null));
-        switch (entryType) {
-            case "tag" -> rows.add(new FieldRow(
-                    new TextTexture(Component.translatable(LabGuiKeys.LAB_LOOT_ENTRY_TAG).getString(),
-                            LabColors.TEXT_PRIMARY),
-                    entryTagField, null));
-            case "loot_table" -> rows.add(new FieldRow(
-                    new TextTexture(Component.translatable(LabGuiKeys.LAB_LOOT_ENTRY_LOOT_TABLE).getString(),
-                            LabColors.TEXT_PRIMARY),
-                    entryLootTableField, null));
-            case "empty" -> {
-            }
-            default -> rows.add(new FieldRow(
-                    new TextTexture(Component.translatable(LabGuiKeys.LAB_LOOT_ENTRY_ITEM).getString(),
-                            LabColors.TEXT_PRIMARY),
-                    entryItemField, null));
-        }
-        if (!"empty".equals(entryType) && !"tag".equals(entryType)) {
-            rows.add(new FieldRow(
-                    new TextTexture(Component.translatable(LabGuiKeys.LAB_LOOT_ENTRY_COUNT_TYPE).getString(),
-                            LabColors.TEXT_PRIMARY),
-                    entryCountTypeDropdown, null));
-            if ("uniform".equals(countType)) {
-                rows.add(new FieldRow(
-                        new TextTexture(Component.translatable(LabGuiKeys.LAB_LOOT_ENTRY_COUNT_MIN).getString(),
-                                LabColors.TEXT_PRIMARY),
-                        entryCountMinField, null));
-                rows.add(new FieldRow(
-                        new TextTexture(Component.translatable(LabGuiKeys.LAB_LOOT_ENTRY_COUNT_MAX).getString(),
-                                LabColors.TEXT_PRIMARY),
-                        entryCountMaxField, null));
-            } else {
-                rows.add(new FieldRow(
-                        new TextTexture(Component.translatable(LabGuiKeys.LAB_LOOT_ENTRY_COUNT_VALUE).getString(),
-                                LabColors.TEXT_PRIMARY),
-                        entryCountValueField, null));
-            }
-        }
-        rows.add(new FieldRow(
-                new TextTexture(Component.translatable(LabGuiKeys.LAB_LOOT_ENTRY_WEIGHT).getString(), LabColors.TEXT_PRIMARY),
-                entryWeightField, null));
-        if ("item".equals(entryType)) {
-            rows.add(new FieldRow(
-                    new TextTexture(Component.translatable(LabGuiKeys.LAB_LOOT_ENTRY_QUALITY).getString(),
-                            LabColors.TEXT_PRIMARY),
-                    entryQualityField, null));
-        }
-
-        rows.add(new FieldRow(
-                new TextTexture(Component.translatable(LabGuiKeys.LAB_LOOT_SURVIVES_EXPLOSION).getString(),
-                        LabColors.TEXT_PRIMARY),
-                poolSurvivesExplosionToggle, null));
-        rows.add(new FieldRow(
-                new TextTexture(Component.translatable(LabGuiKeys.LAB_LOOT_RANDOM_CHANCE).getString(),
-                        LabColors.TEXT_PRIMARY),
-                poolRandomChanceField, null));
-        if (LabLootService.LOOT_TYPE_ENTITY.equals(lootType)) {
-            rows.add(new FieldRow(
-                    new TextTexture(Component.translatable(LabGuiKeys.LAB_LOOT_KILLED_BY_PLAYER).getString(),
-                            LabColors.TEXT_PRIMARY),
-                    poolKilledByPlayerToggle, null));
-        }
-        rows.add(new FieldRow(
-                new TextTexture(Component.translatable(LabGuiKeys.LAB_LOOT_FURNACE_SMELT).getString(),
-                        LabColors.TEXT_PRIMARY),
-                poolFurnaceSmeltToggle, null));
-        rows.add(new FieldRow(
-                new TextTexture(Component.translatable(LabGuiKeys.LAB_LOOT_LOOTING_ENCHANT).getString(),
-                        LabColors.TEXT_PRIMARY),
-                poolLootingEnchantToggle, null));
+        rows.add(plainRow(Component.translatable(LabGuiKeys.LAB_LOOT_POOL).getString(), addPoolButton,
+                pools.size() >= MAX_POOLS));
 
         setRows(rows);
     }
 
+    private void syncLiveText() {
+        String rawTarget = targetIdField.getRawCurrentString();
+        if (rawTarget != null) {
+            targetId = rawTarget.trim();
+        }
+        String rawCustom = customIdField.getRawCurrentString();
+        if (rawCustom != null) {
+            customId = rawCustom.trim();
+        }
+    }
+
     public LabLootFieldValues getValues() {
-        String rollsType = poolRollsTypeDropdown.getSelected() == null ? "constant"
-                : poolRollsTypeDropdown.getSelected();
-        String entryType = entryTypeDropdown.getSelected() == null ? "item" : entryTypeDropdown.getSelected();
-        String countType = entryCountTypeDropdown.getSelected() == null ? "constant"
-                : entryCountTypeDropdown.getSelected();
-        return new LabLootFieldValues(
-                targetId,
-                customId,
-                rollsType,
-                parseFloat(poolRollsValueText, 1f),
-                parseFloat(poolRollsMinText, 0f),
-                parseFloat(poolRollsMaxText, 0f),
-                parseInt(poolRollsNText, 1),
-                parseFloat(poolRollsPText, 0.5f),
-                entryType,
-                entryItem,
-                entryTag,
-                entryLootTable,
-                countType,
-                parseFloat(entryCountValueText, 1f),
-                parseFloat(entryCountMinText, 0f),
-                parseFloat(entryCountMaxText, 0f),
-                parseInt(entryWeightText, 1),
-                parseInt(entryQualityText, 0),
-                poolSurvivesExplosion,
-                clampChance(parseFloat(poolRandomChanceText, 1f)),
-                poolKilledByPlayer,
-                poolFurnaceSmelt,
-                poolLootingEnchant,
-                parseFloat(poolLootingCountText, 0f),
-                parseInt(poolLootingLimitText, 0));
+        syncLiveText();
+        List<LabLootPoolValues> snapshot = pools.isEmpty()
+                ? List.of(LabLootPoolValues.defaults())
+                : List.copyOf(pools);
+        return new LabLootFieldValues(targetId, customId, snapshot);
     }
 
     public List<String> getTags() {
@@ -394,49 +222,14 @@ public final class LabLootSettingsWidget extends LabRowCardSettingsWidget {
     public void applyValues(LabLootFieldValues v) {
         targetId = v.targetId();
         customId = v.customId();
-        poolRollsTypeDropdown.setSelected(v.poolRollsType());
-        poolRollsValueText = formatFloat(v.poolRollsValue());
-        poolRollsMinText = formatFloat(v.poolRollsMin());
-        poolRollsMaxText = formatFloat(v.poolRollsMax());
-        poolRollsNText = Integer.toString(v.poolRollsN());
-        poolRollsPText = formatFloat(v.poolRollsP());
-        entryTypeDropdown.setSelected(v.entryType());
-        entryItem = v.entryItem();
-        entryTag = v.entryTag();
-        entryLootTable = v.entryLootTable();
-        entryCountTypeDropdown.setSelected(v.entryCountType());
-        entryCountValueText = formatFloat(v.entryCountValue());
-        entryCountMinText = formatFloat(v.entryCountMin());
-        entryCountMaxText = formatFloat(v.entryCountMax());
-        entryWeightText = Integer.toString(v.entryWeight());
-        entryQualityText = Integer.toString(v.entryQuality());
-        poolSurvivesExplosion = v.poolSurvivesExplosion();
-        poolRandomChanceText = formatFloat(v.poolRandomChance());
-        poolKilledByPlayer = v.poolKilledByPlayer();
-        poolFurnaceSmelt = v.poolFurnaceSmelt();
-        poolLootingEnchant = v.poolLootingEnchant();
-        poolLootingCountText = formatFloat(v.poolLootingCount());
-        poolLootingLimitText = Integer.toString(v.poolLootingLimit());
-
+        pools.clear();
+        List<LabLootPoolValues> source = v.pools().isEmpty() ? List.of(LabLootPoolValues.defaults()) : v.pools();
+        int poolCount = Math.min(source.size(), MAX_POOLS);
+        for (int i = 0; i < poolCount; i++) {
+            pools.add(source.get(i));
+        }
         targetIdField.setCurrentString(targetId);
         customIdField.setCurrentString(customId);
-        poolRollsValueField.setCurrentString(poolRollsValueText);
-        poolRollsMinField.setCurrentString(poolRollsMinText);
-        poolRollsMaxField.setCurrentString(poolRollsMaxText);
-        poolRollsNField.setCurrentString(poolRollsNText);
-        poolRollsPField.setCurrentString(poolRollsPText);
-        entryItemField.setCurrentString(entryItem);
-        entryTagField.setCurrentString(entryTag);
-        entryLootTableField.setCurrentString(entryLootTable);
-        entryCountValueField.setCurrentString(entryCountValueText);
-        entryCountMinField.setCurrentString(entryCountMinText);
-        entryCountMaxField.setCurrentString(entryCountMaxText);
-        entryWeightField.setCurrentString(entryWeightText);
-        entryQualityField.setCurrentString(entryQualityText);
-        poolRandomChanceField.setCurrentString(poolRandomChanceText);
-        poolLootingCountField.setCurrentString(poolLootingCountText);
-        poolLootingLimitField.setCurrentString(poolLootingLimitText);
-
         rebuildRows();
     }
 

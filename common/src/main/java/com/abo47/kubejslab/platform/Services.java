@@ -13,6 +13,8 @@ import com.abo47.kubejslab.network.block.S2CBlockStatePacket;
 import com.abo47.kubejslab.network.item.C2SItemEditPacket;
 import com.abo47.kubejslab.network.item.S2CItemStatePacket;
 import com.abo47.kubejslab.network.loot.C2SLootEditPacket;
+import com.abo47.kubejslab.network.loot.C2SLootPrefillPacket;
+import com.abo47.kubejslab.network.loot.S2CLootPrefillPacket;
 import com.abo47.kubejslab.network.loot.S2CLootStatePacket;
 import com.abo47.kubejslab.network.recipe.C2SRecipeEditPacket;
 import com.abo47.kubejslab.network.recipe.S2CRecipeStatePacket;
@@ -77,6 +79,14 @@ public final class Services {
 
         @Override
         public void sendLootState(ServerPlayer player, S2CLootStatePacket packet) {
+        }
+
+        @Override
+        public void sendLootPrefill(C2SLootPrefillPacket packet) {
+        }
+
+        @Override
+        public void sendLootPrefill(ServerPlayer player, S2CLootPrefillPacket packet) {
         }
 
         @Override
