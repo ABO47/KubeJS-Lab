@@ -9,11 +9,12 @@ import com.lowdragmc.lowdraglib.gui.widget.SlotWidget;
 import com.lowdragmc.lowdraglib.gui.widget.Widget;
 
 import com.abo47.kubejslab.client.ui.base.LabColors;
+import com.abo47.kubejslab.client.ui.base.LabPickTarget;
 
 import mezz.jei.api.recipe.RecipeIngredientRole;
 
 
-public final class LabPhantomFluidSlotWidget extends Widget {
+public final class LabPhantomFluidSlotWidget extends Widget implements LabPickTarget {
     private final LabSlotData data;
     private LabMachineLayoutWidget dragOwner;
     private RecipeIngredientRole role;

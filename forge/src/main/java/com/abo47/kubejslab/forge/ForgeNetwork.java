@@ -11,6 +11,11 @@ import com.abo47.kubejslab.network.block.C2SBlockEditPacket;
 import com.abo47.kubejslab.network.block.S2CBlockStatePacket;
 import com.abo47.kubejslab.network.item.C2SItemEditPacket;
 import com.abo47.kubejslab.network.item.S2CItemStatePacket;
+import com.abo47.kubejslab.network.loot.C2SLootEditPacket;
+import com.abo47.kubejslab.network.loot.C2SLootPrefillPacket;
+import com.abo47.kubejslab.network.loot.S2CLootPrefillPacket;
+import com.abo47.kubejslab.network.loot.S2CLootStatePacket;
+import com.abo47.kubejslab.network.loot.S2CLootTableListPacket;
 import com.abo47.kubejslab.network.recipe.C2SRecipeEditPacket;
 import com.abo47.kubejslab.network.recipe.S2CRecipeStatePacket;
 
@@ -110,6 +115,51 @@ public final class ForgeNetwork {
         CHANNEL.registerMessage(7, S2CBlockStatePacket.class,
                 S2CBlockStatePacket::write,
                 S2CBlockStatePacket::read,
+                (packet, ctx) -> {
+                    ctx.get().enqueueWork(packet::handleClient);
+                    ctx.get().setPacketHandled(true);
+                });
+        CHANNEL.registerMessage(8, C2SLootEditPacket.class,
+                C2SLootEditPacket::write,
+                C2SLootEditPacket::read,
+                (packet, ctx) -> {
+                    ctx.get().enqueueWork(() -> {
+                        ServerPlayer player = ctx.get().getSender();
+                        if (player != null) {
+                            packet.handle(player);
+                        }
+                    });
+                    ctx.get().setPacketHandled(true);
+                });
+        CHANNEL.registerMessage(9, S2CLootStatePacket.class,
+                S2CLootStatePacket::write,
+                S2CLootStatePacket::read,
+                (packet, ctx) -> {
+                    ctx.get().enqueueWork(packet::handleClient);
+                    ctx.get().setPacketHandled(true);
+                });
+        CHANNEL.registerMessage(10, C2SLootPrefillPacket.class,
+                C2SLootPrefillPacket::write,
+                C2SLootPrefillPacket::read,
+                (packet, ctx) -> {
+                    ctx.get().enqueueWork(() -> {
+                        ServerPlayer player = ctx.get().getSender();
+                        if (player != null) {
+                            packet.handle(player);
+                        }
+                    });
+                    ctx.get().setPacketHandled(true);
+                });
+        CHANNEL.registerMessage(11, S2CLootPrefillPacket.class,
+                S2CLootPrefillPacket::write,
+                S2CLootPrefillPacket::read,
+                (packet, ctx) -> {
+                    ctx.get().enqueueWork(packet::handleClient);
+                    ctx.get().setPacketHandled(true);
+                });
+        CHANNEL.registerMessage(12, S2CLootTableListPacket.class,
+                S2CLootTableListPacket::write,
+                S2CLootTableListPacket::read,
                 (packet, ctx) -> {
                     ctx.get().enqueueWork(packet::handleClient);
                     ctx.get().setPacketHandled(true);

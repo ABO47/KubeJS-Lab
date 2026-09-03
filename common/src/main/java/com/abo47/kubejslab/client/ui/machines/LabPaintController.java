@@ -100,6 +100,10 @@ final class LabPaintController {
         this.pendingPick = pendingPick;
     }
 
+    void clearPendingPick() {
+        pendingPick = null;
+    }
+
     private static void applyPick(LabSlotData data, LabPick pick) {
         if (pick instanceof LabPick.Item item) {
             if (data.kind != LabSlotKind.FLUID) {

@@ -96,6 +96,10 @@ public final class LabMachineLayoutWidget extends WidgetGroup {
         paint.setPendingPick(pendingPick);
     }
 
+    public void clearPendingPick() {
+        paint.clearPendingPick();
+    }
+
     public void setOutputsChangedListener(Runnable outputsChangedListener) {
         this.outputsChangedListener = outputsChangedListener;
     }

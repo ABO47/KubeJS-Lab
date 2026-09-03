@@ -27,6 +27,7 @@ import com.abo47.kubejslab.client.ui.base.LabGlow;
 import com.abo47.kubejslab.client.ui.base.LabGuiKeys;
 import com.abo47.kubejslab.client.ui.base.LabIconAtlas;
 import com.abo47.kubejslab.client.ui.base.LabLayout;
+import com.abo47.kubejslab.client.ui.base.LabModalHeader;
 import com.abo47.kubejslab.client.ui.base.LabScrollBarWidget;
 import com.abo47.kubejslab.client.ui.base.LabScrollMath;
 import com.abo47.kubejslab.client.ui.base.LabTextFieldWidget;
@@ -62,7 +63,7 @@ public final class LabAssetPickerModal {
     private static final int PREVIEW_LABEL_MAX = 22;
     private static final long DOUBLE_CLICK_MS = 350;
 
-    private static final int HEADER_CLOSE_X = MODAL_W - 25;
+    private static final int HEADER_CLOSE_X = LabModalHeader.closeX(MODAL_W);
     private static final int DIM_COLOR = LabColors.withAlpha(LabColors.SURFACE_BASE, 140);
     private static final int PANEL_FILL = LabColors.withAlpha(LabColors.SURFACE_BASE, 252);
     private static final int ELEVATED_FILL = mix(LabColors.SURFACE_PANEL_ALT, LabColors.TEXT_PRIMARY, 10);
@@ -414,7 +415,7 @@ public final class LabAssetPickerModal {
     }
 
     private static int backButtonX() {
-        return HEADER_CLOSE_X - HEADER_BUTTON_SIZE - HEADER_GAP;
+        return LabModalHeader.beforeX(HEADER_CLOSE_X);
     }
 
     private static int mix(int a, int b, int percent) {
