@@ -52,6 +52,8 @@ public final class LabLootEntryBrowserWidget
                 settings.entryCardId(entry.index()),
                 () -> settings.selectEntry(entry.index()),
                 (mx, my) -> {
+                    settings.selectEntry(entry.index());
+                    fireEntryRightClick(entry, mx, my);
                 });
     }
 

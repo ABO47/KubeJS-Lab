@@ -265,7 +265,7 @@
   "kubejslab.gui.lab_block_tip_disable_recipe_removal": "Remove all recipes that produce the block",
   "kubejslab.gui.lab_block_tip_disable_viewer_hide": "Hide the block item from JEI/REI/EMI",
   "kubejslab.chat.restart_required": "Restart your game to see the changes",
-  "kubejslab.gui.lab_tab_tooltip_loot": "Loot tables",
+  "kubejslab.gui.lab_tab_tooltip_loot": "Loot tables: %s",
   "kubejslab.gui.lab_loot_modify": "Modify",
   "kubejslab.gui.lab_loot_disable": "Disable",
   "kubejslab.gui.lab_loot_reset": "Reset",

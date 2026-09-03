@@ -20,7 +20,6 @@ import com.lowdragmc.lowdraglib.gui.widget.SlotWidget;
 import com.lowdragmc.lowdraglib.gui.widget.TextFieldWidget;
 import com.lowdragmc.lowdraglib.gui.widget.Widget;
 
-import com.abo47.kubejslab.client.ui.base.LabActionButton;
 import com.abo47.kubejslab.client.ui.base.LabColors;
 import com.abo47.kubejslab.client.ui.base.LabCommitFieldWidget;
 import com.abo47.kubejslab.client.ui.base.LabGlow;
@@ -183,7 +182,6 @@ public final class LabLootPoolSettingsWidget extends LabRowCardSettingsWidget {
         TextFieldWidget countMaxField;
         TextFieldWidget weightField;
         TextFieldWidget qualityField;
-        LabActionButton removeButton;
         String item = "";
         String tag = "";
         String table = "";
@@ -441,13 +439,6 @@ public final class LabLootPoolSettingsWidget extends LabRowCardSettingsWidget {
         return t;
     }
 
-    private LabActionButton button(String labelKey, Runnable onClick) {
-        LabActionButton b = new LabActionButton(0, 0, CONTROL_W, FIELD_H,
-                Component.translatable(labelKey).getString(), onClick);
-        track(b);
-        return b;
-    }
-
     private void createPoolWidgets() {
         pool.rollsTypeDropdown = dropdown(ROLLS_TYPES);
         pool.rollsValueField = number(() -> pool.rollsValueText, v -> pool.rollsValueText = v,
@@ -488,7 +479,6 @@ public final class LabLootPoolSettingsWidget extends LabRowCardSettingsWidget {
         entry.weightField = number(() -> entry.weightText, v -> entry.weightText = v, entry.weightText);
         entry.qualityField = number(() -> entry.qualityText, v -> entry.qualityText = v,
                 entry.qualityText);
-        entry.removeButton = button(LabGuiKeys.LAB_LOOT_REMOVE, () -> removeEntry(entry));
     }
 
     private void rebuildStateWidgets() {
@@ -547,12 +537,15 @@ public final class LabLootPoolSettingsWidget extends LabRowCardSettingsWidget {
         rebuildRows();
     }
 
-    private void removeEntry(EntryState entry) {
+    public void removeEntryAt(int index) {
         if (pool.entries.size() <= 1) {
             return;
         }
+        if (index < 0 || index >= pool.entries.size()) {
+            return;
+        }
         syncLiveText();
-        pool.entries.remove(entry);
+        pool.entries.remove(index);
         selectedEntry = Math.max(0, Math.min(selectedEntry, pool.entries.size() - 1));
         rebuildStateWidgets();
         rebuildRows();
@@ -574,12 +567,6 @@ public final class LabLootPoolSettingsWidget extends LabRowCardSettingsWidget {
                 control, null);
         control.setHoverTooltips(List.of(Component.translatable(LabLootTooltips.key(field))));
         return r;
-    }
-
-    private FieldRow plainRow(String labelText, Widget control, boolean disabled) {
-        return new FieldRow(
-                new TextTexture(labelText, LabColors.TEXT_PRIMARY).setType(TextTexture.TextType.LEFT), control,
-                null, disabled);
     }
 
     private static String shortId(String id) {
@@ -658,11 +645,6 @@ public final class LabLootPoolSettingsWidget extends LabRowCardSettingsWidget {
         rows.add(row(LabLootField.ENTRY_WEIGHT, LabGuiKeys.LAB_LOOT_ENTRY_WEIGHT, entry.weightField));
         if ("item".equals(entryType)) {
             rows.add(row(LabLootField.ENTRY_QUALITY, LabGuiKeys.LAB_LOOT_ENTRY_QUALITY, entry.qualityField));
-        }
-        if (pool.entries.size() > 1) {
-            rows.add(plainRow(Component.translatable(LabGuiKeys.LAB_LOOT_REMOVE).getString() + " "
-                    + Component.translatable(LabGuiKeys.LAB_LOOT_ENTRY).getString() + " " + (sel + 1),
-                    entry.removeButton, false));
         }
 
         setRows(rows);

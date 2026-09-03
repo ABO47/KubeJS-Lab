@@ -1,5 +1,8 @@
 package com.abo47.kubejslab.client.ui.loot;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import javax.annotation.Nonnull;
 
 import org.joml.Matrix4f;
@@ -13,6 +16,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
@@ -22,8 +26,12 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Block;
 
 import com.lowdragmc.lowdraglib.gui.texture.ItemStackTexture;
+import com.lowdragmc.lowdraglib.gui.widget.SlotWidget;
 import com.lowdragmc.lowdraglib.gui.widget.WidgetGroup;
 
+import com.abo47.kubejslab.client.ui.base.LabColors;
+import com.abo47.kubejslab.client.ui.base.LabGlow;
+import com.abo47.kubejslab.client.ui.picker.LabPickerEntries;
 import com.abo47.kubejslab.loot.model.LabLootEntryValues;
 import com.abo47.kubejslab.loot.model.LabLootFieldValues;
 import com.abo47.kubejslab.loot.model.LabLootPoolValues;
@@ -34,16 +42,33 @@ public final class LabLootPreviewWidget extends WidgetGroup {
     private static final int FRONT_ENTITY_YAW = 205;
     private static final double FILL = 0.82D;
     private static final double MAX_SCALE = 96.0D;
-    private static final int BADGE_SIZE = 22;
-    private static final int BADGE_PAD = 4;
+    private static final int SLOT = 18;
+    private static final int GAP = 2;
+    private static final int PAD = 4;
+    private static final int TARGET_BOX = 44;
+
+    public interface DropClick {
+        void onDropClick(int poolIndex, int entryIndex);
+    }
+
+    private record DropSlot(int poolIndex, int entryIndex, LabLootEntryValues entry, LabLootPoolValues pool) {
+    }
 
     private ResourceLocation entryId;
     private String lootType = LabLootService.LOOT_TYPE_BLOCK;
-    private String dropItem = "";
+    private LabLootFieldValues values;
+    private final List<DropSlot> drops = new ArrayList<>();
+    private int scroll;
+    private int scrollMax;
+    private DropClick dropClickListener;
 
     public LabLootPreviewWidget(int x, int y, int w, int h) {
         super(x, y, w, h);
         lootType = LabLootService.LOOT_TYPE_BLOCK;
+    }
+
+    public void setOnDropClick(DropClick listener) {
+        dropClickListener = listener;
     }
 
     public void setEntry(ResourceLocation id, String lootType) {
@@ -53,67 +78,307 @@ public final class LabLootPreviewWidget extends WidgetGroup {
     public void setEntry(ResourceLocation id, String lootType, LabLootFieldValues values) {
         this.entryId = id;
         this.lootType = lootType == null || lootType.isBlank() ? LabLootService.LOOT_TYPE_BLOCK : lootType;
-        this.dropItem = firstDropItem(values);
+        this.values = values;
+        rebuildDrops();
     }
 
-    private static String firstDropItem(LabLootFieldValues values) {
+    private void rebuildDrops() {
+        int oldScroll = scroll;
+        drops.clear();
+        scrollMax = 0;
         if (values == null) {
-            return "";
+            return;
         }
-        for (LabLootPoolValues pool : values.pools()) {
-            for (LabLootEntryValues entry : pool.entries()) {
-                if ("item".equals(entry.type()) && entry.item() != null && !entry.item().isBlank()) {
-                    return entry.item();
+        List<LabLootPoolValues> pools = values.pools();
+        for (int p = 0; p < pools.size(); p++) {
+            LabLootPoolValues pool = pools.get(p);
+            List<LabLootEntryValues> entries = pool.entries();
+            for (int e = 0; e < entries.size(); e++) {
+                LabLootEntryValues entry = entries.get(e);
+                if (isBlankEntry(entry)) {
+                    continue;
                 }
+                drops.add(new DropSlot(p, e, entry, pool));
             }
         }
-        return "";
+        scrollMax = Math.max(0, contentHeight() - gridHeight());
+        scroll = Math.max(0, Math.min(oldScroll, scrollMax));
+    }
+
+    private static boolean isBlankEntry(LabLootEntryValues entry) {
+        if (entry == null) {
+            return true;
+        }
+        return switch (entry.type()) {
+            case "tag" -> entry.tag() == null || entry.tag().isBlank();
+            case "loot_table" -> entry.lootTable() == null || entry.lootTable().isBlank();
+            case "empty" -> false;
+            default -> entry.item() == null || entry.item().isBlank();
+        };
+    }
+
+    private int gridX() {
+        return TARGET_BOX + PAD + GAP;
+    }
+
+    private int gridW() {
+        return Math.max(1, getSizeWidth() - gridX() - PAD);
+    }
+
+    private int gridHeight() {
+        return Math.max(1, getSizeHeight() - PAD * 2);
+    }
+
+    private int columns() {
+        return Math.max(1, (gridW() + GAP) / (SLOT + GAP));
+    }
+
+    private int contentHeight() {
+        int rows = (drops.size() + columns() - 1) / columns();
+        return Math.max(1, rows * SLOT + Math.max(0, rows - 1) * GAP);
+    }
+
+    private int slotX(int col) {
+        return getPositionX() + gridX() + col * (SLOT + GAP);
+    }
+
+    private int slotY(int row) {
+        return getPositionY() + PAD - scroll + row * (SLOT + GAP);
+    }
+
+    private int dropAt(double mx, double my) {
+        int cols = columns();
+        for (int i = 0; i < drops.size(); i++) {
+            int row = i / cols;
+            int col = i % cols;
+            int x = slotX(col);
+            int y = slotY(row);
+            if (mx >= x && my >= y && mx < x + SLOT && my < y + SLOT) {
+                int gridTop = getPositionY() + PAD;
+                int gridBottom = gridTop + gridHeight();
+                if (my < gridTop || my >= gridBottom) {
+                    return -1;
+                }
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private boolean overTarget(double mx, double my) {
+        int x = getPositionX() + PAD;
+        int y = getPositionY() + PAD;
+        return mx >= x && my >= y && mx < x + TARGET_BOX && my < y + TARGET_BOX;
     }
 
     @Override
     public void drawInBackground(@Nonnull GuiGraphics g, int mx, int my, float pt) {
-        int px = getPositionX();
-        int py = getPositionY();
-        int pw = getSizeWidth();
-        int ph = getSizeHeight();
-
-        ItemStack drop = dropStack();
-        if (!drop.isEmpty()) {
-            int size = Math.max(32, Math.min(pw, ph) - 16);
-            int iconX = px + (pw - size) / 2;
-            int iconY = py + (ph - size) / 2;
-            new ItemStackTexture(drop).draw(g, mx, my, iconX, iconY, size, size);
-            drawSourceBadge(g, px + pw - BADGE_SIZE - BADGE_PAD, py + ph - BADGE_SIZE - BADGE_PAD);
-            return;
+        drawTarget(g, mx, my);
+        int cols = columns();
+        int gridTop = getPositionY() + PAD;
+        int gridBottom = gridTop + gridHeight();
+        g.flush();
+        g.enableScissor(getPositionX() + gridX(), gridTop,
+                getPositionX() + gridX() + gridW(), gridBottom);
+        for (int i = 0; i < drops.size(); i++) {
+            int row = i / cols;
+            int col = i % cols;
+            int x = slotX(col);
+            int y = slotY(row);
+            if (y + SLOT < gridTop || y > gridBottom) {
+                continue;
+            }
+            SlotWidget.ITEM_SLOT_TEXTURE.draw(g, mx, my, x, y, SLOT, SLOT);
+            ItemStack icon = dropIcon(drops.get(i).entry());
+            if (!icon.isEmpty()) {
+                new ItemStackTexture(icon).draw(g, mx, my, x + 1, y + 1, SLOT - 2, SLOT - 2);
+            }
         }
-        if (LabLootService.LOOT_TYPE_ENTITY.equals(lootType)) {
-            drawEntity(g, px, py, pw, ph);
-            return;
+        g.flush();
+        g.disableScissor();
+        int hovered = dropAt(mx, my);
+        if (hovered >= 0) {
+            int row = hovered / cols;
+            int col = hovered % cols;
+            LabGlow.drawGlow(g, mx, my, slotX(col), slotY(row), SLOT, SLOT);
+            setHoverTooltips(dropTips(drops.get(hovered)));
+        } else if (overTarget(mx, my)) {
+            LabGlow.drawGlow(g, mx, my, getPositionX() + PAD, getPositionY() + PAD, TARGET_BOX, TARGET_BOX);
+            setHoverTooltips(targetTips());
+        } else {
+            setHoverTooltips(List.of());
         }
-        int size = Math.max(32, Math.min(pw, ph) - 16);
-        int iconX = px + (pw - size) / 2;
-        int iconY = py + (ph - size) / 2;
-        new ItemStackTexture(stackFor()).draw(g, mx, my, iconX, iconY, size, size);
     }
 
-    private ItemStack dropStack() {
-        if (dropItem == null || dropItem.isBlank()) {
-            return ItemStack.EMPTY;
-        }
-        ResourceLocation id = ResourceLocation.tryParse(dropItem);
-        if (id == null || !BuiltInRegistries.ITEM.containsKey(id)) {
-            return ItemStack.EMPTY;
-        }
-        return new ItemStack(BuiltInRegistries.ITEM.get(id));
-    }
-
-    private void drawSourceBadge(GuiGraphics g, int x, int y) {
-        if (LabLootService.LOOT_TYPE_ENTITY.equals(lootType) && entryId != null) {
-            if (renderEntity(g, x + BADGE_SIZE / 2, y + BADGE_SIZE / 2, BADGE_SIZE, BADGE_SIZE, entryId)) {
+    private void drawTarget(GuiGraphics g, int mx, int my) {
+        int x = getPositionX() + PAD;
+        int y = getPositionY() + PAD;
+        if (LabLootService.LOOT_TYPE_ENTITY.equals(lootType) && targetEgg().isEmpty()) {
+            if (entryId != null && renderEntity(g, x + TARGET_BOX / 2, y + TARGET_BOX / 2,
+                    TARGET_BOX, TARGET_BOX, entryId)) {
                 return;
             }
         }
-        new ItemStackTexture(stackFor()).draw(g, 0, 0, x, y, BADGE_SIZE, BADGE_SIZE);
+        SlotWidget.ITEM_SLOT_TEXTURE.draw(g, mx, my, x, y, TARGET_BOX, TARGET_BOX);
+        ItemStack target = targetEgg().isEmpty() ? stackFor() : targetEgg();
+        if (!target.isEmpty()) {
+            new ItemStackTexture(target).draw(g, mx, my, x + 2, y + 2, TARGET_BOX - 4, TARGET_BOX - 4);
+        }
+    }
+
+    private ItemStack targetEgg() {
+        if (!LabLootService.LOOT_TYPE_ENTITY.equals(lootType) || entryId == null) {
+            return ItemStack.EMPTY;
+        }
+        ResourceLocation eggId = ResourceLocation.tryBuild(entryId.getNamespace(), entryId.getPath() + "_spawn_egg");
+        if (eggId != null && BuiltInRegistries.ITEM.containsKey(eggId)) {
+            return new ItemStack(BuiltInRegistries.ITEM.get(eggId));
+        }
+        return ItemStack.EMPTY;
+    }
+
+    private List<Component> targetTips() {
+        if (entryId != null) {
+            return List.of(Component.literal(entryId.toString()));
+        }
+        if (values != null && !values.targetId().isBlank()) {
+            return List.of(Component.literal(values.targetId()));
+        }
+        return List.of(Component.literal(lootType));
+    }
+
+    private static ItemStack dropIcon(LabLootEntryValues entry) {
+        if (entry == null) {
+            return ItemStack.EMPTY;
+        }
+        return switch (entry.type()) {
+            case "tag" -> {
+                if (entry.tag().isBlank()) {
+                    yield ItemStack.EMPTY;
+                }
+                ResourceLocation tagId = ResourceLocation.tryParse(entry.tag());
+                yield tagId == null ? ItemStack.EMPTY : LabPickerEntries.tagPreview(tagId);
+            }
+            case "loot_table" -> new ItemStack(Items.CHEST);
+            case "empty" -> new ItemStack(Items.BARRIER);
+            default -> {
+                if (entry.item().isBlank()) {
+                    yield ItemStack.EMPTY;
+                }
+                ResourceLocation id = ResourceLocation.tryParse(entry.item());
+                if (id == null || !BuiltInRegistries.ITEM.containsKey(id)) {
+                    yield ItemStack.EMPTY;
+                }
+                yield new ItemStack(BuiltInRegistries.ITEM.get(id));
+            }
+        };
+    }
+
+    private static List<Component> dropTips(DropSlot slot) {
+        List<Component> tips = new ArrayList<>();
+        LabLootEntryValues entry = slot.entry();
+        LabLootPoolValues pool = slot.pool();
+        ItemStack icon = dropIcon(entry);
+        String name = icon.isEmpty() ? entryName(entry) : icon.getHoverName().getString();
+        tips.add(Component.literal(name));
+        tips.add(Component.literal(entryIdLine(entry)));
+        tips.add(Component.literal("Pool " + (slot.poolIndex() + 1) + " - Entry " + (slot.entryIndex() + 1)));
+        tips.add(Component.literal("Weight: " + entry.weight() + "  Quality: " + entry.quality()));
+        tips.add(Component.literal("Count: " + countLine(entry)));
+        tips.add(Component.literal("Chance: " + Math.round(pool.randomChance() * 100f) + "%  Rolls: " + rollsLine(pool)));
+        String conditions = conditionsLine(pool);
+        if (!conditions.isBlank()) {
+            tips.add(Component.literal(conditions));
+        }
+        return tips;
+    }
+
+    private static String entryName(LabLootEntryValues entry) {
+        return switch (entry.type()) {
+            case "tag" -> entry.tag().isBlank() ? "tag" : "#" + entry.tag();
+            case "loot_table" -> entry.lootTable().isBlank() ? "loot table" : entry.lootTable();
+            case "empty" -> "empty";
+            default -> entry.item().isBlank() ? "item" : entry.item();
+        };
+    }
+
+    private static String entryIdLine(LabLootEntryValues entry) {
+        return switch (entry.type()) {
+            case "tag" -> entry.tag();
+            case "loot_table" -> entry.lootTable();
+            case "empty" -> "";
+            default -> entry.item();
+        };
+    }
+
+    private static String countLine(LabLootEntryValues entry) {
+        if ("uniform".equals(entry.countType())) {
+            return formatCount(entry.countMin()) + "-" + formatCount(entry.countMax());
+        }
+        return formatCount(entry.countValue());
+    }
+
+    private static String rollsLine(LabLootPoolValues pool) {
+        return switch (pool.rollsType()) {
+            case "uniform" -> formatCount(pool.rollsMin()) + "-" + formatCount(pool.rollsMax());
+            case "binomial" -> "n=" + pool.rollsN() + " p=" + pool.rollsP();
+            default -> formatCount(pool.rollsValue());
+        };
+    }
+
+    private static String conditionsLine(LabLootPoolValues pool) {
+        List<String> parts = new ArrayList<>();
+        if (pool.killedByPlayer()) {
+            parts.add("killed by player");
+        }
+        if (pool.furnaceSmelt()) {
+            parts.add("smelted");
+        }
+        if (pool.lootingEnchant()) {
+            parts.add("looting");
+        }
+        if (!pool.survivesExplosion()) {
+            parts.add("no explosion guard");
+        }
+        return String.join(", ", parts);
+    }
+
+    private static String formatCount(float value) {
+        if (value == (int) value) {
+            return Integer.toString((int) value);
+        }
+        return Float.toString(value);
+    }
+
+    @Override
+    public boolean mouseClicked(double mx, double my, int button) {
+        if (button == LabColors.MOUSE_BUTTON_LEFT && dropClickListener != null) {
+            int hovered = dropAt(mx, my);
+            if (hovered >= 0) {
+                DropSlot slot = drops.get(hovered);
+                dropClickListener.onDropClick(slot.poolIndex(), slot.entryIndex());
+                return true;
+            }
+        }
+        return super.mouseClicked(mx, my, button);
+    }
+
+    @Override
+    public boolean mouseWheelMove(double mouseX, double mouseY, double wheelDelta) {
+        if (!isMouseOverElement(mouseX, mouseY) || scrollMax <= 0) {
+            return super.mouseWheelMove(mouseX, mouseY, wheelDelta);
+        }
+        int step = Math.max(SLOT + GAP, (SLOT + GAP) * 2);
+        int next = wheel(scroll, scrollMax, step, wheelDelta);
+        if (next != scroll) {
+            scroll = next;
+        }
+        return true;
+    }
+
+    private static int wheel(int value, int max, int step, double delta) {
+        int next = value - (int) Math.signum(delta) * step;
+        return Math.max(0, Math.min(max, next));
     }
 
     private ItemStack stackFor() {
@@ -130,16 +395,6 @@ public final class LabLootPreviewWidget extends WidgetGroup {
             return new ItemStack(Items.EMERALD);
         }
         return new ItemStack(Items.CHEST);
-    }
-
-    private void drawEntity(GuiGraphics g, int px, int py, int pw, int ph) {
-        if (entryId == null || Minecraft.getInstance().level == null) {
-            int size = Math.max(32, Math.min(pw, ph) - 16);
-            new ItemStackTexture(new ItemStack(Items.ZOMBIE_SPAWN_EGG)).draw(g, 0, 0, px + (pw - size) / 2,
-                    py + (ph - size) / 2, size, size);
-            return;
-        }
-        renderEntity(g, px + pw / 2, py + ph / 2, pw, ph, entryId);
     }
 
     public static boolean renderEntity(GuiGraphics g, int centerX, int centerY, int boxW, int boxH,

@@ -45,6 +45,7 @@ import com.abo47.kubejslab.item.model.LabItemState;
 import com.abo47.kubejslab.lab.LabPathResolver;
 import com.abo47.kubejslab.loot.model.LabLootEditAction;
 import com.abo47.kubejslab.loot.model.LabLootFieldValues;
+import com.abo47.kubejslab.loot.model.LabLootPoolValues;
 import com.abo47.kubejslab.loot.model.LabLootState;
 import com.abo47.kubejslab.loot.runtime.LabLootPrefill;
 import com.abo47.kubejslab.loot.runtime.LabLootService;
@@ -143,6 +144,7 @@ public final class LabScreen {
         root.addWidget(assetLayer);
         root.setModalLayer(assetLayer);
         root.addWidget(picker);
+        root.setPickerWidget(picker);
         rightPanel.itemSettings.setOnTexturePick(() -> {
             rightPanel.itemSettings.closeAllPopups();
             LabAssetPickerModal.open(assetLayer,
@@ -203,6 +205,28 @@ public final class LabScreen {
                     });
             rightPanel.poolModal.setOnClose(() -> rightPanel.poolModal = null);
         });
+        rightPanel.lootPreview.setOnDropClick((poolIndex, entryIndex) -> {
+            LabLootFieldValues current = rightPanel.lootSettings.getValues();
+            if (poolIndex < 0 || poolIndex >= current.pools().size()) {
+                return;
+            }
+            rightPanel.lootSettings.closeAllPopups();
+            LabLootPoolValues snapshot = current.pools().get(poolIndex);
+            String lootType = rightPanel.lootSettings.getLootType();
+            int targetPool = poolIndex;
+            rightPanel.poolModal = LabLootPoolModal.open(assetLayer,
+                    rightPanel.lootSettings.poolTitle(targetPool), snapshot, lootType,
+                    () -> {
+                        rightPanel.lootSettings.deletePoolAt(targetPool);
+                        rightPanel.refreshLootPreview();
+                    },
+                    values -> {
+                        rightPanel.lootSettings.applyPoolEdit(targetPool, values);
+                        rightPanel.refreshLootPreview();
+                    });
+            rightPanel.poolModal.selectEntry(entryIndex);
+            rightPanel.poolModal.setOnClose(() -> rightPanel.poolModal = null);
+        });
 
         return new ModularUI(root, IUIHolder.EMPTY, player);
     }
@@ -256,6 +280,7 @@ public final class LabScreen {
         private final WidgetGroup contextMenuLayer =
                 new WidgetGroup(0, 0, LabLayout.ROOT_W, LabLayout.ROOT_H);
         private WidgetGroup modalLayer;
+        private Widget pickerWidget;
         private boolean menuOpen;
         private List<LabContextAction> menuActions = List.of();
         private int menuX;
@@ -279,6 +304,10 @@ public final class LabScreen {
 
         void setModalLayer(WidgetGroup modalLayer) {
             this.modalLayer = modalLayer;
+        }
+
+        void setPickerWidget(Widget pickerWidget) {
+            this.pickerWidget = pickerWidget;
         }
 
         boolean isModalOpen() {
@@ -325,6 +354,82 @@ public final class LabScreen {
                 return true;
             }
             return handled;
+        }
+
+        @Override
+        public boolean mouseWheelMove(double mouseX, double mouseY, double wheelDelta) {
+            if (isModalOpen()) {
+                if (pickerWidget != null && pickerWidget.isVisible() && pickerWidget.isActive()
+                        && pickerWidget.mouseWheelMove(mouseX, mouseY, wheelDelta)) {
+                    return true;
+                }
+                if (modalLayer.mouseWheelMove(mouseX, mouseY, wheelDelta)) {
+                    return true;
+                }
+                return true;
+            }
+            return super.mouseWheelMove(mouseX, mouseY, wheelDelta);
+        }
+
+        @Override
+        public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+            if (isModalOpen()) {
+                if (pickerWidget != null && pickerWidget.isVisible() && pickerWidget.isActive()
+                        && pickerWidget.mouseDragged(mouseX, mouseY, button, dragX, dragY)) {
+                    return true;
+                }
+                if (modalLayer.mouseDragged(mouseX, mouseY, button, dragX, dragY)) {
+                    return true;
+                }
+                return true;
+            }
+            return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+        }
+
+        @Override
+        public boolean mouseReleased(double mouseX, double mouseY, int button) {
+            if (isModalOpen()) {
+                boolean handled = false;
+                if (pickerWidget != null && pickerWidget.isVisible() && pickerWidget.isActive()
+                        && pickerWidget.mouseReleased(mouseX, mouseY, button)) {
+                    handled = true;
+                }
+                if (modalLayer.mouseReleased(mouseX, mouseY, button)) {
+                    handled = true;
+                }
+                return true;
+            }
+            return super.mouseReleased(mouseX, mouseY, button);
+        }
+
+        @Override
+        public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+            if (isModalOpen()) {
+                if (pickerWidget != null && pickerWidget.isVisible() && pickerWidget.isActive()
+                        && pickerWidget.keyPressed(keyCode, scanCode, modifiers)) {
+                    return true;
+                }
+                if (modalLayer.keyPressed(keyCode, scanCode, modifiers)) {
+                    return true;
+                }
+                return true;
+            }
+            return super.keyPressed(keyCode, scanCode, modifiers);
+        }
+
+        @Override
+        public boolean charTyped(char codePoint, int modifiers) {
+            if (isModalOpen()) {
+                if (pickerWidget != null && pickerWidget.isVisible() && pickerWidget.isActive()
+                        && pickerWidget.charTyped(codePoint, modifiers)) {
+                    return true;
+                }
+                if (modalLayer.charTyped(codePoint, modifiers)) {
+                    return true;
+                }
+                return true;
+            }
+            return super.charTyped(codePoint, modifiers);
         }
 
         private void clearPendingPicks() {
