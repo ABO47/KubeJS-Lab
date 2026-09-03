@@ -1,5 +1,7 @@
 package com.abo47.kubejslab.client.ui.machines;
 
+import java.util.List;
+
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
@@ -11,6 +13,7 @@ import com.lowdragmc.lowdraglib.gui.widget.SlotWidget;
 import com.lowdragmc.lowdraglib.side.item.IItemTransfer;
 
 import com.abo47.kubejslab.client.ui.base.LabColors;
+import com.abo47.kubejslab.client.ui.base.LabPickTarget;
 import com.abo47.kubejslab.recipe.model.LabSlotKind;
 import com.abo47.kubejslab.recipe.model.LabSlotTint;
 
@@ -18,7 +21,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import mezz.jei.api.recipe.RecipeIngredientRole;
 
 
-public final class LabPhantomSlotWidget extends PhantomSlotWidget {
+public final class LabPhantomSlotWidget extends PhantomSlotWidget implements LabPickTarget {
     private final LabPhantomHandler handler;
     private LabMachineLayoutWidget dragOwner;
     private boolean tagTooltipSet;
@@ -50,7 +53,7 @@ public final class LabPhantomSlotWidget extends PhantomSlotWidget {
             setHoverTooltips(Component.literal("#" + handler.data().tag));
             tagTooltipSet = true;
         } else if (!isTag && tagTooltipSet) {
-            setHoverTooltips(java.util.List.of());
+            setHoverTooltips(List.of());
             tagTooltipSet = false;
         }
     }

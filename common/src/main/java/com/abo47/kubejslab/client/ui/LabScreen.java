@@ -20,6 +20,7 @@ import com.lowdragmc.lowdraglib.gui.texture.IGuiTexture;
 import com.lowdragmc.lowdraglib.gui.texture.TextTexture;
 import com.lowdragmc.lowdraglib.gui.widget.custom.PlayerInventoryWidget;
 import com.lowdragmc.lowdraglib.gui.widget.TextFieldWidget;
+import com.lowdragmc.lowdraglib.gui.widget.Widget;
 import com.lowdragmc.lowdraglib.gui.widget.WidgetGroup;
 import com.lowdragmc.lowdraglib.utils.Position;
 
@@ -313,11 +314,27 @@ public final class LabScreen {
                 closeMenu();
             }
             boolean handled = super.mouseClicked(mouseX, mouseY, button);
+            if (button == LabColors.MOUSE_BUTTON_LEFT) {
+                Widget hover = getHoverElement(mouseX, mouseY);
+                if (!(hover instanceof LabPickTile) && !(hover instanceof LabPickTarget)) {
+                    clearPendingPicks();
+                }
+            }
             if (!handled && gui != null) {
                 gui.getModularUIContainer().setCarried(ItemStack.EMPTY);
                 return true;
             }
             return handled;
+        }
+
+        private void clearPendingPicks() {
+            if (rightPanel == null) {
+                return;
+            }
+            rightPanel.machineLayout.clearPendingPick();
+            if (rightPanel.poolModal != null) {
+                rightPanel.poolModal.clearPendingPick();
+            }
         }
 
         void openContextMenu(LabRecipeIndex.LabRecipeEntry entry, double mx, double my) {

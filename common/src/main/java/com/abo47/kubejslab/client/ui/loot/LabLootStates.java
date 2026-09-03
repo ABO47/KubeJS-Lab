@@ -19,20 +19,13 @@ import com.abo47.kubejslab.loot.runtime.LabLootService;
 
 public final class LabLootStates {
     private static final Map<ResourceLocation, LabLootState> STATE = new HashMap<>();
-    private static final Set<ResourceLocation> PENDING_EXTRA = new HashSet<>();
 
     private LabLootStates() {
     }
 
     public static void apply(Map<ResourceLocation, LabLootState> states) {
-        apply(states, List.of());
-    }
-
-    public static void apply(Map<ResourceLocation, LabLootState> states, List<ResourceLocation> pendingOnly) {
         STATE.clear();
         STATE.putAll(states);
-        PENDING_EXTRA.clear();
-        PENDING_EXTRA.addAll(pendingOnly);
     }
 
     public static LabLootStatus statusOf(ResourceLocation id) {
@@ -42,11 +35,6 @@ public final class LabLootStates {
 
     public static LabLootState stateOf(ResourceLocation id) {
         return STATE.get(id);
-    }
-
-    public static boolean pendingRestartOf(ResourceLocation id) {
-        LabLootState entry = STATE.get(id);
-        return entry != null && entry.pendingRestart() || PENDING_EXTRA.contains(id);
     }
 
     public static LabTabCounts counts(boolean kubejs) {
@@ -74,11 +62,6 @@ public final class LabLootStates {
         for (LabLootState entry : STATE.values()) {
             String name = entry.name().isBlank() ? entry.id().getPath() : entry.name();
             result.put(entry.id(), entryOf(entry.id(), name, entry.lootType()));
-        }
-        for (ResourceLocation id : PENDING_EXTRA) {
-            if (!result.containsKey(id)) {
-                result.put(id, entryOf(id, id.getPath(), LabLootService.LOOT_TYPE_BLOCK));
-            }
         }
         return new ArrayList<>(result.values());
     }

@@ -39,7 +39,6 @@ import com.google.gson.JsonObject;
 public final class LabLootService {
     private static final Map<ResourceLocation, LabLootSaveEntry> STATE = new LinkedHashMap<>();
     private static final Set<ResourceLocation> SESSION_CREATED_IDS = new HashSet<>();
-    private static final Set<ResourceLocation> PENDING = new HashSet<>();
     private static boolean stateLoaded;
 
     public static final String LOOT_TYPE_BLOCK = "block";
@@ -90,15 +89,9 @@ public final class LabLootService {
         for (Map.Entry<ResourceLocation, LabLootSaveEntry> entry : STATE.entrySet()) {
             LabLootSaveEntry e = entry.getValue();
             states.put(entry.getKey(), new LabLootState(entry.getKey(), e.lootType(), e.status(),
-                    PENDING.contains(entry.getKey()), e.name(), e.wasModified(), e.values(), e.tags(), e.actions()));
+                    e.name(), e.wasModified(), e.values(), e.tags(), e.actions()));
         }
-        List<ResourceLocation> pendingOnly = new ArrayList<>();
-        for (ResourceLocation id : PENDING) {
-            if (!states.containsKey(id)) {
-                pendingOnly.add(id);
-            }
-        }
-        return new S2CLootStatePacket(states, pendingOnly);
+        return new S2CLootStatePacket(states);
     }
 
     private static void saveNew(LabLootPayload payload) throws IOException {
@@ -119,7 +112,6 @@ public final class LabLootService {
         STATE.put(id, new LabLootSaveEntry(lootType, LabLootStatus.CREATED, targetIdStr, false, payload.values(),
                 payload.tags(), payload.actions()));
         SESSION_CREATED_IDS.add(id);
-        PENDING.add(id);
         KubeJSLab.LOGGER.info("[LabLootService] SAVE_NEW created {} for {}", id, targetIdStr);
     }
 
@@ -132,7 +124,6 @@ public final class LabLootService {
                 : payload.values().targetId();
         STATE.put(targetId, new LabLootSaveEntry(payload.lootType(), LabLootStatus.MODIFIED, name, true, payload.values(),
                 payload.tags(), payload.actions()));
-        PENDING.add(targetId);
         KubeJSLab.LOGGER.info("[LabLootService] MODIFY wrote {}", targetId);
     }
 
@@ -156,7 +147,6 @@ public final class LabLootService {
         STATE.put(id, new LabLootSaveEntry(source.lootType(), LabLootStatus.CREATED, source.name(), false,
                 source.values(), source.tags(), source.actions()));
         SESSION_CREATED_IDS.add(id);
-        PENDING.add(id);
         KubeJSLab.LOGGER.info("[LabLootService] DUPLICATE created {}", id);
     }
 
@@ -175,7 +165,6 @@ public final class LabLootService {
         }
         STATE.put(targetId, new LabLootSaveEntry(entry.lootType(), LabLootStatus.DISABLED, entry.name(),
                 entry.wasModified(), entry.values(), entry.tags(), actions));
-        PENDING.add(targetId);
         KubeJSLab.LOGGER.info("[LabLootService] DISABLE {}", targetId);
     }
 
@@ -195,7 +184,6 @@ public final class LabLootService {
         } else {
             STATE.remove(targetId);
         }
-        PENDING.add(targetId);
         KubeJSLab.LOGGER.info("[LabLootService] ENABLE {}", targetId);
     }
 
@@ -204,7 +192,6 @@ public final class LabLootService {
             return;
         }
         STATE.remove(targetId);
-        PENDING.add(targetId);
         KubeJSLab.LOGGER.info("[LabLootService] RESET {}", targetId);
     }
 
@@ -214,7 +201,6 @@ public final class LabLootService {
         }
         STATE.remove(targetId);
         SESSION_CREATED_IDS.remove(targetId);
-        PENDING.remove(targetId);
         KubeJSLab.LOGGER.info("[LabLootService] DELETE {}", targetId);
     }
 

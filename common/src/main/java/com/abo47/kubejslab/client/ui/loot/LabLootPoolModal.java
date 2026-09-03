@@ -21,6 +21,9 @@ public final class LabLootPoolModal {
     public static final int MODAL_H = 260;
     private static final int BODY_Y = 22;
     private static final int BODY_PAD = 8;
+    private static final int LIST_X = 8;
+    private static final int LIST_W = 150;
+    private static final int LIST_GAP = 4;
 
     private static final int DIM_COLOR = LabColors.withAlpha(LabColors.SURFACE_BASE, 140);
 
@@ -52,8 +55,10 @@ public final class LabLootPoolModal {
         panel.addWidget(LabModalHeader.titleLabel(title, 8, LabModalHeader.contentW(MODAL_W, 8)));
         panel.addWidget(LabModalHeader.closeButton(LabModalHeader.closeX(MODAL_W), this::close));
 
-        this.settings = new LabLootPoolSettingsWidget(BODY_PAD, BODY_Y, MODAL_W - BODY_PAD * 2,
-                MODAL_H - BODY_Y - BODY_PAD,
+        int listRight = LIST_X + LIST_W + LIST_GAP;
+        int bodyH = MODAL_H - BODY_Y - BODY_PAD;
+        this.settings = new LabLootPoolSettingsWidget(listRight, BODY_Y, MODAL_W - listRight - BODY_PAD,
+                bodyH,
                 Component.translatable(LabGuiKeys.LAB_LOOT_DELETE).getString(),
                 Component.translatable(LabGuiKeys.LAB_LOOT_DONE).getString());
         this.settings.setClientSideWidget();
@@ -67,6 +72,8 @@ public final class LabLootPoolModal {
             close();
         });
         panel.addWidget(settings);
+
+        panel.addWidget(new LabLootEntryPanel(settings, LIST_X, BODY_Y, LIST_W, bodyH));
     }
 
     public void setOnClose(Runnable onClose) {
@@ -78,6 +85,10 @@ public final class LabLootPoolModal {
             return false;
         }
         return settings.offerPick(pick);
+    }
+
+    public void clearPendingPick() {
+        settings.clearPendingPick();
     }
 
     private void close() {

@@ -17,7 +17,7 @@ import com.abo47.kubejslab.loot.model.LabLootState;
 import com.abo47.kubejslab.loot.model.LabLootStatus;
 
 
-public record S2CLootStatePacket(Map<ResourceLocation, LabLootState> states, List<ResourceLocation> pendingOnly) {
+public record S2CLootStatePacket(Map<ResourceLocation, LabLootState> states) {
 
     public void write(FriendlyByteBuf buf) {
         buf.writeVarInt(states.size());
@@ -25,7 +25,6 @@ public record S2CLootStatePacket(Map<ResourceLocation, LabLootState> states, Lis
             buf.writeUtf(entry.id().toString());
             buf.writeUtf(entry.lootType(), 32767);
             buf.writeVarInt(entry.status().ordinal());
-            buf.writeBoolean(entry.pendingRestart());
             buf.writeUtf(entry.name());
             buf.writeBoolean(entry.wasModified());
             LabLootFieldValues.write(buf, entry.values());
@@ -38,10 +37,6 @@ public record S2CLootStatePacket(Map<ResourceLocation, LabLootState> states, Lis
                 buf.writeVarInt(action.ordinal());
             }
         }
-        buf.writeVarInt(pendingOnly.size());
-        for (ResourceLocation id : pendingOnly) {
-            buf.writeUtf(id.toString());
-        }
         KubeJSLab.LOGGER.info("[Net] S2CLootStatePacket write: {} entries", states.size());
     }
 
@@ -52,7 +47,6 @@ public record S2CLootStatePacket(Map<ResourceLocation, LabLootState> states, Lis
             ResourceLocation id = new ResourceLocation(buf.readUtf());
             String lootType = buf.readUtf();
             int statusOrdinal = Math.min(buf.readVarInt(), LabLootStatus.values().length - 1);
-            boolean pendingRestart = buf.readBoolean();
             String name = buf.readUtf();
             boolean wasModified = buf.readBoolean();
             LabLootFieldValues values = LabLootFieldValues.read(buf);
@@ -69,19 +63,14 @@ public record S2CLootStatePacket(Map<ResourceLocation, LabLootState> states, Lis
                     actions.add(LabLootAction.values()[ordinal]);
                 }
             }
-            states.put(id, new LabLootState(id, lootType, LabLootStatus.values()[statusOrdinal], pendingRestart, name,
+            states.put(id, new LabLootState(id, lootType, LabLootStatus.values()[statusOrdinal], name,
                     wasModified, values, tagList, actions));
         }
-        int pendingCount = Math.min(buf.readVarInt(), 65536);
-        List<ResourceLocation> pendingOnly = new ArrayList<>(pendingCount);
-        for (int i = 0; i < pendingCount; i++) {
-            pendingOnly.add(new ResourceLocation(buf.readUtf()));
-        }
-        return new S2CLootStatePacket(states, pendingOnly);
+        return new S2CLootStatePacket(states);
     }
 
     public void handleClient() {
-        LabLootStates.apply(states, pendingOnly);
+        LabLootStates.apply(states);
         LabScreen.refreshOpen();
     }
 }

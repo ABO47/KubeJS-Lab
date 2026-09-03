@@ -7,6 +7,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import javax.annotation.Nonnull;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
@@ -25,6 +26,7 @@ import com.abo47.kubejslab.client.ui.base.LabCommitFieldWidget;
 import com.abo47.kubejslab.client.ui.base.LabGlow;
 import com.abo47.kubejslab.client.ui.base.LabGuiKeys;
 import com.abo47.kubejslab.client.ui.base.LabOptionDropdownWidget;
+import com.abo47.kubejslab.client.ui.base.LabPickTarget;
 import com.abo47.kubejslab.client.ui.base.LabRowCardSettingsWidget;
 import com.abo47.kubejslab.client.ui.base.LabToggleSwitchWidget;
 import com.abo47.kubejslab.client.ui.picker.LabPick;
@@ -36,7 +38,7 @@ import com.abo47.kubejslab.loot.runtime.LabLootService;
 
 
 public final class LabLootPoolSettingsWidget extends LabRowCardSettingsWidget {
-    public static final int MAX_ENTRIES = 6;
+    public static final int MAX_ENTRIES = 64;
 
     private static final List<String> ROLLS_TYPES = List.of("constant", "uniform", "binomial");
     private static final List<String> ENTRY_TYPES = List.of("item", "tag", "empty", "loot_table");
@@ -46,8 +48,10 @@ public final class LabLootPoolSettingsWidget extends LabRowCardSettingsWidget {
     private String lootType = LabLootService.LOOT_TYPE_BLOCK;
     private final List<Widget> dynamicWidgets = new ArrayList<>();
     private LabPick pendingPick;
+    private int selectedEntry;
+    private Runnable entryListListener;
 
-    private final class PickSlot extends Widget {
+    private final class PickSlot extends Widget implements LabPickTarget {
         private final EntryState entry;
 
         PickSlot(EntryState entry) {
@@ -59,6 +63,7 @@ public final class LabLootPoolSettingsWidget extends LabRowCardSettingsWidget {
         @Override
         public boolean mouseClicked(double mouseX, double mouseY, int button) {
             if (button == 0 && isMouseOverElement(mouseX, mouseY)) {
+                paintCarried(entry);
                 paintPending(entry);
                 return true;
             }
@@ -89,6 +94,26 @@ public final class LabLootPoolSettingsWidget extends LabRowCardSettingsWidget {
             return true;
         }
         return false;
+    }
+
+    public void clearPendingPick() {
+        pendingPick = null;
+    }
+
+    private void paintCarried(EntryState entry) {
+        var player = Minecraft.getInstance().player;
+        if (player == null || player.containerMenu == null) {
+            return;
+        }
+        ItemStack carried = player.containerMenu.getCarried();
+        if (carried.isEmpty()) {
+            return;
+        }
+        entry.item = BuiltInRegistries.ITEM.getKey(carried.getItem()).toString();
+        entry.typeDropdown.setSelected("item");
+        pendingPick = null;
+        player.containerMenu.setCarried(ItemStack.EMPTY);
+        rebuildRows();
     }
 
     private void paintPending(EntryState entry) {
@@ -183,7 +208,6 @@ public final class LabLootPoolSettingsWidget extends LabRowCardSettingsWidget {
         LabToggleSwitchWidget lootingEnchantToggle;
         TextFieldWidget lootingCountField;
         TextFieldWidget lootingLimitField;
-        LabActionButton addEntryButton;
         String rollsValueText = "1";
         String rollsMinText = "0";
         String rollsMaxText = "0";
@@ -213,6 +237,7 @@ public final class LabLootPoolSettingsWidget extends LabRowCardSettingsWidget {
 
     public void applyPool(LabLootPoolValues values, String lootType) {
         this.lootType = lootType == null || lootType.isBlank() ? LabLootService.LOOT_TYPE_BLOCK : lootType;
+        selectedEntry = 0;
         pool.rollsValueText = formatFloat(values.rollsValue());
         pool.rollsMinText = formatFloat(values.rollsMin());
         pool.rollsMaxText = formatFloat(values.rollsMax());
@@ -253,6 +278,72 @@ public final class LabLootPoolSettingsWidget extends LabRowCardSettingsWidget {
         }
         syncWidgetContents();
         rebuildRows();
+    }
+
+    public void setEntryListListener(Runnable r) {
+        entryListListener = r;
+    }
+
+    public int getSelectedEntry() {
+        return selectedEntry;
+    }
+
+    public int entryCount() {
+        return pool.entries.size();
+    }
+
+    public void selectEntry(int index) {
+        if (pool.entries.isEmpty()) {
+            return;
+        }
+        selectedEntry = Math.max(0, Math.min(index, pool.entries.size() - 1));
+        rebuildRows();
+    }
+
+    public ItemStack entryCardIcon(int index) {
+        if (index < 0 || index >= pool.entries.size()) {
+            return ItemStack.EMPTY;
+        }
+        return slotIcon(pool.entries.get(index));
+    }
+
+    public String entryCardName(int index) {
+        if (index < 0 || index >= pool.entries.size()) {
+            return "";
+        }
+        EntryState entry = pool.entries.get(index);
+        String entryType = entry.typeDropdown == null || entry.typeDropdown.getSelected() == null ? "item"
+                : entry.typeDropdown.getSelected();
+        return switch (entryType) {
+            case "tag" -> entry.tag.isBlank() ? "" : "#" + entry.tag;
+            case "loot_table" -> shortId(entry.table);
+            case "empty" -> "empty";
+            default -> {
+                ItemStack icon = slotIcon(entry);
+                yield icon.isEmpty() ? entry.item : icon.getHoverName().getString();
+            }
+        };
+    }
+
+    public String entryCardId(int index) {
+        if (index < 0 || index >= pool.entries.size()) {
+            return "";
+        }
+        EntryState entry = pool.entries.get(index);
+        String entryType = entry.typeDropdown == null || entry.typeDropdown.getSelected() == null ? "item"
+                : entry.typeDropdown.getSelected();
+        return switch (entryType) {
+            case "tag" -> entry.tag;
+            case "loot_table" -> entry.table;
+            case "empty" -> "";
+            default -> entry.item;
+        };
+    }
+
+    private void notifyEntryList() {
+        if (entryListListener != null) {
+            entryListListener.run();
+        }
     }
 
     public void setOnDelete(Runnable r) {
@@ -377,7 +468,6 @@ public final class LabLootPoolSettingsWidget extends LabRowCardSettingsWidget {
                 pool.lootingCountText, 4);
         pool.lootingLimitField = number(() -> pool.lootingLimitText, v -> pool.lootingLimitText = v,
                 pool.lootingLimitText);
-        pool.addEntryButton = button(LabGuiKeys.LAB_LOOT_ADD_ENTRY, this::addEntry);
         for (EntryState entry : pool.entries) {
             createEntryWidgets(entry);
         }
@@ -444,13 +534,14 @@ public final class LabLootPoolSettingsWidget extends LabRowCardSettingsWidget {
         }
     }
 
-    private void addEntry() {
+    public void addEntry() {
         if (pool.entries.size() >= MAX_ENTRIES) {
             return;
         }
         syncLiveText();
         EntryState entry = new EntryState();
         pool.entries.add(entry);
+        selectedEntry = pool.entries.size() - 1;
         createEntryWidgets(entry);
         syncWidgetContents();
         rebuildRows();
@@ -462,6 +553,7 @@ public final class LabLootPoolSettingsWidget extends LabRowCardSettingsWidget {
         }
         syncLiveText();
         pool.entries.remove(entry);
+        selectedEntry = Math.max(0, Math.min(selectedEntry, pool.entries.size() - 1));
         rebuildStateWidgets();
         rebuildRows();
     }
@@ -488,25 +580,6 @@ public final class LabLootPoolSettingsWidget extends LabRowCardSettingsWidget {
         return new FieldRow(
                 new TextTexture(labelText, LabColors.TEXT_PRIMARY).setType(TextTexture.TextType.LEFT), control,
                 null, disabled);
-    }
-
-    private String entryLabel(int index, EntryState entry) {
-        String entryType = entry.typeDropdown == null || entry.typeDropdown.getSelected() == null ? "item"
-                : entry.typeDropdown.getSelected();
-        String what = switch (entryType) {
-            case "tag" -> entry.tag.isBlank() ? "—" : "#" + shortId(entry.tag);
-            case "loot_table" -> entry.table.isBlank() ? "—" : shortId(entry.table);
-            case "empty" -> "empty";
-            default -> entry.item.isBlank() ? "—" : shortId(entry.item);
-        };
-        String countType = entry.countTypeDropdown == null || entry.countTypeDropdown.getSelected() == null
-                ? "constant"
-                : entry.countTypeDropdown.getSelected();
-        String count = "uniform".equals(countType)
-                ? "×" + entry.countMinText + "-" + entry.countMaxText
-                : "×" + entry.countValueText;
-        return Component.translatable(LabGuiKeys.LAB_LOOT_ENTRY).getString() + " " + (index + 1) + " · " + what + " "
-                + count + " · w" + entry.weightText;
     }
 
     private static String shortId(String id) {
@@ -551,54 +624,49 @@ public final class LabLootPoolSettingsWidget extends LabRowCardSettingsWidget {
                     pool.lootingLimitField));
         }
 
-        for (int j = 0; j < pool.entries.size(); j++) {
-            EntryState entry = pool.entries.get(j);
-            if (pool.entries.size() > 1) {
-                rows.add(plainRow(entryLabel(j, entry), entry.removeButton, false));
-            }
-            String entryType = entry.typeDropdown.getSelected() == null ? "item"
-                    : entry.typeDropdown.getSelected();
-                rows.add(row(LabLootField.ENTRY_TYPE, LabGuiKeys.LAB_LOOT_ENTRY_TYPE, entry.typeDropdown));
-                if ("loot_table".equals(entryType)) {
-                    rows.add(row(LabLootField.ENTRY_LOOT_TABLE,
-                            LabGuiKeys.LAB_LOOT_ENTRY_LOOT_TABLE, entry.tableField));
-                } else if (!"empty".equals(entryType)) {
-                    LabLootField pickField =
-                            "tag".equals(entryType) ? LabLootField.ENTRY_TAG : LabLootField.ENTRY_ITEM;
-                    String pickKey = "tag".equals(entryType)
-                            ? LabGuiKeys.LAB_LOOT_ENTRY_TAG
-                            : LabGuiKeys.LAB_LOOT_ENTRY_ITEM;
-                    rows.add(row(pickField, pickKey, entry.pickSlot));
-                }
-            if (!"empty".equals(entryType) && !"tag".equals(entryType)) {
-                String countType = entry.countTypeDropdown.getSelected() == null ? "constant"
-                        : entry.countTypeDropdown.getSelected();
-                rows.add(row(LabLootField.ENTRY_COUNT_TYPE, LabGuiKeys.LAB_LOOT_ENTRY_COUNT_TYPE,
-                        entry.countTypeDropdown));
-                if ("uniform".equals(countType)) {
-                    rows.add(row(LabLootField.ENTRY_COUNT_MIN, LabGuiKeys.LAB_LOOT_ENTRY_COUNT_MIN,
-                            entry.countMinField));
-                    rows.add(row(LabLootField.ENTRY_COUNT_MAX, LabGuiKeys.LAB_LOOT_ENTRY_COUNT_MAX,
-                            entry.countMaxField));
-                } else {
-                    rows.add(row(LabLootField.ENTRY_COUNT_VALUE, LabGuiKeys.LAB_LOOT_ENTRY_COUNT_VALUE,
-                            entry.countValueField));
-                }
-            }
-            rows.add(row(LabLootField.ENTRY_WEIGHT, LabGuiKeys.LAB_LOOT_ENTRY_WEIGHT, entry.weightField));
-            if ("item".equals(entryType)) {
-                rows.add(row(LabLootField.ENTRY_QUALITY, LabGuiKeys.LAB_LOOT_ENTRY_QUALITY, entry.qualityField));
-            }
-            if (pool.entries.size() > 1) {
-                rows.add(plainRow(Component.translatable(LabGuiKeys.LAB_LOOT_REMOVE).getString() + " "
-                        + Component.translatable(LabGuiKeys.LAB_LOOT_ENTRY).getString() + " " + (j + 1),
-                        entry.removeButton, false));
+        int sel = Math.max(0, Math.min(selectedEntry, pool.entries.size() - 1));
+        EntryState entry = pool.entries.get(sel);
+        String entryType = entry.typeDropdown.getSelected() == null ? "item"
+                : entry.typeDropdown.getSelected();
+        rows.add(row(LabLootField.ENTRY_TYPE, LabGuiKeys.LAB_LOOT_ENTRY_TYPE, entry.typeDropdown));
+        if ("loot_table".equals(entryType)) {
+            rows.add(row(LabLootField.ENTRY_LOOT_TABLE,
+                    LabGuiKeys.LAB_LOOT_ENTRY_LOOT_TABLE, entry.tableField));
+        } else if (!"empty".equals(entryType)) {
+            LabLootField pickField =
+                    "tag".equals(entryType) ? LabLootField.ENTRY_TAG : LabLootField.ENTRY_ITEM;
+            String pickKey = "tag".equals(entryType)
+                    ? LabGuiKeys.LAB_LOOT_ENTRY_TAG
+                    : LabGuiKeys.LAB_LOOT_ENTRY_ITEM;
+            rows.add(row(pickField, pickKey, entry.pickSlot));
+        }
+        if (!"empty".equals(entryType) && !"tag".equals(entryType)) {
+            String countType = entry.countTypeDropdown.getSelected() == null ? "constant"
+                    : entry.countTypeDropdown.getSelected();
+            rows.add(row(LabLootField.ENTRY_COUNT_TYPE, LabGuiKeys.LAB_LOOT_ENTRY_COUNT_TYPE,
+                    entry.countTypeDropdown));
+            if ("uniform".equals(countType)) {
+                rows.add(row(LabLootField.ENTRY_COUNT_MIN, LabGuiKeys.LAB_LOOT_ENTRY_COUNT_MIN,
+                        entry.countMinField));
+                rows.add(row(LabLootField.ENTRY_COUNT_MAX, LabGuiKeys.LAB_LOOT_ENTRY_COUNT_MAX,
+                        entry.countMaxField));
+            } else {
+                rows.add(row(LabLootField.ENTRY_COUNT_VALUE, LabGuiKeys.LAB_LOOT_ENTRY_COUNT_VALUE,
+                        entry.countValueField));
             }
         }
-        rows.add(plainRow(Component.translatable(LabGuiKeys.LAB_LOOT_ADD_ENTRY).getString(), pool.addEntryButton,
-                pool.entries.size() >= MAX_ENTRIES));
+        rows.add(row(LabLootField.ENTRY_WEIGHT, LabGuiKeys.LAB_LOOT_ENTRY_WEIGHT, entry.weightField));
+        if ("item".equals(entryType)) {
+            rows.add(row(LabLootField.ENTRY_QUALITY, LabGuiKeys.LAB_LOOT_ENTRY_QUALITY, entry.qualityField));
+        }
+        if (pool.entries.size() > 1) {
+            rows.add(plainRow(Component.translatable(LabGuiKeys.LAB_LOOT_REMOVE).getString() + " "
+                    + Component.translatable(LabGuiKeys.LAB_LOOT_ENTRY).getString() + " " + (sel + 1),
+                    entry.removeButton, false));
+        }
 
         setRows(rows);
+        notifyEntryList();
     }
 
     private static String formatPercent(float fraction) {

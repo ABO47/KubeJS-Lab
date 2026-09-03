@@ -10,12 +10,9 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Block;
 
 import com.lowdragmc.lowdraglib.gui.texture.IGuiTexture;
-import com.lowdragmc.lowdraglib.gui.texture.ResourceTexture;
 
 import com.abo47.kubejslab.client.ui.base.LabColors;
 import com.abo47.kubejslab.client.ui.base.LabEntryCardWidget;
-import com.abo47.kubejslab.client.ui.base.LabIconAtlas;
-import com.abo47.kubejslab.client.ui.contextmenu.LabActionTone;
 import com.abo47.kubejslab.loot.model.LabLootStatus;
 import com.abo47.kubejslab.loot.runtime.LabLootService;
 
@@ -25,17 +22,11 @@ public final class LabLootCardWidget extends LabEntryCardWidget {
             LabColors.bordered(LabColors.SURFACE_PANEL_ALT, LabColors.WARNING);
     private static final IGuiTexture DISABLED_TEXTURE =
             LabColors.bordered(LabColors.SURFACE_PANEL_ALT, LabColors.ERROR);
-    private static final int BADGE_X = 16;
-    private static final int BADGE_Y = 3;
-    private static final int BADGE_SIZE = 9;
     private static final int ENTITY_ICON = 22;
 
-    private final ResourceTexture pendingIcon =
-            LabIconAtlas.iconTexture("repeat", LabActionTone.NEUTRAL);
     private final ResourceLocation entityId;
     private final boolean isEntity;
     private LabLootStatus status = LabLootStatus.NORMAL;
-    private boolean pending;
 
     public LabLootCardWidget(int x, int y, int w, int h, LabLootIndex.LabLootEntry entry,
             Runnable onClick, CardRightClick onRightClick) {
@@ -64,10 +55,6 @@ public final class LabLootCardWidget extends LabEntryCardWidget {
         this.status = status;
     }
 
-    public void setPending(boolean pending) {
-        this.pending = pending;
-    }
-
     @Override
     protected void drawIcon(GuiGraphics g, int mx, int my) {
         if (isEntity && entityId != null) {
@@ -90,9 +77,5 @@ public final class LabLootCardWidget extends LabEntryCardWidget {
             case CREATED, NORMAL -> CARD_TEXTURE;
         });
         super.drawInBackground(g, mx, my, pt);
-        if (pending && pendingIcon != null) {
-            pendingIcon.draw(g, mx, my, getPositionX() + getSizeWidth() - BADGE_X,
-                    getPositionY() + BADGE_Y, BADGE_SIZE, BADGE_SIZE);
-        }
     }
 }

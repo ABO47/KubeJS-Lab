@@ -276,7 +276,7 @@
   "kubejslab.gui.lab_loot_entry": "entry",
   "kubejslab.gui.lab_loot_add": "add",
   "kubejslab.gui.lab_loot_new_pool": "new pool",
-  "kubejslab.gui.lab_loot_pick_hint": "Pick an item or tag, then click here",
+  "kubejslab.gui.lab_loot_pick_hint": "Pick an item or tag, or click with one on your cursor",
   "kubejslab.gui.lab_loot_add_entry": "add entry",
   "kubejslab.gui.lab_loot_remove": "remove",
   "kubejslab.gui.lab_loot_clear": "Clear",

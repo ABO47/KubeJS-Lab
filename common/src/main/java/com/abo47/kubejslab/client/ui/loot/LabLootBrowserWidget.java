@@ -59,7 +59,6 @@ public final class LabLootBrowserWidget extends LabCardBrowserWidget<LabLootCard
                 () -> fireEntryClick(entry),
                 (mouseX, mouseY) -> fireEntryRightClick(entry, mouseX, mouseY));
         card.setStatus(LabLootStates.statusOf(entry.id()));
-        card.setPending(LabLootStates.pendingRestartOf(entry.id()));
         return card;
     }
 
