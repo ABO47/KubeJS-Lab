@@ -39,7 +39,7 @@ public final class LabLootEntryPanel extends WidgetGroup {
         LabTextFieldWidget search = new LabTextFieldWidget(
                 LabLayout.LIST_INSET,
                 0,
-                w - LabLayout.LIST_INSET * 2,
+                w - LabLayout.LIST_INSET - 2,
                 LabLayout.SEARCH_H,
                 null,
                 query -> browser.setQuery(query));

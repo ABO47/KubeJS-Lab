@@ -12,6 +12,7 @@ import org.lwjgl.opengl.GL11;
 import com.mojang.blaze3d.platform.Lighting;
 import com.mojang.blaze3d.systems.RenderSystem;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
@@ -280,17 +281,29 @@ public final class LabLootPreviewWidget extends WidgetGroup {
         LabLootPoolValues pool = slot.pool();
         ItemStack icon = dropIcon(entry);
         String name = icon.isEmpty() ? entryName(entry) : icon.getHoverName().getString();
-        tips.add(Component.literal(name));
-        tips.add(Component.literal(entryIdLine(entry)));
-        tips.add(Component.literal("Pool " + (slot.poolIndex() + 1) + " - Entry " + (slot.entryIndex() + 1)));
-        tips.add(Component.literal("Weight: " + entry.weight() + "  Quality: " + entry.quality()));
-        tips.add(Component.literal("Count: " + countLine(entry)));
-        tips.add(Component.literal("Chance: " + Math.round(pool.randomChance() * 100f) + "%  Rolls: " + rollsLine(pool)));
+        tips.add(Component.literal(name).withStyle(ChatFormatting.WHITE));
+        String idLine = entryIdLine(entry);
+        if (!idLine.isBlank()) {
+            tips.add(Component.literal(idLine).withStyle(ChatFormatting.GRAY));
+        }
+        tips.add(Component.literal("Pool " + (slot.poolIndex() + 1) + " - Entry " + (slot.entryIndex() + 1))
+                .withStyle(ChatFormatting.YELLOW));
+        tips.add(statLine("Weight: ", Integer.toString(entry.weight())));
+        tips.add(statLine("Quality: ", Integer.toString(entry.quality())));
+        tips.add(statLine("Count: ", countLine(entry)));
+        tips.add(statLine("Chance: ", Math.round(pool.randomChance() * 100f) + "%"));
+        tips.add(statLine("Rolls: ", rollsLine(pool)));
         String conditions = conditionsLine(pool);
         if (!conditions.isBlank()) {
-            tips.add(Component.literal(conditions));
+            tips.add(Component.literal(conditions).withStyle(ChatFormatting.GOLD));
         }
+        tips.add(Component.literal("Click to edit").withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.ITALIC));
         return tips;
+    }
+
+    private static Component statLine(String label, String value) {
+        return Component.literal(label).withStyle(ChatFormatting.GRAY)
+                .append(Component.literal(value).withStyle(ChatFormatting.WHITE));
     }
 
     private static String entryName(LabLootEntryValues entry) {

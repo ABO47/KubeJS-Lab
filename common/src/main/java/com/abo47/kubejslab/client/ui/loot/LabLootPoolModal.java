@@ -34,11 +34,7 @@ public final class LabLootPoolModal {
     private static final int CONTAINER_PAD = 4;
 
     private static final int DIM_COLOR = LabColors.withAlpha(LabColors.SURFACE_BASE, 140);
-    private static final int ELEVATED_FILL = mix(LabColors.SURFACE_PANEL_ALT, LabColors.TEXT_PRIMARY, 10);
-    private static final int SUBTLE_BORDER = mix(LabColors.BORDER_BASE, LabColors.SURFACE_BASE, 28);
-    private static final IGuiTexture LIST_CONTAINER_TEXTURE = LabColors.bordered(
-            LabColors.withAlpha(ELEVATED_FILL, 190), SUBTLE_BORDER);
-    private static final IGuiTexture SETTINGS_CONTAINER_TEXTURE = LabColors.bordered(
+    private static final IGuiTexture CONTAINER_TEXTURE = LabColors.bordered(
             LabColors.withAlpha(LabColors.SURFACE_PANEL_ALT, 120), LabColors.BORDER_BASE);
 
     private final WidgetGroup layer;
@@ -78,11 +74,11 @@ public final class LabLootPoolModal {
         int rightW = MODAL_W - listRight - BODY_PAD;
 
         WidgetGroup listContainer = new WidgetGroup(LIST_X, BODY_Y, LIST_W, bodyH);
-        listContainer.setBackground(LIST_CONTAINER_TEXTURE);
+        listContainer.setBackground(CONTAINER_TEXTURE);
         panel.addWidget(listContainer);
 
         WidgetGroup settingsContainer = new WidgetGroup(listRight, BODY_Y, rightW, bodyH);
-        settingsContainer.setBackground(SETTINGS_CONTAINER_TEXTURE);
+        settingsContainer.setBackground(CONTAINER_TEXTURE);
         panel.addWidget(settingsContainer);
 
         this.settings = new LabLootPoolSettingsWidget(CONTAINER_PAD, CONTAINER_PAD,
@@ -175,14 +171,6 @@ public final class LabLootPoolModal {
             panel.removeWidget(contextMenu);
             contextMenu = null;
         }
-    }
-
-    private static int mix(int a, int b, int percent) {
-        int inverse = 100 - percent;
-        return (Math.max(0, ((a >>> 24) * inverse + (b >>> 24) * percent) / 100) << 24)
-                | (Math.max(0, ((a >>> 16 & 0xFF) * inverse + (b >>> 16 & 0xFF) * percent) / 100) << 16)
-                | (Math.max(0, ((a >>> 8 & 0xFF) * inverse + (b >>> 8 & 0xFF) * percent) / 100) << 8)
-                | Math.max(0, ((a & 0xFF) * inverse + (b & 0xFF) * percent) / 100);
     }
 
     private void close() {

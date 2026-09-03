@@ -180,13 +180,14 @@ public final class LabLootPrefill {
 
         List<LabLootEntryValues> entryValues = new ArrayList<>();
         if (pool.has("entries") && pool.get("entries").isJsonArray()) {
-            JsonArray entries = pool.getAsJsonArray("entries");
-            int entryCount = Math.min(entries.size(), MAX_ENTRIES);
-            for (int i = 0; i < entryCount; i++) {
-                if (!entries.get(i).isJsonObject()) {
+            for (JsonElement entryEl : pool.getAsJsonArray("entries")) {
+                if (entryValues.size() >= MAX_ENTRIES) {
+                    break;
+                }
+                if (!entryEl.isJsonObject()) {
                     continue;
                 }
-                entryValues.add(parseEntry(entries.get(i).getAsJsonObject()));
+                collectEntries(entryEl.getAsJsonObject(), entryValues);
             }
         }
         if (entryValues.isEmpty()) {
@@ -194,6 +195,27 @@ public final class LabLootPrefill {
         }
         return new LabLootPoolValues(rollsType, rollsValue, rollsMin, rollsMax, rollsN, rollsP, survivesExplosion,
                 randomChance, killedByPlayer, furnaceSmelt, lootingEnchant, lootingCount, lootingLimit, entryValues);
+    }
+
+    private static void collectEntries(JsonObject entry, List<LabLootEntryValues> out) {
+        if (out.size() >= MAX_ENTRIES) {
+            return;
+        }
+        String rawType = entry.has("type") ? entry.get("type").getAsString() : "";
+        if ((rawType.endsWith("alternatives") || rawType.endsWith("sequence") || rawType.endsWith("group"))
+                && entry.has("children") && entry.get("children").isJsonArray()) {
+            for (JsonElement childEl : entry.getAsJsonArray("children")) {
+                if (out.size() >= MAX_ENTRIES) {
+                    return;
+                }
+                if (!childEl.isJsonObject()) {
+                    continue;
+                }
+                collectEntries(childEl.getAsJsonObject(), out);
+            }
+            return;
+        }
+        out.add(parseEntry(entry));
     }
 
     private static LabLootEntryValues parseEntry(JsonObject entry) {
