@@ -5,53 +5,53 @@ import java.util.List;
 import net.minecraft.world.item.crafting.AbstractCookingRecipe;
 import net.minecraft.world.item.crafting.Recipe;
 
-import com.abo47.kubejslab.recipe.LabRecipeMachine;
-import com.abo47.kubejslab.recipe.model.LabIngredient;
-import com.abo47.kubejslab.recipe.model.LabRecipeField;
-import com.abo47.kubejslab.recipe.model.LabRecipeFieldValues;
-import com.abo47.kubejslab.recipe.model.LabRecipeJson;
-import com.abo47.kubejslab.recipe.model.LabRecipeOutput;
-import com.abo47.kubejslab.recipe.model.LabSlotDescriptor;
-import com.abo47.kubejslab.recipe.model.LabSlotLayouts;
+import com.abo47.kubejslab.recipe.RecipeHandler;
+import com.abo47.kubejslab.recipe.model.RecipeField;
+import com.abo47.kubejslab.recipe.model.RecipeFieldValues;
+import com.abo47.kubejslab.recipe.model.RecipeIngredient;
+import com.abo47.kubejslab.recipe.model.RecipeJson;
+import com.abo47.kubejslab.recipe.model.RecipeOutput;
+import com.abo47.kubejslab.recipe.model.SlotDescriptor;
+import com.abo47.kubejslab.recipe.model.SlotLayouts;
 
 import com.google.gson.JsonObject;
 
 
-public abstract class CookingBase implements LabRecipeMachine {
+public abstract class CookingBase implements RecipeHandler {
     @Override
-    public List<LabRecipeField> fields() {
-        return List.of(LabRecipeField.EXPERIENCE, LabRecipeField.COOKING_TIME);
+    public List<RecipeField> fields() {
+        return List.of(RecipeField.EXPERIENCE, RecipeField.COOKING_TIME);
     }
 
     @Override
-    public List<LabSlotDescriptor> inputSlots() {
-        return LabSlotLayouts.oneInput();
+    public List<SlotDescriptor> inputSlots() {
+        return SlotLayouts.oneInput();
     }
 
     @Override
-    public List<LabSlotDescriptor> outputSlots() {
-        return LabSlotLayouts.oneOutput();
+    public List<SlotDescriptor> outputSlots() {
+        return SlotLayouts.oneOutput();
     }
 
     @Override
-    public JsonObject buildJson(String jsonType, List<LabIngredient> inputs, List<LabRecipeOutput> outputs,
-            LabRecipeFieldValues values) {
-        if (inputs.isEmpty() || LabRecipeOutput.firstItem(outputs).isEmpty()) {
+    public JsonObject buildJson(String jsonType, List<RecipeIngredient> inputs, List<RecipeOutput> outputs,
+            RecipeFieldValues values) {
+        if (inputs.isEmpty() || RecipeOutput.firstItem(outputs).isEmpty()) {
             return null;
         }
         JsonObject json = new JsonObject();
         json.addProperty("type", jsonType);
-        json.add("ingredient", LabRecipeJson.ingredientJson(inputs.get(0)));
-        json.add("result", LabRecipeJson.itemWithCount(LabRecipeOutput.firstItem(outputs)));
+        json.add("ingredient", RecipeJson.ingredientJson(inputs.get(0)));
+        json.add("result", RecipeJson.itemWithCount(RecipeOutput.firstItem(outputs)));
         json.addProperty("experience", values.experience());
         json.addProperty("cookingtime", values.cookingTime());
         return json;
     }
 
     @Override
-    public LabRecipeFieldValues prefill(LabRecipeFieldValues current, Recipe<?> original) {
+    public RecipeFieldValues prefill(RecipeFieldValues current, Recipe<?> original) {
         if (original instanceof AbstractCookingRecipe cooking) {
-            return new LabRecipeFieldValues(current.shapeless(), cooking.getExperience(),
+            return new RecipeFieldValues(current.shapeless(), cooking.getExperience(),
                     cooking.getCookingTime(), current.count(), current.processingTime(), current.heatRequirement(),
                     current.keepHeldItem(), current.acceptMirrored(), current.gridWidth(), current.gridHeight());
         }

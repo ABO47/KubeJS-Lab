@@ -5,8 +5,8 @@ import java.util.List;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.crafting.Recipe;
 
-import com.abo47.kubejslab.recipe.model.LabSlotDescriptor;
-import com.abo47.kubejslab.recipe.model.LabSlotLayouts;
+import com.abo47.kubejslab.recipe.model.SlotDescriptor;
+import com.abo47.kubejslab.recipe.model.SlotLayouts;
 
 import com.simibubi.create.content.kinetics.crusher.CrushingRecipe;
 import com.simibubi.create.content.kinetics.millstone.MillingRecipe;
@@ -29,19 +29,19 @@ public class CrushingWheelMachine extends ProcessingRecipeMachine {
     }
 
     @Override
-    public List<LabSlotDescriptor> inputSlots() {
-        return LabSlotLayouts.oneInput();
+    public List<SlotDescriptor> inputSlots() {
+        return SlotLayouts.oneInput();
     }
 
     @Override
-    public List<LabSlotDescriptor> outputSlots() {
+    public List<SlotDescriptor> outputSlots() {
         return List.of(
-                new LabSlotDescriptor(false, com.abo47.kubejslab.recipe.model.LabSlotKind.ITEM, 1, 0, true),
-                new LabSlotDescriptor(false, com.abo47.kubejslab.recipe.model.LabSlotKind.ITEM, 2, 0, true),
-                new LabSlotDescriptor(false, com.abo47.kubejslab.recipe.model.LabSlotKind.ITEM, 3, 0, true),
-                new LabSlotDescriptor(false, com.abo47.kubejslab.recipe.model.LabSlotKind.ITEM, 1, 1, true),
-                new LabSlotDescriptor(false, com.abo47.kubejslab.recipe.model.LabSlotKind.ITEM, 2, 1, true),
-                new LabSlotDescriptor(false, com.abo47.kubejslab.recipe.model.LabSlotKind.ITEM, 3, 1, true),
-                new LabSlotDescriptor(false, com.abo47.kubejslab.recipe.model.LabSlotKind.ITEM, 2, 2, true));
+                new SlotDescriptor(false, com.abo47.kubejslab.recipe.model.SlotKind.ITEM, 1, 0, true),
+                new SlotDescriptor(false, com.abo47.kubejslab.recipe.model.SlotKind.ITEM, 2, 0, true),
+                new SlotDescriptor(false, com.abo47.kubejslab.recipe.model.SlotKind.ITEM, 3, 0, true),
+                new SlotDescriptor(false, com.abo47.kubejslab.recipe.model.SlotKind.ITEM, 1, 1, true),
+                new SlotDescriptor(false, com.abo47.kubejslab.recipe.model.SlotKind.ITEM, 2, 1, true),
+                new SlotDescriptor(false, com.abo47.kubejslab.recipe.model.SlotKind.ITEM, 3, 1, true),
+                new SlotDescriptor(false, com.abo47.kubejslab.recipe.model.SlotKind.ITEM, 2, 2, true));
     }
 }

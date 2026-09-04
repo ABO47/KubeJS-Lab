@@ -8,16 +8,16 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 
-import com.abo47.kubejslab.item.model.LabItemAction;
-import com.abo47.kubejslab.item.model.LabItemEditAction;
-import com.abo47.kubejslab.item.model.LabItemFieldValues;
-import com.abo47.kubejslab.item.model.LabItemPayload;
-import com.abo47.kubejslab.item.runtime.LabItemService;
 import com.abo47.kubejslab.KubeJSLab;
+import com.abo47.kubejslab.item.model.ItemAction;
+import com.abo47.kubejslab.item.model.ItemEditAction;
+import com.abo47.kubejslab.item.model.ItemFieldValues;
+import com.abo47.kubejslab.item.model.ItemPayload;
+import com.abo47.kubejslab.item.runtime.ItemService;
 
 
-public record C2SItemEditPacket(LabItemEditAction action, @Nullable ResourceLocation targetId,
-        LabItemPayload payload) {
+public record C2SItemEditPacket(ItemEditAction action, @Nullable ResourceLocation targetId,
+        ItemPayload payload) {
 
     public void write(FriendlyByteBuf buf) {
         int start = buf.writerIndex();
@@ -28,14 +28,14 @@ public record C2SItemEditPacket(LabItemEditAction action, @Nullable ResourceLoca
         }
         buf.writeUtf(payload.type(), 32767);
         int afterIds = buf.writerIndex() - start;
-        LabItemFieldValues.write(buf, payload.values());
+        ItemFieldValues.write(buf, payload.values());
         int afterValues = buf.writerIndex() - start;
         buf.writeVarInt(payload.tags().size());
         for (String tag : payload.tags()) {
             buf.writeUtf(tag, 32767);
         }
         buf.writeVarInt(payload.actions().size());
-        for (LabItemAction itemAction : payload.actions()) {
+        for (ItemAction itemAction : payload.actions()) {
             buf.writeVarInt(itemAction.ordinal());
         }
         int total = buf.writerIndex() - start;
@@ -46,24 +46,24 @@ public record C2SItemEditPacket(LabItemEditAction action, @Nullable ResourceLoca
     }
 
     public static C2SItemEditPacket read(FriendlyByteBuf buf) {
-        LabItemEditAction action = LabItemEditAction.values()[buf.readVarInt()];
+        ItemEditAction action = ItemEditAction.values()[buf.readVarInt()];
         ResourceLocation targetId = buf.readBoolean() ? new ResourceLocation(buf.readUtf()) : null;
         String type = buf.readUtf();
-        LabItemFieldValues values = LabItemFieldValues.read(buf);
+        ItemFieldValues values = ItemFieldValues.read(buf);
         int tagCount = Math.min(buf.readVarInt(), 32);
         List<String> tagList = new ArrayList<>(tagCount);
         for (int i = 0; i < tagCount; i++) {
             tagList.add(buf.readUtf());
         }
         int actionCount = Math.min(buf.readVarInt(), 16);
-        List<LabItemAction> actions = new ArrayList<>(actionCount);
+        List<ItemAction> actions = new ArrayList<>(actionCount);
         for (int i = 0; i < actionCount; i++) {
             int ordinal = buf.readVarInt();
-            if (ordinal < LabItemAction.values().length) {
-                actions.add(LabItemAction.values()[ordinal]);
+            if (ordinal < ItemAction.values().length) {
+                actions.add(ItemAction.values()[ordinal]);
             }
         }
-        return new C2SItemEditPacket(action, targetId, new LabItemPayload(targetId, type, values, tagList, actions));
+        return new C2SItemEditPacket(action, targetId, new ItemPayload(targetId, type, values, tagList, actions));
     }
 
     public void handle(ServerPlayer player) {
@@ -74,6 +74,6 @@ public record C2SItemEditPacket(LabItemEditAction action, @Nullable ResourceLoca
             KubeJSLab.LOGGER.warn("[Net] C2SItemEditPacket rejected: {} lacks permission level 2", player.getName().getString());
             return;
         }
-        LabItemService.handle(player, action, targetId, payload);
+        ItemService.handle(player, action, targetId, payload);
     }
 }

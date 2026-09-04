@@ -1,8 +1,8 @@
 package com.abo47.kubejslab.fabric;
 
-import com.abo47.kubejslab.command.LabCommand;
 import com.abo47.kubejslab.KubeJSLab;
-import com.abo47.kubejslab.network.ModNetwork;
+import com.abo47.kubejslab.command.MainCommand;
+import com.abo47.kubejslab.network.NetworkRegistry;
 import com.abo47.kubejslab.platform.Services;
 
 import net.fabricmc.api.ModInitializer;
@@ -15,9 +15,9 @@ public final class FabricMod implements ModInitializer {
         Services.setPlatform(new FabricPlatformService());
         FabricContent.register();
         KubeJSLab.bootstrap();
-        ModNetwork.register();
+        NetworkRegistry.register();
 
         CommandRegistrationCallback.EVENT.register(
-                (dispatcher, registryAccess, environment) -> LabCommand.register(dispatcher));
+                (dispatcher, registryAccess, environment) -> MainCommand.register(dispatcher));
     }
 }

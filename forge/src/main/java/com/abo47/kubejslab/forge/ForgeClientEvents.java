@@ -1,7 +1,7 @@
 package com.abo47.kubejslab.forge;
 
-import com.abo47.kubejslab.client.LabKeybindings;
 import com.abo47.kubejslab.KubeJSLab;
+import com.abo47.kubejslab.client.Keybindings;
 
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
@@ -17,7 +17,7 @@ public final class ForgeClientEvents {
 
     @SubscribeEvent
     public static void onRegisterKeyMappings(RegisterKeyMappingsEvent event) {
-        LabKeybindings.registerKeyMappings(event::register);
+        Keybindings.registerKeyMappings(event::register);
     }
 }
 
@@ -29,7 +29,7 @@ final class ForgeClientTick {
     @SubscribeEvent
     public static void onClientTick(TickEvent.ClientTickEvent event) {
         if (event.phase == TickEvent.Phase.END) {
-            LabKeybindings.onClientTick();
+            Keybindings.onClientTick();
         }
     }
 }

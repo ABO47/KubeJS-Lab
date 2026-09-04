@@ -4,9 +4,9 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 
-import com.abo47.kubejslab.client.ui.LabClientUIFactory;
-import com.abo47.kubejslab.client.ui.LabUIFactory;
 import com.abo47.kubejslab.KubeJSLab;
+import com.abo47.kubejslab.client.ui.shell.ClientScreenOpener;
+import com.abo47.kubejslab.client.ui.shell.ServerScreenOpener;
 import com.abo47.kubejslab.network.block.C2SBlockEditPacket;
 import com.abo47.kubejslab.network.block.S2CBlockStatePacket;
 import com.abo47.kubejslab.network.item.C2SItemEditPacket;
@@ -46,7 +46,7 @@ public final class ForgeNetwork {
                 OpenScreenPacket::decode,
                 (packet, ctx) -> {
                     ctx.get().enqueueWork(() -> {
-                        LabClientUIFactory.openFromScreen(new FriendlyByteBuf(Unpooled.wrappedBuffer(packet.payload())), packet.windowId());
+                        ClientScreenOpener.openFromScreen(new FriendlyByteBuf(Unpooled.wrappedBuffer(packet.payload())), packet.windowId());
                     });
                     ctx.get().setPacketHandled(true);
                 });
@@ -57,7 +57,7 @@ public final class ForgeNetwork {
                     ctx.get().enqueueWork(() -> {
                         ServerPlayer player = ctx.get().getSender();
                         if (player != null) {
-                            LabUIFactory.open(player.blockPosition(), player);
+                            ServerScreenOpener.open(player.blockPosition(), player);
                         }
                     });
                     ctx.get().setPacketHandled(true);

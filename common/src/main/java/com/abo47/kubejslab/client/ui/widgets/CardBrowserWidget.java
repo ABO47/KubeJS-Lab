@@ -1,0 +1,188 @@
+package com.abo47.kubejslab.client.ui.widgets;
+
+import java.util.ArrayList;
+import java.util.function.Consumer;
+import java.util.List;
+import javax.annotation.Nonnull;
+
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.resources.ResourceLocation;
+
+import com.lowdragmc.lowdraglib.gui.widget.Widget;
+import com.lowdragmc.lowdraglib.gui.widget.WidgetGroup;
+
+import com.abo47.kubejslab.client.ui.theme.UiLayout;
+import com.mojang.blaze3d.systems.RenderSystem;
+
+
+public abstract class CardBrowserWidget<L extends EntryCardWidget, E> extends WidgetGroup {
+    private final List<L> cards = new ArrayList<>();
+    private String query = "";
+    private boolean kubejsOnly;
+    private ResourceLocation selectedId;
+    private int scroll;
+    private int scrollMax;
+    private boolean dragging;
+    private Consumer<E> entryClickListener;
+    private EntryRightClick<E> entryRightClickListener;
+
+    public CardBrowserWidget(int x, int y, int w, int h) {
+        super(x, y, w, h);
+    }
+
+    protected abstract List<E> entries();
+
+    protected abstract L createCard(E entry, int x, int y, int w, int h);
+
+    protected abstract ResourceLocation entryId(E entry);
+
+    protected String query() {
+        return query;
+    }
+
+    protected boolean kubejsOnly() {
+        return kubejsOnly;
+    }
+
+    protected void resetScroll() {
+        scroll = 0;
+    }
+
+    public void setEntryClickListener(Consumer<E> entryClickListener) {
+        this.entryClickListener = entryClickListener;
+    }
+
+    public void setEntryRightClickListener(EntryRightClick<E> entryRightClickListener) {
+        this.entryRightClickListener = entryRightClickListener;
+    }
+
+    public void setSelectedId(ResourceLocation selectedId) {
+        this.selectedId = selectedId;
+        rebuild();
+    }
+
+    public void setQuery(String query) {
+        this.query = query == null ? "" : query;
+        scroll = 0;
+        rebuild();
+    }
+
+    public void setKubejsOnly(boolean kubejsOnly) {
+        this.kubejsOnly = kubejsOnly;
+        scroll = 0;
+    }
+
+    public void rebuild() {
+        clearAllWidgets();
+        cards.clear();
+        List<E> entries = entries();
+        if (entries.isEmpty()) {
+            com.abo47.kubejslab.KubeJSLab.LOGGER.warn(
+                    "[CardBrowserWidget] rebuild empty: query='{}' kubejsOnly={} pos=({},{}) size=({},{}) visible={}",
+                    query, kubejsOnly, getSelfPositionX(), getSelfPositionY(), getSizeWidth(), getSizeHeight(), isVisible());
+        } else {
+            com.abo47.kubejslab.KubeJSLab.LOGGER.info(
+                    "[CardBrowserWidget] rebuild {} entries: query='{}' kubejsOnly={} visible={}",
+                    entries.size(), query, kubejsOnly, isVisible());
+        }
+        int listW = getSizeWidth();
+        int listH = getSizeHeight();
+        int rowStep = UiLayout.CARD_ROW_STEP;
+        int cardH = UiLayout.CARD_H;
+        int rows = entries.size();
+        int contentH = rows * cardH + Math.max(0, rows - 1) * UiLayout.CARD_GAP;
+        scrollMax = Math.max(0, contentH - listH);
+        scroll = ScrollMath.clamp(scroll, scrollMax);
+        boolean showScrollBar = scrollMax > 0;
+
+        int trackX = UiLayout.recipeTrackX(listW);
+        int cardX = UiLayout.LIST_INSET;
+        int cardW = showScrollBar ? UiLayout.recipeCardWidth(listW) : listW - UiLayout.LIST_INSET * 2;
+
+        for (int row = 0; row < rows; row++) {
+            int y = -scroll + row * rowStep;
+            E entry = entries.get(row);
+            L card = createCard(entry, cardX, y, cardW, cardH);
+            card.setSelected(entryId(entry).equals(selectedId));
+            cards.add(card);
+            addWidget(card);
+        }
+
+        if (showScrollBar) {
+            int knobH = Math.max(UiLayout.KNOB_MIN_H,
+                    (int) ((float) listH * ((float) listH / (float) Math.max(listH, contentH))));
+            addWidget(new ScrollBarWidget(
+                    trackX,
+                    0,
+                    ScrollBarWidget.RESERVED_WIDTH,
+                    listH,
+                    () -> scroll,
+                    () -> scrollMax,
+                    () -> knobH,
+                    value -> scroll = value,
+                    () -> dragging,
+                    value -> dragging = value,
+                    this::repositionCards
+            ));
+        }
+    }
+
+    protected void fireEntryClick(E entry) {
+        if (entryClickListener != null) {
+            entryClickListener.accept(entry);
+        }
+    }
+
+    protected void fireEntryRightClick(E entry, double mouseX, double mouseY) {
+        if (entryRightClickListener != null) {
+            entryRightClickListener.onRightClick(entry, mouseX, mouseY);
+        }
+    }
+
+    private void repositionCards() {
+        int rowStep = UiLayout.CARD_ROW_STEP;
+        for (int i = 0; i < cards.size(); i++) {
+            cards.get(i).setSelfPosition(UiLayout.LIST_INSET, -scroll + i * rowStep);
+        }
+    }
+
+    @Override
+    public void drawInBackground(@Nonnull GuiGraphics g, int mx, int my, float pt) {
+        int x = getPositionX();
+        int y = getPositionY();
+        int w = getSizeWidth();
+        int h = getSizeHeight();
+        g.flush();
+        g.enableScissor(x, y, x + w, y + h);
+        for (Widget child : widgets) {
+            int cy = child.getPositionY();
+            if (cy + child.getSizeHeight() < y || cy > y + h) {
+                continue;
+            }
+            RenderSystem.enableBlend();
+            RenderSystem.setShaderColor(1, 1, 1, 1);
+            child.drawInBackground(g, mx, my, pt);
+        }
+        g.flush();
+        g.disableScissor();
+    }
+
+    @Override
+    public boolean mouseWheelMove(double mouseX, double mouseY, double wheelDelta) {
+        if (!isMouseOverElement(mouseX, mouseY)) {
+            return super.mouseWheelMove(mouseX, mouseY, wheelDelta);
+        }
+        int step = Math.max(8, UiLayout.CARD_ROW_STEP / 3);
+        int next = ScrollMath.wheel(scroll, scrollMax, step, wheelDelta);
+        if (next != scroll) {
+            scroll = next;
+            repositionCards();
+        }
+        return true;
+    }
+
+    @FunctionalInterface
+    public interface EntryRightClick<E> {
+        void onRightClick(E entry, double mouseX, double mouseY);
+    }
+}

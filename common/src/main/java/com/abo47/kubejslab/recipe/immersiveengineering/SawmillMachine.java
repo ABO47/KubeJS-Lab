@@ -4,13 +4,13 @@ import java.util.List;
 
 import net.minecraft.world.item.crafting.Recipe;
 
-import com.abo47.kubejslab.recipe.model.LabIngredient;
-import com.abo47.kubejslab.recipe.model.LabRecipeField;
-import com.abo47.kubejslab.recipe.model.LabRecipeFieldValues;
-import com.abo47.kubejslab.recipe.model.LabRecipeJson;
-import com.abo47.kubejslab.recipe.model.LabRecipeOutput;
-import com.abo47.kubejslab.recipe.model.LabSlotDescriptor;
-import com.abo47.kubejslab.recipe.model.LabSlotKind;
+import com.abo47.kubejslab.recipe.model.RecipeField;
+import com.abo47.kubejslab.recipe.model.RecipeFieldValues;
+import com.abo47.kubejslab.recipe.model.RecipeIngredient;
+import com.abo47.kubejslab.recipe.model.RecipeJson;
+import com.abo47.kubejslab.recipe.model.RecipeOutput;
+import com.abo47.kubejslab.recipe.model.SlotDescriptor;
+import com.abo47.kubejslab.recipe.model.SlotKind;
 
 import blusunrize.immersiveengineering.api.crafting.SawmillRecipe;
 import com.google.gson.JsonArray;
@@ -19,20 +19,20 @@ import com.google.gson.JsonObject;
 
 public class SawmillMachine extends ImmersiveEngineeringMachine {
     public SawmillMachine() {
-        super("sawmill", LabRecipeField.ENERGY);
+        super("sawmill", RecipeField.ENERGY);
     }
 
     @Override
-    public List<LabSlotDescriptor> inputSlots() {
-        return List.of(new LabSlotDescriptor(true, LabSlotKind.ITEM, 0, 0, false));
+    public List<SlotDescriptor> inputSlots() {
+        return List.of(new SlotDescriptor(true, SlotKind.ITEM, 0, 0, false));
     }
 
     @Override
-    public List<LabSlotDescriptor> outputSlots() {
+    public List<SlotDescriptor> outputSlots() {
         return List.of(
-                new LabSlotDescriptor(false, LabSlotKind.ITEM, 0, 0, false),
-                new LabSlotDescriptor(false, LabSlotKind.ITEM, 1, 0, true),
-                new LabSlotDescriptor(false, LabSlotKind.ITEM, 0, 1, true));
+                new SlotDescriptor(false, SlotKind.ITEM, 0, 0, false),
+                new SlotDescriptor(false, SlotKind.ITEM, 1, 0, true),
+                new SlotDescriptor(false, SlotKind.ITEM, 0, 1, true));
     }
 
     @Override
@@ -41,12 +41,12 @@ public class SawmillMachine extends ImmersiveEngineeringMachine {
     }
 
     @Override
-    public JsonObject buildJson(String type, List<LabIngredient> inputs, List<LabRecipeOutput> outputs,
-            LabRecipeFieldValues values) {
+    public JsonObject buildJson(String type, List<RecipeIngredient> inputs, List<RecipeOutput> outputs,
+            RecipeFieldValues values) {
         JsonObject json = new JsonObject();
         json.addProperty("type", type);
         if (!inputs.isEmpty()) {
-            json.add("input", LabRecipeJson.ingredientJson(inputs.get(0)));
+            json.add("input", RecipeJson.ingredientJson(inputs.get(0)));
         }
         if (!outputs.isEmpty()) {
             json.add("result", readOutput(outputs.get(0)));
@@ -67,9 +67,9 @@ public class SawmillMachine extends ImmersiveEngineeringMachine {
     }
 
     @Override
-    public LabRecipeFieldValues prefill(LabRecipeFieldValues current, Recipe<?> original) {
+    public RecipeFieldValues prefill(RecipeFieldValues current, Recipe<?> original) {
         if (original instanceof SawmillRecipe sawmill) {
-            return new LabRecipeFieldValues(current.shapeless(), current.experience(), current.cookingTime(),
+            return new RecipeFieldValues(current.shapeless(), current.experience(), current.cookingTime(),
                     current.count(), current.processingTime(), current.heatRequirement(), current.keepHeldItem(),
                     current.acceptMirrored(), current.gridWidth(), current.gridHeight(),
                     sawmill.getTotalProcessEnergy(), current.creosoteAmount(), current.mold(),

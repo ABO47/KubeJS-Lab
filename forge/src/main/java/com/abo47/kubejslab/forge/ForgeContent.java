@@ -9,10 +9,10 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 
-import com.abo47.kubejslab.block.LabTable;
-import com.abo47.kubejslab.content.LabContent;
-import com.abo47.kubejslab.item.LabTabletItem;
 import com.abo47.kubejslab.KubeJSLab;
+import com.abo47.kubejslab.block.WorktableBlock;
+import com.abo47.kubejslab.content.ContentRegistry;
+import com.abo47.kubejslab.item.TabletItem;
 
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.DeferredRegister;
@@ -26,13 +26,13 @@ public final class ForgeContent {
     public static final DeferredRegister<CreativeModeTab> TABS = DeferredRegister.create(Registries.CREATIVE_MODE_TAB, KubeJSLab.MOD_ID);
 
     public static final RegistryObject<Block> LAB_TABLE = BLOCKS.register("lab_table",
-            () -> new LabTable(BlockBehaviour.Properties.of().strength(3.0F, 3.0F)));
+            () -> new WorktableBlock(BlockBehaviour.Properties.of().strength(3.0F, 3.0F)));
 
     public static final RegistryObject<Item> LAB_TABLE_ITEM = ITEMS.register("lab_table",
             () -> new BlockItem(LAB_TABLE.get(), new Item.Properties()));
 
     public static final RegistryObject<Item> LAB_TABLET = ITEMS.register("lab_tablet",
-            () -> new LabTabletItem(new Item.Properties().stacksTo(1)));
+            () -> new TabletItem(new Item.Properties().stacksTo(1)));
 
     public static final RegistryObject<CreativeModeTab> MAIN_TAB = TABS.register("main",
             () -> CreativeModeTab.builder()
@@ -49,7 +49,7 @@ public final class ForgeContent {
     }
 
     public static void register(IEventBus modBus) {
-        LabContent.registerContent(LAB_TABLE, LAB_TABLE_ITEM, LAB_TABLET);
+        ContentRegistry.registerContent(LAB_TABLE, LAB_TABLE_ITEM, LAB_TABLET);
         BLOCKS.register(modBus);
         ITEMS.register(modBus);
         TABS.register(modBus);

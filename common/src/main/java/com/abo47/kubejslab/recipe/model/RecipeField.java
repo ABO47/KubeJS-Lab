@@ -1,0 +1,22 @@
+package com.abo47.kubejslab.recipe.model;
+
+public enum RecipeField {
+    SHAPELESS,
+    EXPERIENCE,
+    COOKING_TIME,
+    COUNT,
+    PROCESSING_TIME,
+    HEAT_REQUIREMENT,
+    KEEP_HELD_ITEM,
+    ACCEPT_MIRRORED,
+    GRID_WIDTH,
+    GRID_HEIGHT,
+    ENERGY,
+    CREOSOTE_AMOUNT,
+    MOLD,
+    BLUEPRINT_CATEGORY,
+    CLOCHE_RENDER_TYPE,
+    CLOCHE_RENDER_BLOCK,
+    FLUID_INPUT_AMOUNT,
+    FLUID_OUTPUT_AMOUNT
+}

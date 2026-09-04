@@ -5,13 +5,13 @@ import java.util.List;
 
 import net.minecraft.world.item.crafting.Recipe;
 
-import com.abo47.kubejslab.recipe.model.LabIngredient;
-import com.abo47.kubejslab.recipe.model.LabRecipeField;
-import com.abo47.kubejslab.recipe.model.LabRecipeFieldValues;
-import com.abo47.kubejslab.recipe.model.LabRecipeJson;
-import com.abo47.kubejslab.recipe.model.LabRecipeOutput;
-import com.abo47.kubejslab.recipe.model.LabSlotDescriptor;
-import com.abo47.kubejslab.recipe.model.LabSlotKind;
+import com.abo47.kubejslab.recipe.model.RecipeField;
+import com.abo47.kubejslab.recipe.model.RecipeFieldValues;
+import com.abo47.kubejslab.recipe.model.RecipeIngredient;
+import com.abo47.kubejslab.recipe.model.RecipeJson;
+import com.abo47.kubejslab.recipe.model.RecipeOutput;
+import com.abo47.kubejslab.recipe.model.SlotDescriptor;
+import com.abo47.kubejslab.recipe.model.SlotKind;
 
 import blusunrize.immersiveengineering.api.crafting.CrusherRecipe;
 import blusunrize.immersiveengineering.api.crafting.StackWithChance;
@@ -21,7 +21,7 @@ import com.google.gson.JsonObject;
 
 public class CrusherMachine extends ImmersiveEngineeringMachine {
     public CrusherMachine() {
-        super("crusher", LabRecipeField.ENERGY);
+        super("crusher", RecipeField.ENERGY);
     }
 
     @Override
@@ -30,26 +30,26 @@ public class CrusherMachine extends ImmersiveEngineeringMachine {
     }
 
     @Override
-    public List<LabSlotDescriptor> inputSlots() {
-        return new ArrayList<>(List.of(new LabSlotDescriptor(true, LabSlotKind.ITEM, 0, 0, false)));
+    public List<SlotDescriptor> inputSlots() {
+        return new ArrayList<>(List.of(new SlotDescriptor(true, SlotKind.ITEM, 0, 0, false)));
     }
 
     @Override
-    public List<LabSlotDescriptor> outputSlots() {
-        List<LabSlotDescriptor> slots = new ArrayList<>();
-        slots.add(new LabSlotDescriptor(false, LabSlotKind.ITEM, 1, 0, false));
-        slots.add(new LabSlotDescriptor(false, LabSlotKind.ITEM, 1, 1, true));
-        slots.add(new LabSlotDescriptor(false, LabSlotKind.ITEM, 2, 1, true));
+    public List<SlotDescriptor> outputSlots() {
+        List<SlotDescriptor> slots = new ArrayList<>();
+        slots.add(new SlotDescriptor(false, SlotKind.ITEM, 1, 0, false));
+        slots.add(new SlotDescriptor(false, SlotKind.ITEM, 1, 1, true));
+        slots.add(new SlotDescriptor(false, SlotKind.ITEM, 2, 1, true));
         return slots;
     }
 
     @Override
-    public JsonObject buildJson(String type, List<LabIngredient> inputs, List<LabRecipeOutput> outputs,
-            LabRecipeFieldValues values) {
+    public JsonObject buildJson(String type, List<RecipeIngredient> inputs, List<RecipeOutput> outputs,
+            RecipeFieldValues values) {
         JsonObject json = new JsonObject();
         json.addProperty("type", type);
         if (!inputs.isEmpty()) {
-            json.add("input", LabRecipeJson.ingredientJson(inputs.get(0)));
+            json.add("input", RecipeJson.ingredientJson(inputs.get(0)));
         }
         if (!outputs.isEmpty()) {
             json.add("result", readOutput(outputs.get(0)));
@@ -58,7 +58,7 @@ public class CrusherMachine extends ImmersiveEngineeringMachine {
         for (int i = 1; i < outputs.size(); i++) {
             JsonObject secondary = new JsonObject();
             secondary.add("output", readOutput(outputs.get(i)));
-            secondary.addProperty("chance", outputs.get(i) instanceof LabRecipeOutput.Item item
+            secondary.addProperty("chance", outputs.get(i) instanceof RecipeOutput.Item item
                     ? item.chance() : 1.0f);
             secondaries.add(secondary);
         }
@@ -81,9 +81,9 @@ public class CrusherMachine extends ImmersiveEngineeringMachine {
     }
 
     @Override
-    public LabRecipeFieldValues prefill(LabRecipeFieldValues current, Recipe<?> original) {
+    public RecipeFieldValues prefill(RecipeFieldValues current, Recipe<?> original) {
         if (original instanceof CrusherRecipe crusher) {
-            return new LabRecipeFieldValues(current.shapeless(), current.experience(), current.cookingTime(),
+            return new RecipeFieldValues(current.shapeless(), current.experience(), current.cookingTime(),
                     current.count(), current.processingTime(), current.heatRequirement(), current.keepHeldItem(),
                     current.acceptMirrored(), current.gridWidth(), current.gridHeight(),
                     crusher.getTotalProcessEnergy(), current.creosoteAmount(), current.mold(),

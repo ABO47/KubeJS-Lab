@@ -4,12 +4,12 @@ import java.util.List;
 
 import net.minecraft.world.item.crafting.Recipe;
 
-import com.abo47.kubejslab.recipe.model.LabIngredient;
-import com.abo47.kubejslab.recipe.model.LabRecipeField;
-import com.abo47.kubejslab.recipe.model.LabRecipeFieldValues;
-import com.abo47.kubejslab.recipe.model.LabRecipeOutput;
-import com.abo47.kubejslab.recipe.model.LabSlotDescriptor;
-import com.abo47.kubejslab.recipe.model.LabSlotKind;
+import com.abo47.kubejslab.recipe.model.RecipeField;
+import com.abo47.kubejslab.recipe.model.RecipeFieldValues;
+import com.abo47.kubejslab.recipe.model.RecipeIngredient;
+import com.abo47.kubejslab.recipe.model.RecipeOutput;
+import com.abo47.kubejslab.recipe.model.SlotDescriptor;
+import com.abo47.kubejslab.recipe.model.SlotKind;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -17,7 +17,7 @@ import com.google.gson.JsonObject;
 
 public class BottlingMachine extends ImmersiveEngineeringMachine {
     public BottlingMachine() {
-        super("bottling_machine", LabRecipeField.FLUID_INPUT_AMOUNT);
+        super("bottling_machine", RecipeField.FLUID_INPUT_AMOUNT);
     }
 
     @Override
@@ -26,30 +26,30 @@ public class BottlingMachine extends ImmersiveEngineeringMachine {
     }
 
     @Override
-    public List<LabSlotDescriptor> inputSlots() {
+    public List<SlotDescriptor> inputSlots() {
         return List.of(
-                new LabSlotDescriptor(true, LabSlotKind.ITEM, 0, 0, true),
-                new LabSlotDescriptor(true, LabSlotKind.ITEM, 0, 1, true),
-                new LabSlotDescriptor(true, LabSlotKind.FLUID, 2, 0, false));
+                new SlotDescriptor(true, SlotKind.ITEM, 0, 0, true),
+                new SlotDescriptor(true, SlotKind.ITEM, 0, 1, true),
+                new SlotDescriptor(true, SlotKind.FLUID, 2, 0, false));
     }
 
     @Override
-    public List<LabSlotDescriptor> outputSlots() {
+    public List<SlotDescriptor> outputSlots() {
         return List.of(
-                new LabSlotDescriptor(false, LabSlotKind.ITEM, 4, 0, false),
-                new LabSlotDescriptor(false, LabSlotKind.ITEM, 4, 1, true),
-                new LabSlotDescriptor(false, LabSlotKind.ITEM, 4, 2, true));
+                new SlotDescriptor(false, SlotKind.ITEM, 4, 0, false),
+                new SlotDescriptor(false, SlotKind.ITEM, 4, 1, true),
+                new SlotDescriptor(false, SlotKind.ITEM, 4, 2, true));
     }
 
     @Override
-    public JsonObject buildJson(String type, List<LabIngredient> inputs, List<LabRecipeOutput> outputs,
-            LabRecipeFieldValues values) {
+    public JsonObject buildJson(String type, List<RecipeIngredient> inputs, List<RecipeOutput> outputs,
+            RecipeFieldValues values) {
         JsonObject json = new JsonObject();
         json.addProperty("type", type);
         JsonArray itemInputs = new JsonArray();
         JsonObject fluidInput = null;
-        for (LabIngredient input : inputs) {
-            if (input instanceof LabIngredient.Fluid) {
+        for (RecipeIngredient input : inputs) {
+            if (input instanceof RecipeIngredient.Fluid) {
                 fluidInput = fluidTagInput(input, values.fluidInputAmount());
             } else {
                 itemInputs.add(ingredientWithSize(input));
@@ -64,7 +64,7 @@ public class BottlingMachine extends ImmersiveEngineeringMachine {
             json.add("fluid", fluidInput);
         }
         JsonArray results = new JsonArray();
-        for (LabRecipeOutput output : outputs) {
+        for (RecipeOutput output : outputs) {
             results.add(readOutput(output));
         }
         json.add("results", results);
@@ -72,7 +72,7 @@ public class BottlingMachine extends ImmersiveEngineeringMachine {
     }
 
     @Override
-    public LabRecipeFieldValues prefill(LabRecipeFieldValues current, Recipe<?> original) {
+    public RecipeFieldValues prefill(RecipeFieldValues current, Recipe<?> original) {
         return current;
     }
 }

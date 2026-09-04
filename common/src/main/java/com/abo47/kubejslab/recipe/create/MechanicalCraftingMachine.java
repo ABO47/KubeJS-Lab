@@ -9,19 +9,19 @@ import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.ShapedRecipe;
 
 import com.abo47.kubejslab.KubeJSLab;
-import com.abo47.kubejslab.recipe.LabRecipeMachine;
-import com.abo47.kubejslab.recipe.model.LabIngredient;
-import com.abo47.kubejslab.recipe.model.LabRecipeField;
-import com.abo47.kubejslab.recipe.model.LabRecipeFieldValues;
-import com.abo47.kubejslab.recipe.model.LabRecipeJson;
-import com.abo47.kubejslab.recipe.model.LabRecipeOutput;
+import com.abo47.kubejslab.recipe.RecipeHandler;
+import com.abo47.kubejslab.recipe.model.RecipeField;
+import com.abo47.kubejslab.recipe.model.RecipeFieldValues;
+import com.abo47.kubejslab.recipe.model.RecipeIngredient;
+import com.abo47.kubejslab.recipe.model.RecipeJson;
+import com.abo47.kubejslab.recipe.model.RecipeOutput;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.simibubi.create.content.kinetics.crafter.MechanicalCraftingRecipe;
 
 
-public final class MechanicalCraftingMachine implements LabRecipeMachine {
+public final class MechanicalCraftingMachine implements RecipeHandler {
     @Override
     public ResourceLocation jeiUid() {
         return new ResourceLocation("create", "mechanical_crafting");
@@ -43,13 +43,13 @@ public final class MechanicalCraftingMachine implements LabRecipeMachine {
     }
 
     @Override
-    public List<LabRecipeField> fields() {
-        return List.of(LabRecipeField.GRID_WIDTH, LabRecipeField.GRID_HEIGHT, LabRecipeField.ACCEPT_MIRRORED);
+    public List<RecipeField> fields() {
+        return List.of(RecipeField.GRID_WIDTH, RecipeField.GRID_HEIGHT, RecipeField.ACCEPT_MIRRORED);
     }
 
     @Override
-    public JsonObject buildJson(String jsonType, List<LabIngredient> inputs, List<LabRecipeOutput> outputs,
-            LabRecipeFieldValues values) {
+    public JsonObject buildJson(String jsonType, List<RecipeIngredient> inputs, List<RecipeOutput> outputs,
+            RecipeFieldValues values) {
         JsonObject json = new JsonObject();
         json.addProperty("type", jsonType);
         int width = Math.max(1, values.gridWidth());
@@ -65,14 +65,14 @@ public final class MechanicalCraftingMachine implements LabRecipeMachine {
             StringBuilder rowStr = new StringBuilder();
             for (int col = 0; col < width; col++) {
                 int index = row * width + col;
-                LabIngredient ingredient = index < inputs.size() ? inputs.get(index)
-                        : new LabIngredient.Item(net.minecraft.world.item.ItemStack.EMPTY);
+                RecipeIngredient ingredient = index < inputs.size() ? inputs.get(index)
+                        : new RecipeIngredient.Item(net.minecraft.world.item.ItemStack.EMPTY);
                 if (ingredient.isEmpty()) {
                     rowStr.append(' ');
                     continue;
                 }
                 anyFilled = true;
-                if (ingredient instanceof LabIngredient.Fluid) {
+                if (ingredient instanceof RecipeIngredient.Fluid) {
                     throw new IllegalArgumentException("Mechanical crafting only accepts item or tag inputs");
                 }
                 String entryKey = ingredientKey(ingredient);
@@ -82,7 +82,7 @@ public final class MechanicalCraftingMachine implements LabRecipeMachine {
                     charByKey.put(entryKey, c);
                 }
                 rowStr.append((char) c);
-                key.add(String.valueOf((char) c), LabRecipeJson.ingredientJson(ingredient));
+                key.add(String.valueOf((char) c), RecipeJson.ingredientJson(ingredient));
             }
             pattern.add(rowStr.toString());
         }
@@ -92,7 +92,7 @@ public final class MechanicalCraftingMachine implements LabRecipeMachine {
         }
         json.add("pattern", pattern);
         json.add("key", key);
-        json.add("result", LabRecipeJson.itemWithCount(LabRecipeOutput.firstItem(outputs)));
+        json.add("result", RecipeJson.itemWithCount(RecipeOutput.firstItem(outputs)));
         if (!values.acceptMirrored()) {
             json.addProperty("acceptMirrored", false);
         }
@@ -100,26 +100,26 @@ public final class MechanicalCraftingMachine implements LabRecipeMachine {
         return json;
     }
 
-    private static String ingredientKey(LabIngredient ingredient) {
-        if (ingredient instanceof LabIngredient.Item item) {
+    private static String ingredientKey(RecipeIngredient ingredient) {
+        if (ingredient instanceof RecipeIngredient.Item item) {
             return "i:" + item.stack().getItem().builtInRegistryHolder().key().location()
                     + (item.stack().hasTag() ? "|" + item.stack().getTag() : "");
         }
-        if (ingredient instanceof LabIngredient.Tag tag) {
+        if (ingredient instanceof RecipeIngredient.Tag tag) {
             return "t:" + tag.tag();
         }
         return "f:" + ingredient;
     }
 
     @Override
-    public LabRecipeFieldValues prefill(LabRecipeFieldValues current, Recipe<?> original) {
+    public RecipeFieldValues prefill(RecipeFieldValues current, Recipe<?> original) {
         if (original instanceof MechanicalCraftingRecipe crafting) {
             ShapedRecipe shaped = crafting;
             int height = Math.max(1, Math.min(9, shaped.getHeight()));
             int width = Math.max(1, Math.min(9, shaped.getWidth()));
             KubeJSLab.LOGGER.info("[MechCrafting] prefill: original id={}, pattern {}x{}, acceptMirrored={}",
                     original.getId(), width, height, crafting.acceptsMirrored());
-            return new LabRecipeFieldValues(current.shapeless(), current.experience(), current.cookingTime(),
+            return new RecipeFieldValues(current.shapeless(), current.experience(), current.cookingTime(),
                     current.count(), current.processingTime(), current.heatRequirement(), current.keepHeldItem(),
                     crafting.acceptsMirrored(), width, height);
         }

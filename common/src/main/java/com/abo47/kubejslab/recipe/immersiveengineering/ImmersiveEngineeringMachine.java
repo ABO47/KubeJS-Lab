@@ -9,21 +9,21 @@ import net.minecraft.world.level.material.Fluid;
 
 import com.lowdragmc.lowdraglib.side.fluid.FluidStack;
 
-import com.abo47.kubejslab.recipe.LabRecipeMachine;
-import com.abo47.kubejslab.recipe.model.LabIngredient;
-import com.abo47.kubejslab.recipe.model.LabRecipeField;
-import com.abo47.kubejslab.recipe.model.LabRecipeJson;
-import com.abo47.kubejslab.recipe.model.LabRecipeOutput;
+import com.abo47.kubejslab.recipe.RecipeHandler;
+import com.abo47.kubejslab.recipe.model.RecipeField;
+import com.abo47.kubejslab.recipe.model.RecipeIngredient;
+import com.abo47.kubejslab.recipe.model.RecipeJson;
+import com.abo47.kubejslab.recipe.model.RecipeOutput;
 
 import com.google.gson.JsonObject;
 
 
-public abstract class ImmersiveEngineeringMachine implements LabRecipeMachine {
+public abstract class ImmersiveEngineeringMachine implements RecipeHandler {
     private final ResourceLocation jeiUid;
     private final String jsonType;
-    private final List<LabRecipeField> fields;
+    private final List<RecipeField> fields;
 
-    protected ImmersiveEngineeringMachine(String type, LabRecipeField... fields) {
+    protected ImmersiveEngineeringMachine(String type, RecipeField... fields) {
         this.jeiUid = new ResourceLocation("immersiveengineering", type);
         this.jsonType = "immersiveengineering:" + type;
         this.fields = List.of(fields);
@@ -40,27 +40,27 @@ public abstract class ImmersiveEngineeringMachine implements LabRecipeMachine {
     }
 
     @Override
-    public List<LabRecipeField> fields() {
+    public List<RecipeField> fields() {
         return fields;
     }
 
-    protected static JsonObject ingredientWithSize(LabIngredient ingredient) {
-        if (ingredient instanceof LabIngredient.Item item && item.stack().getCount() > 1) {
+    protected static JsonObject ingredientWithSize(RecipeIngredient ingredient) {
+        if (ingredient instanceof RecipeIngredient.Item item && item.stack().getCount() > 1) {
             JsonObject sized = new JsonObject();
             sized.addProperty("count", item.stack().getCount());
-            sized.add("base_ingredient", LabRecipeJson.itemJson(item.stack()));
+            sized.add("base_ingredient", RecipeJson.itemJson(item.stack()));
             return sized;
         }
-        return LabRecipeJson.ingredientJson(ingredient);
+        return RecipeJson.ingredientJson(ingredient);
     }
 
-    protected static JsonObject fluidTagInput(LabIngredient ingredient) {
+    protected static JsonObject fluidTagInput(RecipeIngredient ingredient) {
         return fluidTagInput(ingredient, -1);
     }
 
-    protected static JsonObject fluidTagInput(LabIngredient ingredient, int amountOverride) {
+    protected static JsonObject fluidTagInput(RecipeIngredient ingredient, int amountOverride) {
         JsonObject json = new JsonObject();
-        if (ingredient instanceof LabIngredient.Fluid fluid) {
+        if (ingredient instanceof RecipeIngredient.Fluid fluid) {
             FluidStack stack = fluid.fluid();
             ResourceLocation tag = firstFluidTag(stack.getFluid());
             if (tag == null) {
@@ -77,19 +77,19 @@ public abstract class ImmersiveEngineeringMachine implements LabRecipeMachine {
         return json;
     }
 
-    protected static JsonObject outputWithAmount(LabRecipeOutput output, int amountOverride) {
-        if (output instanceof LabRecipeOutput.Fluid fluid && amountOverride > 0) {
-            return LabRecipeJson.fluidJson(fluid.fluid().copy(amountOverride));
+    protected static JsonObject outputWithAmount(RecipeOutput output, int amountOverride) {
+        if (output instanceof RecipeOutput.Fluid fluid && amountOverride > 0) {
+            return RecipeJson.fluidJson(fluid.fluid().copy(amountOverride));
         }
         return readOutput(output);
     }
 
-    protected static JsonObject readOutput(LabRecipeOutput output) {
-        if (output instanceof LabRecipeOutput.Item item) {
-            return LabRecipeJson.itemWithCount(item.stack());
+    protected static JsonObject readOutput(RecipeOutput output) {
+        if (output instanceof RecipeOutput.Item item) {
+            return RecipeJson.itemWithCount(item.stack());
         }
-        if (output instanceof LabRecipeOutput.Fluid fluid) {
-            return LabRecipeJson.fluidJson(fluid.fluid());
+        if (output instanceof RecipeOutput.Fluid fluid) {
+            return RecipeJson.fluidJson(fluid.fluid());
         }
         return new JsonObject();
     }

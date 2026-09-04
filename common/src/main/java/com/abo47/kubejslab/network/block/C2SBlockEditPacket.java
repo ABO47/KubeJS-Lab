@@ -8,16 +8,16 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 
-import com.abo47.kubejslab.block.model.LabBlockAction;
-import com.abo47.kubejslab.block.model.LabBlockEditAction;
-import com.abo47.kubejslab.block.model.LabBlockFieldValues;
-import com.abo47.kubejslab.block.model.LabBlockPayload;
-import com.abo47.kubejslab.block.runtime.LabBlockService;
 import com.abo47.kubejslab.KubeJSLab;
+import com.abo47.kubejslab.block.model.BlockAction;
+import com.abo47.kubejslab.block.model.BlockEditAction;
+import com.abo47.kubejslab.block.model.BlockFieldValues;
+import com.abo47.kubejslab.block.model.BlockPayload;
+import com.abo47.kubejslab.block.runtime.BlockService;
 
 
-public record C2SBlockEditPacket(LabBlockEditAction action, @Nullable ResourceLocation targetId,
-        LabBlockPayload payload) {
+public record C2SBlockEditPacket(BlockEditAction action, @Nullable ResourceLocation targetId,
+        BlockPayload payload) {
 
     public void write(FriendlyByteBuf buf) {
         buf.writeVarInt(action.ordinal());
@@ -26,36 +26,36 @@ public record C2SBlockEditPacket(LabBlockEditAction action, @Nullable ResourceLo
             buf.writeUtf(targetId.toString(), 32767);
         }
         buf.writeUtf(payload.type(), 32767);
-        LabBlockFieldValues.write(buf, payload.values());
+        BlockFieldValues.write(buf, payload.values());
         buf.writeVarInt(payload.tags().size());
         for (String tag : payload.tags()) {
             buf.writeUtf(tag, 32767);
         }
         buf.writeVarInt(payload.actions().size());
-        for (LabBlockAction blockAction : payload.actions()) {
+        for (BlockAction blockAction : payload.actions()) {
             buf.writeVarInt(blockAction.ordinal());
         }
     }
 
     public static C2SBlockEditPacket read(FriendlyByteBuf buf) {
-        LabBlockEditAction action = LabBlockEditAction.values()[buf.readVarInt()];
+        BlockEditAction action = BlockEditAction.values()[buf.readVarInt()];
         ResourceLocation targetId = buf.readBoolean() ? new ResourceLocation(buf.readUtf()) : null;
         String type = buf.readUtf();
-        LabBlockFieldValues values = LabBlockFieldValues.read(buf);
+        BlockFieldValues values = BlockFieldValues.read(buf);
         int tagCount = Math.min(buf.readVarInt(), 32);
         List<String> tagList = new ArrayList<>(tagCount);
         for (int i = 0; i < tagCount; i++) {
             tagList.add(buf.readUtf());
         }
         int actionCount = Math.min(buf.readVarInt(), 16);
-        List<LabBlockAction> actions = new ArrayList<>(actionCount);
+        List<BlockAction> actions = new ArrayList<>(actionCount);
         for (int i = 0; i < actionCount; i++) {
             int ordinal = buf.readVarInt();
-            if (ordinal < LabBlockAction.values().length) {
-                actions.add(LabBlockAction.values()[ordinal]);
+            if (ordinal < BlockAction.values().length) {
+                actions.add(BlockAction.values()[ordinal]);
             }
         }
-        return new C2SBlockEditPacket(action, targetId, new LabBlockPayload(targetId, type, values, tagList, actions));
+        return new C2SBlockEditPacket(action, targetId, new BlockPayload(targetId, type, values, tagList, actions));
     }
 
     public void handle(ServerPlayer player) {
@@ -64,6 +64,6 @@ public record C2SBlockEditPacket(LabBlockEditAction action, @Nullable ResourceLo
                     player.getName().getString());
             return;
         }
-        LabBlockService.handle(player, action, targetId, payload);
+        BlockService.handle(player, action, targetId, payload);
     }
 }

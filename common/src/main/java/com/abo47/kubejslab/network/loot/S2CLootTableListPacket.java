@@ -6,8 +6,8 @@ import java.util.List;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 
-import com.abo47.kubejslab.client.ui.LabScreen;
-import com.abo47.kubejslab.client.ui.loot.LabLootIndex;
+import com.abo47.kubejslab.client.ui.loot.LootIndex;
+import com.abo47.kubejslab.client.ui.shell.ScreenFactory;
 
 
 public record S2CLootTableListPacket(List<ResourceLocation> tables) {
@@ -33,7 +33,7 @@ public record S2CLootTableListPacket(List<ResourceLocation> tables) {
     }
 
     public void handleClient() {
-        LabLootIndex.setScannedTables(tables);
-        LabScreen.refreshOpen();
+        LootIndex.setScannedTables(tables);
+        ScreenFactory.refreshOpen();
     }
 }

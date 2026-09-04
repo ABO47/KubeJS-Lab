@@ -8,28 +8,28 @@ import java.util.Map;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 
-import com.abo47.kubejslab.client.ui.items.LabItemStates;
-import com.abo47.kubejslab.client.ui.LabScreen;
-import com.abo47.kubejslab.item.model.LabCustomTier;
-import com.abo47.kubejslab.item.model.LabItemAction;
-import com.abo47.kubejslab.item.model.LabItemFieldValues;
-import com.abo47.kubejslab.item.model.LabItemState;
-import com.abo47.kubejslab.item.model.LabItemStatus;
 import com.abo47.kubejslab.KubeJSLab;
+import com.abo47.kubejslab.client.ui.items.ItemStates;
+import com.abo47.kubejslab.client.ui.shell.ScreenFactory;
+import com.abo47.kubejslab.item.model.CustomTier;
+import com.abo47.kubejslab.item.model.ItemAction;
+import com.abo47.kubejslab.item.model.ItemFieldValues;
+import com.abo47.kubejslab.item.model.ItemState;
+import com.abo47.kubejslab.item.model.ItemStatus;
 
 
-public record S2CItemStatePacket(Map<ResourceLocation, LabItemState> states, List<ResourceLocation> pendingOnly) {
+public record S2CItemStatePacket(Map<ResourceLocation, ItemState> states, List<ResourceLocation> pendingOnly) {
 
     public void write(FriendlyByteBuf buf) {
         buf.writeVarInt(states.size());
-        for (LabItemState entry : states.values()) {
+        for (ItemState entry : states.values()) {
             buf.writeUtf(entry.id().toString());
             buf.writeUtf(entry.type(), 32767);
             buf.writeVarInt(entry.status().ordinal());
             buf.writeBoolean(entry.pendingRestart());
             buf.writeUtf(entry.name());
             buf.writeBoolean(entry.wasModified());
-            LabCustomTier tier = entry.customTier();
+            CustomTier tier = entry.customTier();
             buf.writeBoolean(tier != null);
             if (tier != null) {
                 buf.writeUtf(tier.id());
@@ -49,13 +49,13 @@ public record S2CItemStatePacket(Map<ResourceLocation, LabItemState> states, Lis
                 buf.writeFloat(tier.toughness());
                 buf.writeFloat(tier.knockbackResistance());
             }
-            LabItemFieldValues.write(buf, entry.values());
+            ItemFieldValues.write(buf, entry.values());
             buf.writeVarInt(entry.tags().size());
             for (String tag : entry.tags()) {
                 buf.writeUtf(tag, 32767);
             }
             buf.writeVarInt(entry.actions().size());
-            for (LabItemAction action : entry.actions()) {
+            for (ItemAction action : entry.actions()) {
                 buf.writeVarInt(action.ordinal());
             }
         }
@@ -72,15 +72,15 @@ public record S2CItemStatePacket(Map<ResourceLocation, LabItemState> states, Lis
 
     public static S2CItemStatePacket read(FriendlyByteBuf buf) {
         int size = Math.min(buf.readVarInt(), 65536);
-        Map<ResourceLocation, LabItemState> states = new HashMap<>();
+        Map<ResourceLocation, ItemState> states = new HashMap<>();
         for (int i = 0; i < size; i++) {
             ResourceLocation id = new ResourceLocation(buf.readUtf());
             String type = buf.readUtf();
-            int statusOrdinal = Math.min(buf.readVarInt(), LabItemStatus.values().length - 1);
+            int statusOrdinal = Math.min(buf.readVarInt(), ItemStatus.values().length - 1);
             boolean pendingRestart = buf.readBoolean();
             String name = buf.readUtf();
             boolean wasModified = buf.readBoolean();
-            LabCustomTier tier = null;
+            CustomTier tier = null;
             if (buf.readBoolean()) {
                 String tierId = buf.readUtf();
                 boolean armor = buf.readBoolean();
@@ -99,24 +99,24 @@ public record S2CItemStatePacket(Map<ResourceLocation, LabItemState> states, Lis
                 String equipSound = buf.readUtf();
                 float toughness = buf.readFloat();
                 float knockbackResistance = buf.readFloat();
-                tier = new LabCustomTier(tierId, armor, uses, speed, attackDamageBonus, level, enchantValue,
+                tier = new CustomTier(tierId, armor, uses, speed, attackDamageBonus, level, enchantValue,
                         repairIngredient, durabilityMultiplier, protections, equipSound, toughness, knockbackResistance);
             }
-            LabItemFieldValues values = LabItemFieldValues.read(buf);
+            ItemFieldValues values = ItemFieldValues.read(buf);
             int tagCount = Math.min(buf.readVarInt(), 32);
             List<String> tagList = new ArrayList<>(tagCount);
             for (int t = 0; t < tagCount; t++) {
                 tagList.add(buf.readUtf());
             }
             int actionCount = Math.min(buf.readVarInt(), 16);
-            List<LabItemAction> actions = new ArrayList<>(actionCount);
+            List<ItemAction> actions = new ArrayList<>(actionCount);
             for (int a = 0; a < actionCount; a++) {
                 int ordinal = buf.readVarInt();
-                if (ordinal < LabItemAction.values().length) {
-                    actions.add(LabItemAction.values()[ordinal]);
+                if (ordinal < ItemAction.values().length) {
+                    actions.add(ItemAction.values()[ordinal]);
                 }
             }
-            states.put(id, new LabItemState(id, type, LabItemStatus.values()[statusOrdinal], pendingRestart, name,
+            states.put(id, new ItemState(id, type, ItemStatus.values()[statusOrdinal], pendingRestart, name,
                     wasModified, tier, values, tagList, actions));
         }
         int pendingCount = Math.min(buf.readVarInt(), 65536);
@@ -128,7 +128,7 @@ public record S2CItemStatePacket(Map<ResourceLocation, LabItemState> states, Lis
     }
 
     public void handleClient() {
-        LabItemStates.apply(states, pendingOnly);
-        LabScreen.refreshOpen();
+        ItemStates.apply(states, pendingOnly);
+        ScreenFactory.refreshOpen();
     }
 }

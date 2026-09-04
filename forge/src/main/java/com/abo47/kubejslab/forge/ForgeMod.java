@@ -1,8 +1,8 @@
 package com.abo47.kubejslab.forge;
 
-import com.abo47.kubejslab.command.LabCommand;
 import com.abo47.kubejslab.KubeJSLab;
-import com.abo47.kubejslab.network.ModNetwork;
+import com.abo47.kubejslab.command.MainCommand;
+import com.abo47.kubejslab.network.NetworkRegistry;
 import com.abo47.kubejslab.platform.Services;
 
 import net.minecraftforge.common.MinecraftForge;
@@ -30,10 +30,10 @@ public final class ForgeMod {
     }
 
     private void onCommonSetupNetwork(FMLCommonSetupEvent event) {
-        event.enqueueWork(ModNetwork::register);
+        event.enqueueWork(NetworkRegistry::register);
     }
 
     private void onRegisterCommands(net.minecraftforge.event.RegisterCommandsEvent event) {
-        LabCommand.register(event.getDispatcher());
+        MainCommand.register(event.getDispatcher());
     }
 }

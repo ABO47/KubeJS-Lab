@@ -10,16 +10,16 @@ import net.minecraft.server.level.ServerPlayer;
 
 import com.abo47.kubejslab.KubeJSLab;
 import com.abo47.kubejslab.recipe.model.HeatRequirement;
-import com.abo47.kubejslab.recipe.model.LabIngredient;
-import com.abo47.kubejslab.recipe.model.LabRecipeEditAction;
-import com.abo47.kubejslab.recipe.model.LabRecipeFieldValues;
-import com.abo47.kubejslab.recipe.model.LabRecipeOutput;
-import com.abo47.kubejslab.recipe.model.LabRecipePayload;
-import com.abo47.kubejslab.recipe.runtime.LabRecipeService;
+import com.abo47.kubejslab.recipe.model.RecipeEditAction;
+import com.abo47.kubejslab.recipe.model.RecipeFieldValues;
+import com.abo47.kubejslab.recipe.model.RecipeIngredient;
+import com.abo47.kubejslab.recipe.model.RecipeOutput;
+import com.abo47.kubejslab.recipe.model.RecipePayload;
+import com.abo47.kubejslab.recipe.runtime.RecipeService;
 
 
-public record C2SRecipeEditPacket(LabRecipeEditAction action, @Nullable ResourceLocation targetId,
-        LabRecipePayload payload) {
+public record C2SRecipeEditPacket(RecipeEditAction action, @Nullable ResourceLocation targetId,
+        RecipePayload payload) {
 
     public void write(FriendlyByteBuf buf) {
         int start = buf.writerIndex();
@@ -34,17 +34,17 @@ public record C2SRecipeEditPacket(LabRecipeEditAction action, @Nullable Resource
         }
         int afterIds = buf.writerIndex() - start;
         buf.writeVarInt(payload.inputs().size());
-        for (LabIngredient ingredient : payload.inputs()) {
-            LabPacketCodecs.writeIngredient(buf, ingredient);
+        for (RecipeIngredient ingredient : payload.inputs()) {
+            RecipePacketCodecs.writeIngredient(buf, ingredient);
         }
         int afterInputs = buf.writerIndex() - start;
         buf.writeVarInt(payload.outputs().size());
-        for (LabRecipeOutput output : payload.outputs()) {
-            LabPacketCodecs.writeOutput(buf, output);
+        for (RecipeOutput output : payload.outputs()) {
+            RecipePacketCodecs.writeOutput(buf, output);
         }
         int afterOutputs = buf.writerIndex() - start;
         buf.writeUtf(payload.name() == null ? "" : payload.name(), 32767);
-        LabRecipeFieldValues values = payload.values();
+        RecipeFieldValues values = payload.values();
         buf.writeBoolean(values.shapeless());
         buf.writeFloat(values.experience());
         buf.writeVarInt(values.cookingTime());
@@ -72,18 +72,18 @@ public record C2SRecipeEditPacket(LabRecipeEditAction action, @Nullable Resource
     }
 
     public static C2SRecipeEditPacket read(FriendlyByteBuf buf) {
-        LabRecipeEditAction action = LabRecipeEditAction.values()[buf.readVarInt()];
+        RecipeEditAction action = RecipeEditAction.values()[buf.readVarInt()];
         ResourceLocation targetId = buf.readBoolean() ? new ResourceLocation(buf.readUtf()) : null;
         ResourceLocation machineUid = buf.readBoolean() ? new ResourceLocation(buf.readUtf()) : null;
         int inputCount = Math.min(buf.readVarInt(), 81);
-        List<LabIngredient> inputs = new ArrayList<>(inputCount);
+        List<RecipeIngredient> inputs = new ArrayList<>(inputCount);
         for (int i = 0; i < inputCount; i++) {
-            inputs.add(LabPacketCodecs.readIngredient(buf));
+            inputs.add(RecipePacketCodecs.readIngredient(buf));
         }
         int outputCount = Math.min(buf.readVarInt(), 12);
-        List<LabRecipeOutput> outputs = new ArrayList<>(outputCount);
+        List<RecipeOutput> outputs = new ArrayList<>(outputCount);
         for (int i = 0; i < outputCount; i++) {
-            outputs.add(LabPacketCodecs.readOutput(buf));
+            outputs.add(RecipePacketCodecs.readOutput(buf));
         }
         String name = buf.readUtf();
         boolean shapeless = buf.readBoolean();
@@ -105,8 +105,8 @@ public record C2SRecipeEditPacket(LabRecipeEditAction action, @Nullable Resource
         int fluidInputAmount = Math.max(0, Math.min(1000000, buf.readVarInt()));
         int fluidOutputAmount = Math.max(0, Math.min(1000000, buf.readVarInt()));
         return new C2SRecipeEditPacket(action, targetId,
-                new LabRecipePayload(machineUid, inputs, outputs, name,
-                        new LabRecipeFieldValues(shapeless, experience, cookingTime, count, processingTime,
+                new RecipePayload(machineUid, inputs, outputs, name,
+                        new RecipeFieldValues(shapeless, experience, cookingTime, count, processingTime,
                                 heatRequirement, keepHeldItem, acceptMirrored, gridWidth, gridHeight,
                                 energy, creosoteAmount, mold, blueprintCategory, clocheRenderType, clocheRenderBlock,
                                 fluidInputAmount, fluidOutputAmount)));
@@ -120,6 +120,6 @@ public record C2SRecipeEditPacket(LabRecipeEditAction action, @Nullable Resource
             KubeJSLab.LOGGER.warn("[Net] C2SRecipeEditPacket rejected: {} lacks permission level 2", player.getName().getString());
             return;
         }
-        LabRecipeService.handle(player, action, targetId, payload);
+        RecipeService.handle(player, action, targetId, payload);
     }
 }

@@ -2,8 +2,8 @@ package com.abo47.kubejslab.fabric;
 
 import net.minecraft.network.FriendlyByteBuf;
 
-import com.abo47.kubejslab.client.LabKeybindings;
-import com.abo47.kubejslab.client.ui.LabClientUIFactory;
+import com.abo47.kubejslab.client.Keybindings;
+import com.abo47.kubejslab.client.ui.shell.ClientScreenOpener;
 import com.abo47.kubejslab.network.block.S2CBlockStatePacket;
 import com.abo47.kubejslab.network.item.S2CItemStatePacket;
 import com.abo47.kubejslab.network.loot.S2CLootPrefillPacket;
@@ -21,8 +21,8 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 public final class FabricModClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
-        KeyBindingHelper.registerKeyBinding(LabKeybindings.OPEN_UI);
-        ClientTickEvents.END_CLIENT_TICK.register(client -> LabKeybindings.onClientTick());
+        KeyBindingHelper.registerKeyBinding(Keybindings.OPEN_UI);
+        ClientTickEvents.END_CLIENT_TICK.register(client -> Keybindings.onClientTick());
 
         ClientPlayNetworking.registerGlobalReceiver(FabricNetwork.OPEN_SCREEN, (client, handler, buf, responseSender) -> {
             int windowId = buf.readVarInt();
@@ -32,7 +32,7 @@ public final class FabricModClient implements ClientModInitializer {
                 buf.readBytes(payload);
             }
             FriendlyByteBuf holder = new FriendlyByteBuf(Unpooled.wrappedBuffer(payload));
-            client.execute(() -> LabClientUIFactory.openFromScreen(holder, windowId));
+            client.execute(() -> ClientScreenOpener.openFromScreen(holder, windowId));
         });
 
         ClientPlayNetworking.registerGlobalReceiver(FabricNetwork.STATE_SYNC, (client, handler, buf, responseSender) -> {

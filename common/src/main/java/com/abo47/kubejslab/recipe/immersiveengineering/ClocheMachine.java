@@ -6,13 +6,13 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.crafting.Recipe;
 
-import com.abo47.kubejslab.recipe.model.LabIngredient;
-import com.abo47.kubejslab.recipe.model.LabRecipeField;
-import com.abo47.kubejslab.recipe.model.LabRecipeFieldValues;
-import com.abo47.kubejslab.recipe.model.LabRecipeJson;
-import com.abo47.kubejslab.recipe.model.LabRecipeOutput;
-import com.abo47.kubejslab.recipe.model.LabSlotDescriptor;
-import com.abo47.kubejslab.recipe.model.LabSlotKind;
+import com.abo47.kubejslab.recipe.model.RecipeField;
+import com.abo47.kubejslab.recipe.model.RecipeFieldValues;
+import com.abo47.kubejslab.recipe.model.RecipeIngredient;
+import com.abo47.kubejslab.recipe.model.RecipeJson;
+import com.abo47.kubejslab.recipe.model.RecipeOutput;
+import com.abo47.kubejslab.recipe.model.SlotDescriptor;
+import com.abo47.kubejslab.recipe.model.SlotKind;
 
 import blusunrize.immersiveengineering.api.crafting.ClocheRecipe;
 import com.google.gson.JsonArray;
@@ -21,37 +21,37 @@ import com.google.gson.JsonObject;
 
 public class ClocheMachine extends ImmersiveEngineeringMachine {
     public ClocheMachine() {
-        super("cloche", LabRecipeField.PROCESSING_TIME, LabRecipeField.CLOCHE_RENDER_TYPE,
-                LabRecipeField.CLOCHE_RENDER_BLOCK);
+        super("cloche", RecipeField.PROCESSING_TIME, RecipeField.CLOCHE_RENDER_TYPE,
+                RecipeField.CLOCHE_RENDER_BLOCK);
     }
 
     @Override
-    public List<LabSlotDescriptor> inputSlots() {
+    public List<SlotDescriptor> inputSlots() {
         return List.of(
-                new LabSlotDescriptor(true, LabSlotKind.ITEM, 0, 0, false),
-                new LabSlotDescriptor(true, LabSlotKind.ITEM, 0, 1, false));
+                new SlotDescriptor(true, SlotKind.ITEM, 0, 0, false),
+                new SlotDescriptor(true, SlotKind.ITEM, 0, 1, false));
     }
 
     @Override
-    public List<LabSlotDescriptor> outputSlots() {
+    public List<SlotDescriptor> outputSlots() {
         return List.of(
-                new LabSlotDescriptor(false, LabSlotKind.ITEM, 2, 0, true),
-                new LabSlotDescriptor(false, LabSlotKind.ITEM, 3, 0, true),
-                new LabSlotDescriptor(false, LabSlotKind.ITEM, 2, 1, true),
-                new LabSlotDescriptor(false, LabSlotKind.ITEM, 3, 1, true));
+                new SlotDescriptor(false, SlotKind.ITEM, 2, 0, true),
+                new SlotDescriptor(false, SlotKind.ITEM, 3, 0, true),
+                new SlotDescriptor(false, SlotKind.ITEM, 2, 1, true),
+                new SlotDescriptor(false, SlotKind.ITEM, 3, 1, true));
     }
 
     @Override
-    public JsonObject buildJson(String type, List<LabIngredient> inputs, List<LabRecipeOutput> outputs,
-            LabRecipeFieldValues values) {
+    public JsonObject buildJson(String type, List<RecipeIngredient> inputs, List<RecipeOutput> outputs,
+            RecipeFieldValues values) {
         JsonObject json = new JsonObject();
         json.addProperty("type", type);
         if (inputs.size() >= 2) {
-            json.add("input", LabRecipeJson.ingredientJson(inputs.get(0)));
-            json.add("soil", LabRecipeJson.ingredientJson(inputs.get(1)));
+            json.add("input", RecipeJson.ingredientJson(inputs.get(0)));
+            json.add("soil", RecipeJson.ingredientJson(inputs.get(1)));
         }
         JsonArray results = new JsonArray();
-        for (LabRecipeOutput output : outputs) {
+        for (RecipeOutput output : outputs) {
             results.add(readOutput(output));
         }
         json.add("results", results);
@@ -64,10 +64,10 @@ public class ClocheMachine extends ImmersiveEngineeringMachine {
     }
 
     @Override
-    public LabRecipeFieldValues prefill(LabRecipeFieldValues current, Recipe<?> original) {
+    public RecipeFieldValues prefill(RecipeFieldValues current, Recipe<?> original) {
         if (original instanceof ClocheRecipe cloche) {
             ResourceLocation blockKey = BuiltInRegistries.BLOCK.getKey(cloche.renderReference.getBlock());
-            return new LabRecipeFieldValues(current.shapeless(), current.experience(), current.cookingTime(),
+            return new RecipeFieldValues(current.shapeless(), current.experience(), current.cookingTime(),
                     current.count(), cloche.time, current.heatRequirement(), current.keepHeldItem(),
                     current.acceptMirrored(), current.gridWidth(), current.gridHeight(),
                     current.energy(), current.creosoteAmount(), current.mold(), current.blueprintCategory(),

@@ -4,9 +4,9 @@ import java.util.List;
 
 import net.minecraft.resources.ResourceLocation;
 
-import com.abo47.kubejslab.recipe.model.LabSlotDescriptor;
-import com.abo47.kubejslab.recipe.model.LabSlotKind;
-import com.abo47.kubejslab.recipe.model.LabSlotLayouts;
+import com.abo47.kubejslab.recipe.model.SlotDescriptor;
+import com.abo47.kubejslab.recipe.model.SlotKind;
+import com.abo47.kubejslab.recipe.model.SlotLayouts;
 
 
 public class SawingMachine extends ProcessingRecipeMachine {
@@ -15,16 +15,16 @@ public class SawingMachine extends ProcessingRecipeMachine {
     }
 
     @Override
-    public List<LabSlotDescriptor> inputSlots() {
-        return LabSlotLayouts.oneInput();
+    public List<SlotDescriptor> inputSlots() {
+        return SlotLayouts.oneInput();
     }
 
     @Override
-    public List<LabSlotDescriptor> outputSlots() {
+    public List<SlotDescriptor> outputSlots() {
         return List.of(
-                new LabSlotDescriptor(false, LabSlotKind.ITEM, 0, 0, true),
-                new LabSlotDescriptor(false, LabSlotKind.ITEM, 1, 0, true),
-                new LabSlotDescriptor(false, LabSlotKind.ITEM, 0, 1, true),
-                new LabSlotDescriptor(false, LabSlotKind.ITEM, 1, 1, true));
+                new SlotDescriptor(false, SlotKind.ITEM, 0, 0, true),
+                new SlotDescriptor(false, SlotKind.ITEM, 1, 0, true),
+                new SlotDescriptor(false, SlotKind.ITEM, 0, 1, true),
+                new SlotDescriptor(false, SlotKind.ITEM, 1, 1, true));
     }
 }
