@@ -765,38 +765,6 @@ public final class LabLootPoolSettingsWidget extends LabRowCardSettingsWidget {
     private void rebuildRows() {
         List<FieldRow> rows = new ArrayList<>();
 
-        String rollsType = pool.rollsTypeDropdown.getSelected() == null ? "constant"
-                : pool.rollsTypeDropdown.getSelected();
-        rows.add(row(LabLootField.POOL_ROLLS_TYPE, LabGuiKeys.LAB_LOOT_POOL_ROLLS_TYPE, pool.rollsTypeDropdown));
-        if ("uniform".equals(rollsType)) {
-            rows.add(row(LabLootField.POOL_ROLLS_MIN, LabGuiKeys.LAB_LOOT_POOL_ROLLS_MIN, pool.rollsMinField));
-            rows.add(row(LabLootField.POOL_ROLLS_MAX, LabGuiKeys.LAB_LOOT_POOL_ROLLS_MAX, pool.rollsMaxField));
-        } else if ("binomial".equals(rollsType)) {
-            rows.add(row(LabLootField.POOL_ROLLS_N, LabGuiKeys.LAB_LOOT_POOL_ROLLS_N, pool.rollsNField));
-            rows.add(row(LabLootField.POOL_ROLLS_P, LabGuiKeys.LAB_LOOT_POOL_ROLLS_P, pool.rollsPField));
-        } else {
-            rows.add(row(LabLootField.POOL_ROLLS_VALUE, LabGuiKeys.LAB_LOOT_POOL_ROLLS_VALUE,
-                    pool.rollsValueField));
-        }
-
-        rows.add(row(LabLootField.POOL_SURVIVES_EXPLOSION, LabGuiKeys.LAB_LOOT_SURVIVES_EXPLOSION,
-                pool.survivesExplosionToggle));
-        if (LabLootService.LOOT_TYPE_ENTITY.equals(lootType)) {
-            rows.add(row(LabLootField.POOL_KILLED_BY_PLAYER, LabGuiKeys.LAB_LOOT_KILLED_BY_PLAYER,
-                    pool.killedByPlayerToggle));
-        }
-        rows.add(row(LabLootField.POOL_LOOTING_ENCHANT, LabGuiKeys.LAB_LOOT_LOOTING_ENCHANT,
-                pool.lootingEnchantToggle));
-        if (pool.lootingEnchant) {
-            rows.add(row(LabLootField.POOL_LOOTING_COUNT, LabGuiKeys.LAB_LOOT_LOOTING_COUNT,
-                    pool.lootingCountField));
-            rows.add(row(LabLootField.POOL_LOOTING_LIMIT, LabGuiKeys.LAB_LOOT_LOOTING_LIMIT,
-                    pool.lootingLimitField));
-        }
-        rows.add(row(LabLootField.POOL_RANDOM_CHANCE, LabGuiKeys.LAB_LOOT_RANDOM_CHANCE, pool.randomChanceField));
-        rows.add(row(LabLootField.POOL_FURNACE_SMELT, LabGuiKeys.LAB_LOOT_FURNACE_SMELT,
-                pool.furnaceSmeltToggle));
-
         int sel = Math.max(0, Math.min(selectedEntry, pool.entries.size() - 1));
         EntryState entry = pool.entries.get(sel);
         String entryType = entry.typeDropdown.getSelected() == null ? "item"
@@ -816,6 +784,8 @@ public final class LabLootPoolSettingsWidget extends LabRowCardSettingsWidget {
                     : LabGuiKeys.LAB_LOOT_ENTRY_ITEM;
             rows.add(row(pickField, pickKey, entry.pickSlot));
         }
+        rows.add(row(LabLootField.POOL_RANDOM_CHANCE, LabGuiKeys.LAB_LOOT_RANDOM_CHANCE, pool.randomChanceField));
+        rows.add(row(LabLootField.ENTRY_CHANCE, LabGuiKeys.LAB_LOOT_ENTRY_CHANCE, entry.chanceField));
         rows.add(row(LabLootField.ENTRY_WEIGHT, LabGuiKeys.LAB_LOOT_ENTRY_WEIGHT, entry.weightField));
         if ("item".equals(entryType)) {
             rows.add(row(LabLootField.ENTRY_QUALITY, LabGuiKeys.LAB_LOOT_ENTRY_QUALITY, entry.qualityField));
@@ -835,19 +805,31 @@ public final class LabLootPoolSettingsWidget extends LabRowCardSettingsWidget {
                         entry.countValueField));
             }
         }
+        String rollsType = pool.rollsTypeDropdown.getSelected() == null ? "constant"
+                : pool.rollsTypeDropdown.getSelected();
+        rows.add(row(LabLootField.POOL_ROLLS_TYPE, LabGuiKeys.LAB_LOOT_POOL_ROLLS_TYPE, pool.rollsTypeDropdown));
+        if ("uniform".equals(rollsType)) {
+            rows.add(row(LabLootField.POOL_ROLLS_MIN, LabGuiKeys.LAB_LOOT_POOL_ROLLS_MIN, pool.rollsMinField));
+            rows.add(row(LabLootField.POOL_ROLLS_MAX, LabGuiKeys.LAB_LOOT_POOL_ROLLS_MAX, pool.rollsMaxField));
+        } else if ("binomial".equals(rollsType)) {
+            rows.add(row(LabLootField.POOL_ROLLS_N, LabGuiKeys.LAB_LOOT_POOL_ROLLS_N, pool.rollsNField));
+            rows.add(row(LabLootField.POOL_ROLLS_P, LabGuiKeys.LAB_LOOT_POOL_ROLLS_P, pool.rollsPField));
+        } else {
+            rows.add(row(LabLootField.POOL_ROLLS_VALUE, LabGuiKeys.LAB_LOOT_POOL_ROLLS_VALUE,
+                    pool.rollsValueField));
+        }
         rows.add(row(LabLootField.ENTRY_TOOL, LabGuiKeys.LAB_LOOT_ENTRY_TOOL, entry.toolDropdown));
-        rows.add(row(LabLootField.ENTRY_KILLED_BY_PLAYER, LabGuiKeys.LAB_LOOT_ENTRY_KILLED_BY_PLAYER,
-                entry.killedToggle));
-        rows.add(row(LabLootField.ENTRY_CHANCE, LabGuiKeys.LAB_LOOT_ENTRY_CHANCE, entry.chanceField));
-        rows.add(row(LabLootField.ENTRY_CHANCE_LOOTING, LabGuiKeys.LAB_LOOT_ENTRY_CHANCE_LOOTING,
-                entry.chanceLootingField));
-        rows.add(row(LabLootField.ENTRY_FORTUNE_BONUS, LabGuiKeys.LAB_LOOT_ENTRY_FORTUNE_BONUS,
-                entry.fortuneToggle));
-        rows.add(row(LabLootField.ENTRY_EXPLOSION_DECAY, LabGuiKeys.LAB_LOOT_ENTRY_EXPLOSION_DECAY,
-                entry.explosionToggle));
-        rows.add(row(LabLootField.ENTRY_LOOTING_BONUS, LabGuiKeys.LAB_LOOT_ENTRY_LOOTING_BONUS,
-                entry.lootingBonusToggle));
-        if (entry.lootingBonusOn) {
+        if ("fortune".equals(entry.toolDropdown.getSelected())) {
+            rows.add(row(LabLootField.ENTRY_FORTUNE_BONUS, LabGuiKeys.LAB_LOOT_ENTRY_FORTUNE_BONUS,
+                    entry.fortuneToggle));
+        }
+        rows.add(row(LabLootField.POOL_LOOTING_ENCHANT, LabGuiKeys.LAB_LOOT_LOOTING_ENCHANT,
+                pool.lootingEnchantToggle));
+        if (pool.lootingEnchant) {
+            rows.add(row(LabLootField.ENTRY_LOOTING_BONUS, LabGuiKeys.LAB_LOOT_ENTRY_LOOTING_BONUS,
+                    entry.lootingBonusToggle));
+        }
+        if (pool.lootingEnchant && entry.lootingBonusOn) {
             rows.add(row(LabLootField.ENTRY_LOOTING_MIN, LabGuiKeys.LAB_LOOT_ENTRY_LOOTING_MIN,
                     entry.bonusMinField));
             rows.add(row(LabLootField.ENTRY_LOOTING_MAX, LabGuiKeys.LAB_LOOT_ENTRY_LOOTING_MAX,
@@ -855,6 +837,26 @@ public final class LabLootPoolSettingsWidget extends LabRowCardSettingsWidget {
             rows.add(row(LabLootField.ENTRY_LOOTING_LIMIT, LabGuiKeys.LAB_LOOT_ENTRY_LOOTING_LIMIT,
                     entry.bonusLimitField));
         }
+        if (pool.lootingEnchant) {
+            rows.add(row(LabLootField.POOL_LOOTING_COUNT, LabGuiKeys.LAB_LOOT_LOOTING_COUNT,
+                    pool.lootingCountField));
+            rows.add(row(LabLootField.POOL_LOOTING_LIMIT, LabGuiKeys.LAB_LOOT_LOOTING_LIMIT,
+                    pool.lootingLimitField));
+            rows.add(row(LabLootField.ENTRY_CHANCE_LOOTING, LabGuiKeys.LAB_LOOT_ENTRY_CHANCE_LOOTING,
+                    entry.chanceLootingField));
+        }
+        if (LabLootService.LOOT_TYPE_ENTITY.equals(lootType)) {
+            rows.add(row(LabLootField.POOL_KILLED_BY_PLAYER, LabGuiKeys.LAB_LOOT_KILLED_BY_PLAYER,
+                    pool.killedByPlayerToggle));
+        }
+        rows.add(row(LabLootField.ENTRY_KILLED_BY_PLAYER, LabGuiKeys.LAB_LOOT_ENTRY_KILLED_BY_PLAYER,
+                entry.killedToggle));
+        rows.add(row(LabLootField.POOL_SURVIVES_EXPLOSION, LabGuiKeys.LAB_LOOT_SURVIVES_EXPLOSION,
+                pool.survivesExplosionToggle));
+        rows.add(row(LabLootField.ENTRY_EXPLOSION_DECAY, LabGuiKeys.LAB_LOOT_ENTRY_EXPLOSION_DECAY,
+                entry.explosionToggle));
+        rows.add(row(LabLootField.POOL_FURNACE_SMELT, LabGuiKeys.LAB_LOOT_FURNACE_SMELT,
+                pool.furnaceSmeltToggle));
         entry.groupDropdown.setOptions(groupOptions(entry));
         entry.groupDropdown.setSelected(groupSelected(entry));
         rows.add(row(LabLootField.ENTRY_GROUP, LabGuiKeys.LAB_LOOT_ENTRY_GROUP, entry.groupDropdown));
