@@ -32,7 +32,7 @@ public final class ScreenSession {
             return;
         }
         WorkspacePanel rightPanel = root.getRightPanel();
-        if (rightPanel.lootSelection == null || !rightPanel.lootSelection.id().equals(id)) {
+        if (rightPanel.loot.lootSelection == null || !rightPanel.loot.lootSelection.id().equals(id)) {
             return;
         }
         if (LootStates.stateOf(id) != null) {
@@ -41,6 +41,6 @@ public final class ScreenSession {
         rightPanel.lootSettings.setLootType(lootType);
         rightPanel.lootSettings.applyValues(values);
         rightPanel.lootSettings.setFields(List.of());
-        rightPanel.refreshLootPreview();
+        rightPanel.loot.refreshLootPreview();
     }
 }

@@ -13,6 +13,7 @@ import com.lowdragmc.lowdraglib.gui.widget.Widget;
 import com.abo47.kubejslab.client.ui.theme.UiColors;
 import com.abo47.kubejslab.client.ui.widgets.ActionButton;
 import com.abo47.kubejslab.client.ui.widgets.CommitField;
+import com.abo47.kubejslab.client.ui.widgets.FieldRow;
 import com.abo47.kubejslab.client.ui.widgets.OptionDropdownWidget;
 import com.abo47.kubejslab.client.ui.widgets.RowCardSettings;
 import com.abo47.kubejslab.loot.model.LootAction;

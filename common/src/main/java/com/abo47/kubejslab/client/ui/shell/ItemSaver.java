@@ -19,10 +19,10 @@ final class ItemSaver {
     }
 
     void saveItem() {
-        boolean overriding = panel.itemMode == WorkspacePanel.EditMode.MODIFY
-                && panel.itemModifyTarget != null;
+        boolean overriding = panel.items.itemMode == WorkspacePanel.EditMode.MODIFY
+                && panel.items.itemModifyTarget != null;
         send(overriding ? ItemEditAction.MODIFY : ItemEditAction.SAVE_NEW,
-                overriding ? panel.itemModifyTarget.id() : null);
+                overriding ? panel.items.itemModifyTarget.id() : null);
     }
 
     void send(ItemEditAction action, @Nullable ResourceLocation targetId) {

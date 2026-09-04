@@ -68,27 +68,27 @@ public final class ScreenFactory {
         leftPanel.setTabChangedListener(updateViews);
         rightPanel.setTabChangedListener(updateViews);
         leftPanel.getRecipeBrowser().setRecipeClickListener(entry -> {
-            leftPanel.selectRecipe(entry);
-            rightPanel.showRecipe(entry);
+            leftPanel.recipes.selectRecipe(entry);
+            rightPanel.recipes.showRecipe(entry);
         });
         leftPanel.getRecipeBrowser().setRecipeRightClickListener(
                 (entry, mouseX, mouseY) -> root.openContextMenu(entry, mouseX, mouseY));
         rightPanel.setMachineChangedListener(updateViews);
         rightPanel.itemTypeDropdown.setOnSelect(value -> {
             if ("all".equals(value)) {
-                rightPanel.refreshItemPreview();
+                rightPanel.items.refreshItemPreview();
             } else {
                 rightPanel.itemSettings.setType(value);
-                rightPanel.refreshItemPreview();
+                rightPanel.items.refreshItemPreview();
             }
             updateViews.run();
         });
         rightPanel.blockTypeDropdown.setOnSelect(value -> {
             if ("all".equals(value)) {
-                rightPanel.refreshBlockPreview();
+                rightPanel.blocks.refreshBlockPreview();
             } else {
                 rightPanel.blockSettings.setType(value);
-                rightPanel.refreshBlockPreview();
+                rightPanel.blocks.refreshBlockPreview();
             }
             updateViews.run();
         });
@@ -112,7 +112,7 @@ public final class ScreenFactory {
                     I18n.get(ItemKeys.ITEM_TEXTURE),
                     path -> {
                         rightPanel.itemSettings.setTextureValue(path);
-                        rightPanel.refreshItemPreview();
+                        rightPanel.items.refreshItemPreview();
                     });
         });
         rightPanel.blockSettings.setOnTexturePick(field -> {
@@ -129,24 +129,24 @@ public final class ScreenFactory {
                     I18n.get(ItemKeys.ITEM_TEXTURE),
                     path -> {
                         rightPanel.blockSettings.setTextureValue(field, path);
-                        rightPanel.refreshBlockPreview();
+                        rightPanel.blocks.refreshBlockPreview();
                     });
         });
         leftPanel.getItemBrowser().setItemClickListener(entry -> {
-            leftPanel.selectItem(entry);
-            rightPanel.showItemSettings(entry);
+            leftPanel.items.selectItem(entry);
+            rightPanel.items.showItemSettings(entry);
         });
         leftPanel.getItemBrowser().setItemRightClickListener(
                 (entry, mouseX, mouseY) -> root.openItemContextMenu(entry, mouseX, mouseY));
         leftPanel.getBlockBrowser().setBlockClickListener(entry -> {
-            leftPanel.selectBlock(entry);
-            rightPanel.showBlockSettings(entry);
+            leftPanel.blocks.selectBlock(entry);
+            rightPanel.blocks.showBlockSettings(entry);
         });
         leftPanel.getBlockBrowser().setBlockRightClickListener(
                 (entry, mouseX, mouseY) -> root.openBlockContextMenu(entry, mouseX, mouseY));
         leftPanel.getLootBrowser().setLootClickListener(entry -> {
-            leftPanel.selectLoot(entry);
-            rightPanel.showLootSettings(entry);
+            leftPanel.loot.selectLoot(entry);
+            rightPanel.loot.showLootSettings(entry);
         });
         leftPanel.getLootBrowser().setLootRightClickListener(
                 (entry, mouseX, mouseY) -> root.openLootContextMenu(entry, mouseX, mouseY));
@@ -157,11 +157,11 @@ public final class ScreenFactory {
                     rightPanel.lootSettings.poolTitle(index), snapshot, lootType,
                     () -> {
                         rightPanel.lootSettings.deletePoolAt(index);
-                        rightPanel.refreshLootPreview();
+                        rightPanel.loot.refreshLootPreview();
                     },
                     values -> {
                         rightPanel.lootSettings.applyPoolEdit(index, values);
-                        rightPanel.refreshLootPreview();
+                        rightPanel.loot.refreshLootPreview();
                     });
             rightPanel.poolModal.setOnClose(() -> rightPanel.poolModal = null);
         });
@@ -178,11 +178,11 @@ public final class ScreenFactory {
                     rightPanel.lootSettings.poolTitle(targetPool), snapshot, lootType,
                     () -> {
                         rightPanel.lootSettings.deletePoolAt(targetPool);
-                        rightPanel.refreshLootPreview();
+                        rightPanel.loot.refreshLootPreview();
                     },
                     values -> {
                         rightPanel.lootSettings.applyPoolEdit(targetPool, values);
-                        rightPanel.refreshLootPreview();
+                        rightPanel.loot.refreshLootPreview();
                     });
             rightPanel.poolModal.selectEntry(entryIndex);
             rightPanel.poolModal.setOnClose(() -> rightPanel.poolModal = null);

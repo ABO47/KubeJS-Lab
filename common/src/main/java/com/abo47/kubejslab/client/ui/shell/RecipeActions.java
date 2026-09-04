@@ -41,7 +41,7 @@ final class RecipeActions {
 
     private static ContextAction modify(WorkspacePanel rightPanel, RecipeIndex.RecipeEntry entry) {
         return new ContextAction(I18n.get(RecipeKeys.RECIPE_MODIFY), "editor", ActionTone.PRIMARY,
-                () -> rightPanel.enterModifyMode(entry));
+                () -> rightPanel.recipes.enterModifyMode(entry));
     }
 
     private static ContextAction disable(WorkspacePanel rightPanel, RecipeIndex.RecipeEntry entry) {
@@ -53,7 +53,7 @@ final class RecipeActions {
         return new ContextAction(I18n.get(RecipeKeys.RECIPE_RESET), "repeat", ActionTone.SUCCESS,
                 () -> {
                     send(rightPanel, RecipeEditAction.RESET, entry);
-                    rightPanel.exitModifyMode();
+                    rightPanel.recipes.exitModifyMode();
                 });
     }
 
@@ -61,7 +61,7 @@ final class RecipeActions {
         return new ContextAction(I18n.get(RecipeKeys.RECIPE_DELETE), "delete", ActionTone.DANGER,
                 () -> {
                     send(rightPanel, RecipeEditAction.DELETE, entry);
-                    rightPanel.exitModifyModeIfTarget(entry);
+                    rightPanel.recipes.exitModifyModeIfTarget(entry);
                 });
     }
 

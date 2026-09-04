@@ -17,9 +17,11 @@ import com.abo47.kubejslab.block.runtime.BlockService;
 import com.abo47.kubejslab.client.ui.items.ItemKeys;
 import com.abo47.kubejslab.client.ui.widgets.ActionButton;
 import com.abo47.kubejslab.client.ui.widgets.CommitField;
+import com.abo47.kubejslab.client.ui.widgets.FieldRow;
 import com.abo47.kubejslab.client.ui.widgets.OptionDropdownWidget;
 import com.abo47.kubejslab.client.ui.widgets.RowCardSettings;
 import com.abo47.kubejslab.client.ui.widgets.ToggleSwitchWidget;
+import com.abo47.kubejslab.workspace.ScriptEscaping;
 
 
 public final class BlockSettingsWidget extends RowCardSettings {
@@ -111,8 +113,8 @@ public final class BlockSettingsWidget extends RowCardSettings {
     private String dustColor = "";
     private String blockSetType = "";
     private String woodType = "";
-    private String hardnessText = formatFloat(BlockFieldValues.DEFAULT_HARDNESS);
-    private String resistanceText = formatFloat(BlockFieldValues.DEFAULT_RESISTANCE);
+    private String hardnessText = ScriptEscaping.fmt(BlockFieldValues.DEFAULT_HARDNESS);
+    private String resistanceText = ScriptEscaping.fmt(BlockFieldValues.DEFAULT_RESISTANCE);
     private String lightLevelText = "0";
     private String slipperinessText = "0";
     private String speedFactorText = "0";
@@ -509,8 +511,8 @@ public final class BlockSettingsWidget extends RowCardSettings {
         textureTop = values.textureTop();
         textureBottom = values.textureBottom();
         textureSides = values.textureSides();
-        hardnessText = formatFloat(values.hardness());
-        resistanceText = formatFloat(values.resistance());
+        hardnessText = ScriptEscaping.fmt(values.hardness());
+        resistanceText = ScriptEscaping.fmt(values.resistance());
         unbreakable = values.unbreakable();
         lightLevelText = Integer.toString(values.lightLevel());
         soundType = values.soundType();
@@ -520,15 +522,15 @@ public final class BlockSettingsWidget extends RowCardSettings {
         noDrops = values.noDrops();
         notSolid = values.notSolid();
         opaque = values.opaque();
-        slipperinessText = formatFloat(values.slipperiness());
-        speedFactorText = formatFloat(values.speedFactor());
-        jumpFactorText = formatFloat(values.jumpFactor());
+        slipperinessText = ScriptEscaping.fmt(values.slipperiness());
+        speedFactorText = ScriptEscaping.fmt(values.speedFactor());
+        jumpFactorText = ScriptEscaping.fmt(values.jumpFactor());
         tags = values.tags();
         creativeTab = values.creativeTab();
         lootItem = values.lootItem();
         lootCountMinText = Integer.toString(values.lootCountMin());
         lootCountMaxText = Integer.toString(values.lootCountMax());
-        lootChanceText = formatFloat(values.lootChance());
+        lootChanceText = ScriptEscaping.fmt(values.lootChance());
         dustColor = values.dustColor();
         blockSetType = values.blockSetType();
         woodType = values.woodType();

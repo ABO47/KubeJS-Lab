@@ -8,8 +8,6 @@ import javax.annotation.Nonnull;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.crafting.Recipe;
-import net.minecraft.world.item.ItemStack;
 
 import com.lowdragmc.lowdraglib.gui.texture.ColorRectTexture;
 import com.lowdragmc.lowdraglib.gui.texture.IGuiTexture;
@@ -21,7 +19,6 @@ import com.lowdragmc.lowdraglib.utils.Position;
 
 import com.abo47.kubejslab.block.model.BlockEditAction;
 import com.abo47.kubejslab.block.model.BlockFieldValues;
-import com.abo47.kubejslab.block.model.BlockState;
 import com.abo47.kubejslab.block.runtime.BlockService;
 import com.abo47.kubejslab.client.ui.blocks.*;
 import com.abo47.kubejslab.client.ui.contextmenu.*;
@@ -37,19 +34,13 @@ import com.abo47.kubejslab.client.ui.widgets.OptionDropdownWidget;
 import com.abo47.kubejslab.client.ui.widgets.TextField;
 import com.abo47.kubejslab.item.model.ItemEditAction;
 import com.abo47.kubejslab.item.model.ItemFieldValues;
-import com.abo47.kubejslab.item.model.ItemState;
 import com.abo47.kubejslab.loot.model.LootEditAction;
 import com.abo47.kubejslab.loot.model.LootFieldValues;
-import com.abo47.kubejslab.loot.model.LootState;
-import com.abo47.kubejslab.loot.runtime.LootPrefill;
 import com.abo47.kubejslab.loot.runtime.LootService;
-import com.abo47.kubejslab.network.NetworkRegistry;
-import com.abo47.kubejslab.network.loot.C2SLootPrefillPacket;
 import com.abo47.kubejslab.recipe.MachineRegistry;
 import com.abo47.kubejslab.recipe.RecipeHandler;
 import com.abo47.kubejslab.recipe.model.RecipeEditAction;
 import com.abo47.kubejslab.recipe.model.RecipeFieldValues;
-import com.abo47.kubejslab.recipe.model.RecipeOutput;
 
 public final class WorkspacePanel extends WidgetGroup {
     private static final IGuiTexture PANEL_TEXTURE =
@@ -71,10 +62,10 @@ public final class WorkspacePanel extends WidgetGroup {
     private Runnable tabChangedListener;
     private Runnable machineChangedListener;
     private TextFieldWidget searchField;
-    private RecipeBrowserWidget recipeBrowser;
-    private ItemBrowserWidget itemBrowser;
-    private BlockBrowserWidget blockBrowser;
-    private LootBrowserWidget lootBrowser;
+    RecipeBrowserWidget recipeBrowser;
+    ItemBrowserWidget itemBrowser;
+    BlockBrowserWidget blockBrowser;
+    LootBrowserWidget lootBrowser;
     MachineDropdownWidget machineDropdown;
     MachineLayoutWidget machineLayout;
     RecipeSettingsWidget settingsWidget;
@@ -88,26 +79,19 @@ public final class WorkspacePanel extends WidgetGroup {
     LootPreviewWidget lootPreview;
     LootSettingsWidget lootSettings;
     LootPoolModal poolModal;
+    final RecipePanelSection recipes;
+    final ItemPanelSection items;
+    final BlockPanelSection blocks;
+    final LootPanelSection loot;
     final RecipeSaver saver;
     final ItemSaver itemSaver;
     final BlockSaver blockSaver;
     final LootSaver lootSaver;
     private PlayerInventoryWidget inventory;
-    EditMode mode = EditMode.NEW;
-    EditMode itemMode = EditMode.NEW;
-    EditMode blockMode = EditMode.NEW;
-    EditMode lootMode = EditMode.NEW;
-    RecipeIndex.RecipeEntry modifyTarget;
-    ItemIndex.ItemEntry itemModifyTarget;
-    ItemIndex.ItemEntry itemSelection;
-    BlockIndex.BlockEntry blockModifyTarget;
-    BlockIndex.BlockEntry blockSelection;
-    ResourceLocation lootModifyTarget;
-    LootIndex.LootEntry lootSelection;
-    private TextTexture modeLabel;
-    private TextTexture itemModeLabel;
-    private TextTexture blockModeLabel;
-    private TextTexture lootModeLabel;
+    TextTexture modeLabel;
+    TextTexture itemModeLabel;
+    TextTexture blockModeLabel;
+    TextTexture lootModeLabel;
     private int columnX;
     private int columnW;
     private int modeLabelY;
@@ -192,6 +176,11 @@ public final class WorkspacePanel extends WidgetGroup {
             addWidget(carouselTab);
         }
 
+        this.recipes = new RecipePanelSection(this);
+        this.items = new ItemPanelSection(this);
+        this.blocks = new BlockPanelSection(this);
+        this.loot = new LootPanelSection(this);
+
         if (isLeft) {
             buildLeftContent();
         } else {
@@ -258,7 +247,7 @@ public final class WorkspacePanel extends WidgetGroup {
 
         modeLabelY = searchY + UiLayout.SEARCH_H + UiLayout.MACHINE_GAP;
         modeLabel = new TextTexture(
-                () -> I18n.get(mode == EditMode.MODIFY ? UiKeys.MODE_MODIFY : UiKeys.MODE_NEW))
+                () -> I18n.get(recipes.mode == EditMode.MODIFY ? UiKeys.MODE_MODIFY : UiKeys.MODE_NEW))
                 .setType(TextTexture.TextType.LEFT_HIDE)
                 .setWidth(columnW)
                 .setColor(UiColors.TEXT_MUTED);
@@ -288,16 +277,16 @@ public final class WorkspacePanel extends WidgetGroup {
         settingsWidget.setClientSideWidget();
         settingsWidget.setOnClear(() -> {
             machineLayout.clearPhantoms();
-            if (mode == EditMode.MODIFY && modifyTarget != null) {
-                RecipeIndex.RecipeEntry target = modifyTarget;
+            if (recipes.mode == EditMode.MODIFY && recipes.modifyTarget != null) {
+                RecipeIndex.RecipeEntry target = recipes.modifyTarget;
                 saver.sendRecipeEdit(RecipeEditAction.RESET, target.id(),
                             ScreenFactory.emptyPayload(target, getSelectedMachineUid()));
-                exitModifyMode();
-                showRecipe(target);
+                recipes.exitModifyMode();
+                recipes.showRecipe(target);
             } else {
                 settingsWidget.applyValues(RecipeFieldValues.defaults());
                 settingsWidget.setOutputRows(List.of());
-                exitModifyMode();
+                recipes.exitModifyMode();
             }
             settingsWidget.resetScroll();
         });
@@ -322,17 +311,17 @@ public final class WorkspacePanel extends WidgetGroup {
         }
         itemTypeDropdown.setOnSelect(value -> {
             if ("all".equals(value)) {
-                refreshItemPreview();
+                items.refreshItemPreview();
             } else {
                 itemSettings.setType(value);
-                refreshItemPreview();
+                items.refreshItemPreview();
             }
         });
         itemTypeDropdown.setVisible(false);
         addWidget(itemTypeDropdown);
 
         itemModeLabel = new TextTexture(
-                () -> I18n.get(itemMode == EditMode.MODIFY ? UiKeys.MODE_MODIFY : UiKeys.MODE_NEW))
+                () -> I18n.get(items.itemMode == EditMode.MODIFY ? UiKeys.MODE_MODIFY : UiKeys.MODE_NEW))
                 .setType(TextTexture.TextType.LEFT_HIDE)
                 .setWidth(columnW)
                 .setColor(UiColors.TEXT_MUTED);
@@ -348,17 +337,17 @@ public final class WorkspacePanel extends WidgetGroup {
         itemSettings = new ItemSettingsWidget(settingsX, searchY, UiLayout.MACHINE_W, settingsH);
         itemSettings.setClientSideWidget();
         itemSettings.setOnClear(() -> {
-            if (itemMode == EditMode.MODIFY && itemModifyTarget != null) {
-                ItemIndex.ItemEntry target = itemModifyTarget;
+            if (items.itemMode == EditMode.MODIFY && items.itemModifyTarget != null) {
+                ItemIndex.ItemEntry target = items.itemModifyTarget;
                 itemSaver.send(ItemEditAction.RESET, target.id());
-                exitItemModifyMode();
+                items.exitItemModifyMode();
             }
             itemSettings.applyValues(ItemFieldValues.defaults());
             itemSettings.applyTags(List.of());
             itemSettings.applyActions(List.of());
             itemSettings.setType("basic");
             itemTypeDropdown.setSelected("basic");
-            refreshItemPreview();
+            items.refreshItemPreview();
             itemSettings.setFields(itemSettings.fullFields());
             itemSettings.resetScroll();
         });
@@ -378,17 +367,17 @@ public final class WorkspacePanel extends WidgetGroup {
         }
         blockTypeDropdown.setOnSelect(value -> {
             if ("all".equals(value)) {
-                refreshBlockPreview();
+                blocks.refreshBlockPreview();
             } else {
                 blockSettings.setType(value);
-                refreshBlockPreview();
+                blocks.refreshBlockPreview();
             }
         });
         blockTypeDropdown.setVisible(false);
         addWidget(blockTypeDropdown);
 
         blockModeLabel = new TextTexture(
-                () -> I18n.get(blockMode == EditMode.MODIFY ? UiKeys.MODE_MODIFY : UiKeys.MODE_NEW))
+                () -> I18n.get(blocks.blockMode == EditMode.MODIFY ? UiKeys.MODE_MODIFY : UiKeys.MODE_NEW))
                 .setType(TextTexture.TextType.LEFT_HIDE)
                 .setWidth(columnW)
                 .setColor(UiColors.TEXT_MUTED);
@@ -404,10 +393,10 @@ public final class WorkspacePanel extends WidgetGroup {
         blockSettings = new BlockSettingsWidget(settingsX, searchY, UiLayout.MACHINE_W, settingsH);
         blockSettings.setClientSideWidget();
         blockSettings.setOnClear(() -> {
-            if (blockMode == EditMode.MODIFY && blockModifyTarget != null) {
-                BlockIndex.BlockEntry target = blockModifyTarget;
+            if (blocks.blockMode == EditMode.MODIFY && blocks.blockModifyTarget != null) {
+                BlockIndex.BlockEntry target = blocks.blockModifyTarget;
                 blockSaver.send(BlockEditAction.RESET, target.id());
-                exitBlockModifyMode();
+                blocks.exitBlockModifyMode();
             }
             blockSettings.setBuiltInOnly(false);
             blockSettings.applyValues(BlockFieldValues.defaults());
@@ -415,7 +404,7 @@ public final class WorkspacePanel extends WidgetGroup {
             blockSettings.applyActions(List.of());
             blockSettings.setType("basic");
             blockTypeDropdown.setSelected("basic");
-            refreshBlockPreview();
+            blocks.refreshBlockPreview();
             blockSettings.setFields(blockSettings.fullFields());
             blockSettings.resetScroll();
         });
@@ -442,7 +431,7 @@ public final class WorkspacePanel extends WidgetGroup {
         addWidget(lootTypeDropdown);
 
         lootModeLabel = new TextTexture(
-                () -> I18n.get(lootMode == EditMode.MODIFY ? UiKeys.MODE_MODIFY : UiKeys.MODE_NEW))
+                () -> I18n.get(loot.lootMode == EditMode.MODIFY ? UiKeys.MODE_MODIFY : UiKeys.MODE_NEW))
                 .setType(TextTexture.TextType.LEFT_HIDE)
                 .setWidth(columnW)
                 .setColor(UiColors.TEXT_MUTED);
@@ -458,19 +447,19 @@ public final class WorkspacePanel extends WidgetGroup {
         lootSettings = new LootSettingsWidget(settingsX, searchY, UiLayout.MACHINE_W, settingsH);
         lootSettings.setClientSideWidget();
         lootSettings.setClearHandler(() -> {
-            if (lootMode == EditMode.MODIFY && lootModifyTarget != null) {
-                ResourceLocation target = lootModifyTarget;
+            if (loot.lootMode == EditMode.MODIFY && loot.lootModifyTarget != null) {
+                ResourceLocation target = loot.lootModifyTarget;
                 lootSaver.send(LootEditAction.RESET, target);
-                exitLootModifyMode();
+                loot.exitLootModifyMode();
             }
             lootSettings.applyValues(LootFieldValues.defaults());
             lootSettings.setLootType(LootService.LOOT_TYPE_BLOCK);
-            refreshLootPreview();
+            loot.refreshLootPreview();
             lootSettings.setFields(List.of());
             lootSettings.resetScroll();
         });
         lootSettings.setSaveHandler(() -> lootSaver.saveLoot());
-        lootSettings.setPreviewListener(this::refreshLootPreview);
+        lootSettings.setPreviewListener(this.loot::refreshLootPreview);
         lootSettings.setVisible(false);
         addWidget(lootSettings);
     }
@@ -634,45 +623,6 @@ public final class WorkspacePanel extends WidgetGroup {
         machineDropdown.refreshSelection();
     }
 
-    void selectRecipe(RecipeIndex.RecipeEntry entry) {
-        if (recipeBrowser == null) {
-            return;
-        }
-        recipeBrowser.setSelectedRecipeId(entry.id());
-    }
-
-    void enterModifyMode(RecipeIndex.RecipeEntry entry) {
-        mode = EditMode.MODIFY;
-        modifyTarget = entry;
-        refreshModeLabel();
-        ResourceLocation uid = saver.resolveModifyUid(entry);
-        if (uid != null) {
-            machineDropdown.selectMachineByUid(uid);
-        }
-        showRecipe(entry);
-        if (uid == null) {
-            settingsWidget.setFields(List.of());
-        }
-    }
-
-    void exitModifyMode() {
-        if (mode != EditMode.MODIFY) return;
-        mode = EditMode.NEW;
-        modifyTarget = null;
-        refreshModeLabel();
-    }
-
-    void exitModifyModeIfTarget(RecipeIndex.RecipeEntry entry) {
-        if (modifyTarget != null && modifyTarget.id().equals(entry.id())) {
-            exitModifyMode();
-        }
-    }
-
-    private void refreshModeLabel() {
-        if (modeLabel == null) return;
-        modeLabel.setColor(mode == EditMode.MODIFY ? UiColors.INTERACTIVE : UiColors.TEXT_MUTED);
-    }
-
     void updateRecipeView() {
         if (isLeft) {
             boolean showRecipeView = rightPanel != null && rightPanel.getSelectedTabIndex() == 0;
@@ -732,7 +682,7 @@ public final class WorkspacePanel extends WidgetGroup {
             blockPreview.setVisible(blockTabActive);
             blockSettings.setVisible(blockTabActive);
             if (blockTabActive) {
-                blockSettings.setBuiltInOnly(blockModifyTarget != null && !blockModifyTarget.kubejs());
+                    blockSettings.setBuiltInOnly(blocks.blockModifyTarget != null && !blocks.blockModifyTarget.kubejs());
                 blockSettings.setFields(blockSettings.fullFields());
             }
             boolean lootTabActive = getSelectedTabIndex() == 3;
@@ -765,92 +715,6 @@ public final class WorkspacePanel extends WidgetGroup {
         return machineDropdown.getSelectedMachine();
     }
 
-    void selectItem(ItemIndex.ItemEntry entry) {
-        if (itemBrowser == null) {
-            return;
-        }
-        itemBrowser.setSelectedItemId(entry.id());
-    }
-
-    void enterItemModifyMode(ItemIndex.ItemEntry entry) {
-        itemMode = EditMode.MODIFY;
-        itemModifyTarget = entry;
-        showItemSettings(entry);
-    }
-
-    void exitItemModifyMode() {
-        if (itemMode != EditMode.MODIFY) return;
-        itemMode = EditMode.NEW;
-        itemModifyTarget = null;
-        refreshItemModeLabel();
-    }
-
-    void exitItemModifyModeIfTarget(ItemIndex.ItemEntry entry) {
-        if (itemModifyTarget != null && itemModifyTarget.id().equals(entry.id())) {
-            exitItemModifyMode();
-        }
-    }
-
-    void showItemSettings(ItemIndex.ItemEntry entry) {
-        itemSelection = entry;
-        itemSettings.setFields(itemSettings.fullFields());
-        ItemState state = ItemStates.stateOf(entry.id());
-        String type = state != null && state.type() != null && !state.type().isBlank()
-                ? state.type()
-                : ItemIndex.typeOf(entry.id());
-        itemSettings.setType(type);
-        itemTypeDropdown.setSelected(type);
-        if (state != null) {
-            itemSettings.applyValues(state.values());
-            itemSettings.applyTags(state.tags());
-            itemSettings.applyActions(state.actions());
-        } else {
-            itemSettings.applyValues(ItemIndex.prefillValues(entry.id()));
-            itemSettings.applyTags(List.of());
-            itemSettings.applyActions(List.of());
-        }
-        refreshItemModeLabel();
-        refreshItemPreview();
-    }
-
-    private void refreshItemModeLabel() {
-        if (itemModeLabel == null) return;
-        itemModeLabel.setColor(itemMode == EditMode.MODIFY ? UiColors.INTERACTIVE : UiColors.TEXT_MUTED);
-    }
-
-    void refreshItemPreview() {
-        if (itemSettings == null || itemPreview == null) {
-            return;
-        }
-        ItemStack previewStack = itemSelection != null ? itemSelection.stack() : ItemStack.EMPTY;
-        itemPreview.setItem(itemSettings.getType(), previewStack);
-        itemPreview.setTexture(itemSettings.getTexture());
-    }
-
-    void showRecipe(RecipeIndex.RecipeEntry entry) {
-        machineLayout.showRecipe(entry);
-        MachineView machine = machineDropdown.getSelectedMachine();
-        if (machine == null) {
-            return;
-        }
-        RecipeHandler support = MachineRegistry.get(machine.recipeTypeUid());
-        if (support != null) {
-            Recipe<?> original = RecipeIndex.recipeById(entry.id());
-            settingsWidget.applyValues(support.prefill(settingsWidget.getValues(), original));
-            machineLayout.setGridSize(settingsWidget.gridWidthValue(), settingsWidget.gridHeightValue());
-            if (support.supportsFluidOutputAmount()) {
-                int amount = 0;
-                for (RecipeOutput output : machineLayout.getOutputs()) {
-                    if (output instanceof RecipeOutput.Fluid fluid) {
-                        amount = (int) fluid.fluid().getAmount();
-                        break;
-                    }
-                }
-                settingsWidget.setFluidOutputAmount(amount);
-            }
-        }
-    }
-
     private void onSearchChanged(String value) {
             ScreenSession.lastQuery = value == null ? "" : value;
         recipeBrowser.setQuery(value);
@@ -877,120 +741,4 @@ public final class WorkspacePanel extends WidgetGroup {
         return lootBrowser;
     }
 
-    void selectBlock(BlockIndex.BlockEntry entry) {
-        if (blockBrowser == null) {
-            return;
-        }
-        blockBrowser.setSelectedBlockId(entry.id());
-    }
-
-    void enterBlockModifyMode(BlockIndex.BlockEntry entry) {
-        blockMode = EditMode.MODIFY;
-        blockModifyTarget = entry;
-        showBlockSettings(entry);
-    }
-
-    void exitBlockModifyMode() {
-        if (blockMode != EditMode.MODIFY) return;
-        blockMode = EditMode.NEW;
-        blockModifyTarget = null;
-        refreshBlockModeLabel();
-    }
-
-    void showBlockSettings(BlockIndex.BlockEntry entry) {
-        blockSelection = entry;
-        blockSettings.setBuiltInOnly(!entry.kubejs());
-        blockSettings.setFields(blockSettings.fullFields());
-        BlockState state = BlockStates.stateOf(entry.id());
-        String type = state != null && state.type() != null && !state.type().isBlank()
-                ? state.type()
-                : BlockIndex.typeOf(entry.id());
-        blockSettings.setType(type);
-        blockTypeDropdown.setSelected(type);
-        if (state != null) {
-            blockSettings.applyValues(state.values());
-            blockSettings.applyTags(state.tags());
-            blockSettings.applyActions(state.actions());
-        } else {
-            blockSettings.applyValues(BlockIndex.prefillValues(entry.id()));
-            blockSettings.applyTags(List.of());
-            blockSettings.applyActions(List.of());
-        }
-        refreshBlockModeLabel();
-        refreshBlockPreview();
-    }
-
-    private void refreshBlockModeLabel() {
-        if (blockModeLabel == null) return;
-        blockModeLabel.setColor(blockMode == EditMode.MODIFY ? UiColors.INTERACTIVE : UiColors.TEXT_MUTED);
-    }
-
-    void refreshBlockPreview() {
-        if (blockSettings == null || blockPreview == null) {
-            return;
-        }
-        ItemStack previewStack = blockSelection != null ? blockSelection.stack() : ItemStack.EMPTY;
-        blockPreview.setBlock(blockSettings.getType(), previewStack);
-        blockPreview.setTexture(blockSettings.getAllTexture());
-    }
-
-    void selectLoot(LootIndex.LootEntry entry) {
-        if (lootBrowser == null) {
-            return;
-        }
-        lootBrowser.setSelectedLootId(entry.id());
-    }
-
-    void enterLootModifyMode(LootIndex.LootEntry entry) {
-        lootMode = EditMode.MODIFY;
-        lootModifyTarget = entry.id();
-        showLootSettings(entry);
-    }
-
-    void exitLootModifyMode() {
-        if (lootMode != EditMode.MODIFY) return;
-        lootMode = EditMode.NEW;
-        lootModifyTarget = null;
-        refreshLootModeLabel();
-    }
-
-    void showLootSettings(LootIndex.LootEntry entry) {
-        lootSelection = entry;
-        LootState state = LootStates.stateOf(entry.id());
-        String lootType = state != null && state.lootType() != null && !state.lootType().isBlank()
-                ? state.lootType()
-                : entry.lootType();
-        lootSettings.setLootType(lootType);
-        lootTypeDropdown.setSelected("all");
-        if (state != null) {
-            lootSettings.applyValues(state.values());
-        } else {
-            lootSettings.applyValues(LootPrefill.blankFor(entry.id()));
-            NetworkRegistry.sendLootPrefill(new C2SLootPrefillPacket(entry.id(), lootType));
-        }
-        lootSettings.setFields(List.of());
-        refreshLootModeLabel();
-        refreshLootPreview();
-    }
-
-    private void refreshLootModeLabel() {
-        if (lootModeLabel == null) return;
-        lootModeLabel.setColor(lootMode == EditMode.MODIFY ? UiColors.INTERACTIVE : UiColors.TEXT_MUTED);
-    }
-
-    void refreshLootPreview() {
-        if (lootPreview == null) {
-            return;
-        }
-        ResourceLocation id = lootSelection == null ? null : lootSelection.id();
-        String type = lootSelection == null ? null : lootSelection.lootType();
-        LootFieldValues values = lootSettings == null ? null : lootSettings.getValues();
-        if (id == null && values != null && !values.targetId().isBlank()) {
-            id = ResourceLocation.tryParse(values.targetId());
-        }
-        if ((type == null || type.isBlank()) && lootSettings != null) {
-            type = lootSettings.getLootType();
-        }
-        lootPreview.setEntry(id, type, values);
-    }
 }

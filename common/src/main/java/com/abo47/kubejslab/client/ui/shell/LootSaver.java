@@ -19,10 +19,10 @@ final class LootSaver {
     }
 
     void saveLoot() {
-        boolean overriding = panel.lootMode == WorkspacePanel.EditMode.MODIFY
-                && panel.lootModifyTarget != null;
+        boolean overriding = panel.loot.lootMode == WorkspacePanel.EditMode.MODIFY
+                && panel.loot.lootModifyTarget != null;
         send(overriding ? LootEditAction.MODIFY : LootEditAction.SAVE_NEW,
-                overriding ? panel.lootModifyTarget : null);
+                overriding ? panel.loot.lootModifyTarget : null);
     }
 
     void send(LootEditAction action, @Nullable ResourceLocation targetId) {

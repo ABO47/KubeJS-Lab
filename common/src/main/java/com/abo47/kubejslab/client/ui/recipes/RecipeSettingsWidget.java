@@ -17,12 +17,14 @@ import com.abo47.kubejslab.client.ui.theme.UiLayout;
 import com.abo47.kubejslab.client.ui.widgets.ActionButton;
 import com.abo47.kubejslab.client.ui.widgets.BlockSafeSlotWidget;
 import com.abo47.kubejslab.client.ui.widgets.CommitField;
+import com.abo47.kubejslab.client.ui.widgets.FieldRow;
 import com.abo47.kubejslab.client.ui.widgets.OptionDropdownWidget;
 import com.abo47.kubejslab.client.ui.widgets.RowCardSettings;
 import com.abo47.kubejslab.client.ui.widgets.ToggleSwitchWidget;
 import com.abo47.kubejslab.recipe.model.HeatRequirement;
 import com.abo47.kubejslab.recipe.model.RecipeField;
 import com.abo47.kubejslab.recipe.model.RecipeFieldValues;
+import com.abo47.kubejslab.workspace.ScriptEscaping;
 
 
 public final class RecipeSettingsWidget extends RowCardSettings {
@@ -73,7 +75,7 @@ public final class RecipeSettingsWidget extends RowCardSettings {
     private final TextTexture chanceLabel;
 
     private boolean shapeless;
-    private String experienceText = formatFloat(RecipeFieldValues.defaults().experience());
+    private String experienceText = ScriptEscaping.fmt(RecipeFieldValues.defaults().experience());
     private String cookingTimeText = Integer.toString(RecipeFieldValues.defaults().cookingTime());
     private String countText = Integer.toString(RecipeFieldValues.defaults().count());
     private String processingTimeText = Integer.toString(RecipeFieldValues.defaults().processingTime());
@@ -437,9 +439,9 @@ public final class RecipeSettingsWidget extends RowCardSettings {
         outputChanceFields.clear();
         this.outputRows = List.copyOf(outputRows);
         for (OutputRow row : outputRows) {
-            String initial = formatFloat(row.chanceSupplier().get() * 100f);
+            String initial = ScriptEscaping.fmt(row.chanceSupplier().get() * 100f);
             TextFieldWidget field = numberField(0, 0,
-                    () -> formatFloat(row.chanceSupplier().get() * 100f),
+                    () -> ScriptEscaping.fmt(row.chanceSupplier().get() * 100f),
                     value -> {
                         if (value != null && !value.isBlank()) {
                             row.chanceSetter().accept(clampChance(parseFloat(value, 100f) / 100f));
@@ -478,7 +480,7 @@ public final class RecipeSettingsWidget extends RowCardSettings {
 
     public void applyValues(RecipeFieldValues values) {
         shapeless = values.shapeless();
-        experienceText = formatFloat(values.experience());
+        experienceText = ScriptEscaping.fmt(values.experience());
         cookingTimeText = Integer.toString(values.cookingTime());
         countText = Integer.toString(values.count());
         processingTimeText = Integer.toString(values.processingTime());

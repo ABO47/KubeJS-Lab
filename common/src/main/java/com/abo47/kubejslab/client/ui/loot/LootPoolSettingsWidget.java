@@ -20,13 +20,13 @@ import com.lowdragmc.lowdraglib.gui.texture.TextTexture;
 import com.lowdragmc.lowdraglib.gui.widget.SlotWidget;
 import com.lowdragmc.lowdraglib.gui.widget.TextFieldWidget;
 import com.lowdragmc.lowdraglib.gui.widget.Widget;
-import com.lowdragmc.lowdraglib.gui.widget.WidgetGroup;
 
 import com.abo47.kubejslab.client.ui.picker.Pick;
 import com.abo47.kubejslab.client.ui.picker.PickerEntries;
 import com.abo47.kubejslab.client.ui.theme.UiColors;
 import com.abo47.kubejslab.client.ui.theme.UiGlow;
 import com.abo47.kubejslab.client.ui.widgets.CommitField;
+import com.abo47.kubejslab.client.ui.widgets.FieldRow;
 import com.abo47.kubejslab.client.ui.widgets.OptionDropdownWidget;
 import com.abo47.kubejslab.client.ui.widgets.PickTarget;
 import com.abo47.kubejslab.client.ui.widgets.RowCardSettings;
@@ -35,6 +35,7 @@ import com.abo47.kubejslab.loot.model.LootEntryValues;
 import com.abo47.kubejslab.loot.model.LootField;
 import com.abo47.kubejslab.loot.model.LootPoolValues;
 import com.abo47.kubejslab.loot.runtime.LootService;
+import com.abo47.kubejslab.workspace.ScriptEscaping;
 
 
 public final class LootPoolSettingsWidget extends RowCardSettings {
@@ -269,17 +270,17 @@ public final class LootPoolSettingsWidget extends RowCardSettings {
     public void applyPool(LootPoolValues values, String lootType) {
         this.lootType = lootType == null || lootType.isBlank() ? LootService.LOOT_TYPE_BLOCK : lootType;
         selectedEntry = 0;
-        pool.rollsValueText = formatFloat(values.rollsValue());
-        pool.rollsMinText = formatFloat(values.rollsMin());
-        pool.rollsMaxText = formatFloat(values.rollsMax());
+        pool.rollsValueText = ScriptEscaping.fmt(values.rollsValue());
+        pool.rollsMinText = ScriptEscaping.fmt(values.rollsMin());
+        pool.rollsMaxText = ScriptEscaping.fmt(values.rollsMax());
         pool.rollsNText = Integer.toString(values.rollsN());
-        pool.rollsPText = formatFloat(values.rollsP());
+        pool.rollsPText = ScriptEscaping.fmt(values.rollsP());
         pool.survivesExplosion = values.survivesExplosion();
         pool.randomChanceText = formatPercent(values.randomChance());
         pool.killedByPlayer = values.killedByPlayer();
         pool.furnaceSmelt = values.furnaceSmelt();
         pool.lootingEnchant = values.lootingEnchant();
-        pool.lootingCountText = formatFloat(values.lootingCount());
+        pool.lootingCountText = ScriptEscaping.fmt(values.lootingCount());
         pool.lootingLimitText = Integer.toString(values.lootingLimit());
         pool.bonusRolls = values.bonusRolls();
         pool.poolConditionNotes = values.poolConditionNotes();
@@ -294,9 +295,9 @@ public final class LootPoolSettingsWidget extends RowCardSettings {
             entry.item = e.item();
             entry.tag = e.tag();
             entry.table = e.lootTable();
-            entry.countValueText = formatFloat(e.countValue());
-            entry.countMinText = formatFloat(e.countMin());
-            entry.countMaxText = formatFloat(e.countMax());
+            entry.countValueText = ScriptEscaping.fmt(e.countValue());
+            entry.countMinText = ScriptEscaping.fmt(e.countMin());
+            entry.countMaxText = ScriptEscaping.fmt(e.countMax());
             entry.weightText = Integer.toString(e.weight());
             entry.qualityText = Integer.toString(e.quality());
             entry.conditionNotes = e.conditionNotes();
@@ -307,8 +308,8 @@ public final class LootPoolSettingsWidget extends RowCardSettings {
             entry.fortuneBonus = e.fortuneBonus();
             entry.explosionDecay = e.explosionDecay();
             entry.lootingBonusOn = e.lootBonusMax() > 0f;
-            entry.bonusMinText = formatFloat(e.lootBonusMin());
-            entry.bonusMaxText = formatFloat(e.lootBonusMax());
+            entry.bonusMinText = ScriptEscaping.fmt(e.lootBonusMin());
+            entry.bonusMaxText = ScriptEscaping.fmt(e.lootBonusMax());
             entry.bonusLimitText = Integer.toString(e.lootBonusLimit());
             entry.extraConditionsText = e.extraConditions();
             entry.extraFunctionsText = e.extraFunctions();
@@ -844,7 +845,7 @@ public final class LootPoolSettingsWidget extends RowCardSettings {
     }
 
     private static String formatPercent(float fraction) {
-        return formatFloat(Math.round(fraction * 10000f) / 100f);
+        return ScriptEscaping.fmt(Math.round(fraction * 10000f) / 100f);
     }
 
     private static TextFieldWidget commitField(Consumer<String> onCommit) {

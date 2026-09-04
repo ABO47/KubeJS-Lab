@@ -13,6 +13,7 @@ import com.lowdragmc.lowdraglib.gui.widget.TextFieldWidget;
 
 import com.abo47.kubejslab.client.ui.widgets.ActionButton;
 import com.abo47.kubejslab.client.ui.widgets.CommitField;
+import com.abo47.kubejslab.client.ui.widgets.FieldRow;
 import com.abo47.kubejslab.client.ui.widgets.OptionDropdownWidget;
 import com.abo47.kubejslab.client.ui.widgets.RowCardSettings;
 import com.abo47.kubejslab.client.ui.widgets.SearchDropdownWidget;
@@ -20,6 +21,7 @@ import com.abo47.kubejslab.client.ui.widgets.ToggleSwitchWidget;
 import com.abo47.kubejslab.item.model.ItemAction;
 import com.abo47.kubejslab.item.model.ItemField;
 import com.abo47.kubejslab.item.model.ItemFieldValues;
+import com.abo47.kubejslab.workspace.ScriptEscaping;
 
 
 public final class ItemSettingsWidget extends RowCardSettings {
@@ -769,7 +771,7 @@ public final class ItemSettingsWidget extends RowCardSettings {
         tooltip = values.tooltip();
         tags = values.tags();
         foodHungerText = Integer.toString(values.foodHunger());
-        foodSaturationText = formatFloat(values.foodSaturation());
+        foodSaturationText = ScriptEscaping.fmt(values.foodSaturation());
         foodMeat = values.foodMeat();
         foodFastToEat = values.foodFastToEat();
         foodAlwaysEdible = values.foodAlwaysEdible();
@@ -777,29 +779,29 @@ public final class ItemSettingsWidget extends RowCardSettings {
         foodEffectDropdown.setSelected(values.foodEffect());
         foodEffectDurationText = Integer.toString(values.foodEffectDuration());
         foodEffectAmplifierText = Integer.toString(values.foodEffectAmplifier());
-        foodEffectChanceText = formatFloat(values.foodEffectChance() * 100f);
+        foodEffectChanceText = ScriptEscaping.fmt(values.foodEffectChance() * 100f);
         toolTier = values.toolTier();
-        attackDamageText = formatFloat(values.attackDamageBaseline());
-        attackSpeedText = formatFloat(values.speedBaseline());
-        digSpeedText = formatFloat(values.digSpeed());
+        attackDamageText = ScriptEscaping.fmt(values.attackDamageBaseline());
+        attackSpeedText = ScriptEscaping.fmt(values.speedBaseline());
+        digSpeedText = ScriptEscaping.fmt(values.digSpeed());
         armorTier = values.armorTier();
         armorProtectionText = Integer.toString(values.armorProtection());
-        armorToughnessText = formatFloat(values.armorToughness());
-        armorKnockbackText = formatFloat(values.armorKnockback());
+        armorToughnessText = ScriptEscaping.fmt(values.armorToughness());
+        armorKnockbackText = ScriptEscaping.fmt(values.armorKnockback());
         tierUsesText = Integer.toString(values.tierUses());
-        tierSpeedText = formatFloat(values.tierSpeed());
-        tierAttackDamageBonusText = formatFloat(values.tierAttackDamageBonus());
+        tierSpeedText = ScriptEscaping.fmt(values.tierSpeed());
+        tierAttackDamageBonusText = ScriptEscaping.fmt(values.tierAttackDamageBonus());
         tierLevelText = Integer.toString(values.tierLevel());
         tierEnchantValueText = Integer.toString(values.tierEnchantValue());
         tierRepairIngredient = values.tierRepairIngredient();
-        tierDurabilityMultiplierText = formatFloat(values.tierDurabilityMultiplier());
+        tierDurabilityMultiplierText = ScriptEscaping.fmt(values.tierDurabilityMultiplier());
         tierProtections = values.tierProtections();
         tierEquipSound = values.tierEquipSound();
-        tierToughnessText = formatFloat(values.tierToughness());
-        tierKnockbackResistanceText = formatFloat(values.tierKnockbackResistance());
+        tierToughnessText = ScriptEscaping.fmt(values.tierToughness());
+        tierKnockbackResistanceText = ScriptEscaping.fmt(values.tierKnockbackResistance());
         attributeId = values.attributeId();
         attributeName = values.attributeName();
-        attributeAmountText = formatFloat(values.attributeAmount());
+        attributeAmountText = ScriptEscaping.fmt(values.attributeAmount());
         attributeOperationDropdown.setSelected(values.attributeOperation() == null ? "" : values.attributeOperation());
         behaviorItem = values.behaviorItem();
         behaviorDamageText = Integer.toString(values.behaviorDamage());

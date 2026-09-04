@@ -200,16 +200,16 @@ public final class RootPanel extends WidgetGroup {
     }
 
     void openContextMenu(RecipeIndex.RecipeEntry entry, double mx, double my) {
-        leftPanel.selectRecipe(entry);
+        leftPanel.recipes.selectRecipe(entry);
         openActionsMenu(RecipeActions.forEntry(rightPanel, entry), mx, my);
     }
 
     void openItemContextMenu(ItemIndex.ItemEntry entry, double mx, double my) {
-        rightPanel.selectItem(entry);
+        rightPanel.items.selectItem(entry);
         openActionsMenu(ItemActions.forEntry(entry, new ItemActions.ItemActionCallbacks() {
             @Override
             public void openModify(ItemIndex.ItemEntry target) {
-                rightPanel.enterItemModifyMode(target);
+                rightPanel.items.enterItemModifyMode(target);
             }
 
             @Override
@@ -220,11 +220,11 @@ public final class RootPanel extends WidgetGroup {
     }
 
     void openBlockContextMenu(BlockIndex.BlockEntry entry, double mx, double my) {
-        rightPanel.selectBlock(entry);
+        rightPanel.blocks.selectBlock(entry);
         openActionsMenu(BlockActions.forEntry(entry, new BlockActions.BlockActionCallbacks() {
             @Override
             public void openModify(BlockIndex.BlockEntry target) {
-                rightPanel.enterBlockModifyMode(target);
+                rightPanel.blocks.enterBlockModifyMode(target);
             }
 
             @Override
@@ -235,11 +235,11 @@ public final class RootPanel extends WidgetGroup {
     }
 
     void openLootContextMenu(LootIndex.LootEntry entry, double mx, double my) {
-        rightPanel.selectLoot(entry);
+        rightPanel.loot.selectLoot(entry);
         openActionsMenu(LootActions.forEntry(entry, new LootActions.LootActionCallbacks() {
             @Override
             public void openModify(LootIndex.LootEntry target) {
-                rightPanel.enterLootModifyMode(target);
+                rightPanel.loot.enterLootModifyMode(target);
             }
 
             @Override

@@ -11,7 +11,6 @@ import net.minecraft.network.chat.Component;
 
 import com.lowdragmc.lowdraglib.gui.texture.ColorRectTexture;
 import com.lowdragmc.lowdraglib.gui.texture.IGuiTexture;
-import com.lowdragmc.lowdraglib.gui.texture.ItemStackTexture;
 import com.lowdragmc.lowdraglib.gui.texture.TextTexture;
 import com.lowdragmc.lowdraglib.gui.widget.TextFieldWidget;
 import com.lowdragmc.lowdraglib.gui.widget.Widget;
@@ -21,16 +20,13 @@ import com.lowdragmc.lowdraglib.utils.Position;
 import com.abo47.kubejslab.client.ui.theme.UiColors;
 import com.abo47.kubejslab.client.ui.theme.UiLayout;
 import com.mojang.blaze3d.systems.RenderSystem;
-import org.joml.Vector4f;
 
 
 public abstract class RowCardSettings extends WidgetGroup {
     public static final IGuiTexture CARD_TEXTURE =
             UiColors.bordered(UiColors.SURFACE_PANEL_ALT, UiColors.BORDER_BASE);
-    public static final int ROW_STRIDE = UiLayout.CARD_H + 4;
     public static final int FIELD_H = 15;
     public static final int CONTROL_W = 44;
-    private static final int ROW_GAP = 4;
 
     private final List<PopupProvider> popupDropdowns = new ArrayList<>();
     private final ScrollBarWidget scrollBar;
@@ -68,7 +64,7 @@ public abstract class RowCardSettings extends WidgetGroup {
         addWidget(saveButton);
 
         scrollBar = new ScrollBarWidget(
-                w - UiLayout.SCROLLBAR_W - 2, 0, UiLayout.SCROLLBAR_W, bottomY - ROW_GAP,
+                w - UiLayout.SCROLLBAR_W - 2, 0, UiLayout.SCROLLBAR_W, bottomY - FieldRowLayout.ROW_GAP,
                 () -> scrollOffset,
                 () -> scrollMax,
                 this::scrollKnobHeight,
@@ -139,27 +135,27 @@ public abstract class RowCardSettings extends WidgetGroup {
         int h = getSizeHeight();
         int pad = UiLayout.SETTINGS_PAD;
         int cardX = x + pad;
-        int cardW = contentCardW(w);
+        int cardW = FieldRowLayout.contentCardW(w, scrollMax);
         int bottomY = h - pad - UiLayout.SETTINGS_BTN_H;
-        int contentBottom = y + bottomY - ROW_GAP;
+        int contentBottom = y + bottomY - FieldRowLayout.ROW_GAP;
 
         g.flush();
-        scissorRect(g, x + 1, y, x + w - 1, contentBottom);
+        FieldRowLayout.scissorRect(g, x + 1, y, x + w - 1, contentBottom);
         for (int i = 0; i < rows.size(); i++) {
             FieldRow row = rows.get(i);
-            int rowY = rowY(i) - scrollOffset;
+            int rowY = FieldRowLayout.rowY(i) - scrollOffset;
             int cardY = y + rowY;
             if (cardY + UiLayout.CARD_H < y || cardY > contentBottom) {
                 continue;
             }
-            drawCard(g, mx, my, cardX, y, cardW, rowY, row.label,
-                    controlWidth(row.control), row.icon);
-            if (row.control != null) {
+            FieldRowLayout.drawCard(g, mx, my, cardX, y, cardW, rowY, row.label(),
+                    CONTROL_W, row.icon());
+            if (row.control() != null) {
                 g.flush();
                 RenderSystem.enableBlend();
                 RenderSystem.setShaderColor(1, 1, 1, 1);
-                scissorRect(g, cardX, cardY, cardX + cardW, cardY + UiLayout.CARD_H);
-                row.control.drawInBackground(g, mx, my, pt);
+                FieldRowLayout.scissorRect(g, cardX, cardY, cardX + cardW, cardY + UiLayout.CARD_H);
+                row.control().drawInBackground(g, mx, my, pt);
                 if (row.disabled()) {
                     DISABLED_OVERLAY.draw(g, mx, my, cardX + 1, cardY + 1, cardW - 2, UiLayout.CARD_H - 2);
                 }
@@ -198,18 +194,9 @@ public abstract class RowCardSettings extends WidgetGroup {
         int x = getPositionX();
         int y = getPositionY();
         int bottomY = getSizeHeight() - UiLayout.SETTINGS_PAD - UiLayout.SETTINGS_BTN_H;
-        scissorRect(g, x + 1, y, x + getSizeWidth() - 1, y + bottomY - ROW_GAP);
+        FieldRowLayout.scissorRect(g, x + 1, y, x + getSizeWidth() - 1, y + bottomY - FieldRowLayout.ROW_GAP);
         super.drawInForeground(g, mx, my, pt);
         g.disableScissor();
-    }
-
-    private static void scissorRect(GuiGraphics g, int x1, int y1, int x2, int y2) {
-        var trans = g.pose().last().pose();
-        var realPos = new Vector4f(x1, y1, 0, 1);
-        var realPos2 = new Vector4f(x2, y2, 0, 1);
-        trans.transform(realPos);
-        trans.transform(realPos2);
-        g.enableScissor((int) realPos.x, (int) realPos.y, (int) realPos2.x, (int) realPos2.y);
     }
 
     @Override
@@ -225,7 +212,7 @@ public abstract class RowCardSettings extends WidgetGroup {
         if (saveButton.isMouseOverElement(mouseX, mouseY)) {
             return saveButton.mouseClicked(mouseX, mouseY, button);
         }
-        if (!isInsideViewport(mouseX, mouseY)) {
+        if (!FieldRowLayout.isInsideViewport(mouseY, getPositionY(), getSizeHeight())) {
             return false;
         }
         for (int i = widgets.size() - 1; i >= 0; i--) {
@@ -233,7 +220,8 @@ public abstract class RowCardSettings extends WidgetGroup {
             if (disabledControls.contains(widget)) {
                 continue;
             }
-            if (widget.isVisible() && widget.isActive() && childInsideViewport(widget)
+            if (widget.isVisible() && widget.isActive() && FieldRowLayout.childInsideViewport(widget,
+                    getPositionY(), getSizeHeight())
                     && widget.mouseClicked(mouseX, mouseY, button)) {
                 return true;
             }
@@ -263,13 +251,14 @@ public abstract class RowCardSettings extends WidgetGroup {
             if (disabledControls.contains(widget)) {
                 continue;
             }
-            if (widget.isVisible() && widget.isActive() && childInsideViewport(widget)
+            if (widget.isVisible() && widget.isActive() && FieldRowLayout.childInsideViewport(widget,
+                    getPositionY(), getSizeHeight())
                     && widget.mouseWheelMove(mouseX, mouseY, wheelDelta)) {
                 return true;
             }
         }
         if (isMouseOverElement(mouseX, mouseY) && scrollMax > 0) {
-            int step = Math.max(8, ROW_STRIDE / 3);
+            int step = Math.max(8, FieldRowLayout.ROW_STRIDE / 3);
             scrollOffset = ScrollMath.wheel(scrollOffset, scrollMax, step, wheelDelta);
             relayoutFields();
             return true;
@@ -313,78 +302,26 @@ public abstract class RowCardSettings extends WidgetGroup {
         return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
     }
 
-    private boolean isInsideViewport(double mouseX, double mouseY) {
-        return mouseY >= getPositionY() && mouseY <= viewportBottom();
-    }
-
-    private boolean childInsideViewport(Widget child) {
-        int top = getPositionY();
-        int bottom = viewportBottom();
-        return child.getPositionY() < bottom && child.getPositionY() + child.getSizeHeight() > top;
-    }
-
-    private int viewportBottom() {
-        return getPositionY() + getSizeHeight() - UiLayout.SETTINGS_PAD - UiLayout.SETTINGS_BTN_H - ROW_GAP;
-    }
-
     private void recomputeScrollMax() {
-        int pad = UiLayout.SETTINGS_PAD;
-        int bottomY = getSizeHeight() - pad - UiLayout.SETTINGS_BTN_H;
-        int viewport = Math.max(1, bottomY - ROW_GAP);
-        int contentH = rows.size() * ROW_STRIDE;
-        scrollMax = Math.max(0, contentH - viewport);
+        scrollMax = FieldRowLayout.maxScroll(getSizeHeight(), rows.size());
         scrollOffset = Math.min(scrollOffset, scrollMax);
         scrollBar.setVisible(scrollMax > 0);
     }
 
     private int scrollKnobHeight() {
-        int pad = UiLayout.SETTINGS_PAD;
-        int bottomY = getSizeHeight() - pad - UiLayout.SETTINGS_BTN_H;
-        int viewport = Math.max(1, bottomY - ROW_GAP);
-        int contentH = Math.max(1, rows.size() * ROW_STRIDE);
-        return Math.max(UiLayout.KNOB_MIN_H, viewport * viewport / contentH);
-    }
-
-    private int controlWidth(Widget control) {
-        return CONTROL_W;
-    }
-
-    private int contentCardW(int panelW) {
-        int pad = UiLayout.SETTINGS_PAD;
-        return panelW - pad * 2 - (scrollMax > 0 ? UiLayout.SCROLLBAR_W + 2 : 0);
-    }
-
-    private int controlX(int cardX, int cardW, int pad, FieldRow row) {
-        return cardX + cardW - pad - CONTROL_W - 4;
+        return FieldRowLayout.knobHeight(getSizeHeight(), rows.size());
     }
 
     private void relayoutFields() {
         int pad = UiLayout.SETTINGS_PAD;
         int cardX = pad;
-        int cardW = contentCardW(getSizeWidth());
+        int cardW = FieldRowLayout.contentCardW(getSizeWidth(), scrollMax);
         for (int i = 0; i < rows.size(); i++) {
             FieldRow row = rows.get(i);
-            int rowY = rowY(i) - scrollOffset;
-            int y = rowY + (UiLayout.CARD_H - row.control.getSizeHeight()) / 2;
-            row.control.setSelfPosition(new Position(controlX(cardX, cardW, pad, row), y));
+            int rowY = FieldRowLayout.rowY(i) - scrollOffset;
+            int y = rowY + (UiLayout.CARD_H - row.control().getSizeHeight()) / 2;
+            row.control().setSelfPosition(new Position(FieldRowLayout.controlX(cardX, cardW, pad), y));
         }
-    }
-
-    private void drawCard(GuiGraphics g, int mx, int my, int cardX, int panelY, int cardW,
-            int rowY, TextTexture label, int controlW, ItemStackTexture icon) {
-        int cardY = panelY + rowY;
-        CARD_TEXTURE.draw(g, mx, my, cardX, cardY, cardW, UiLayout.CARD_H);
-        int pad = UiLayout.SETTINGS_PAD;
-        int iconW = icon == null ? 0 : 16 + 4;
-        int labelW = cardW - pad * 2 - controlW - 4 - iconW;
-        if (icon != null) {
-            icon.draw(g, mx, my, cardX + pad, cardY + (UiLayout.CARD_H - 16) / 2, 16, 16);
-        }
-        label.draw(g, mx, my, cardX + pad + iconW, cardY, labelW, UiLayout.CARD_H);
-    }
-
-    private static int rowY(int row) {
-        return row * ROW_STRIDE;
     }
 
     protected static TextTexture rowLabel(String key, int width) {
@@ -440,19 +377,6 @@ public abstract class RowCardSettings extends WidgetGroup {
             return Integer.parseInt(text);
         } catch (NumberFormatException ignored) {
             return fallback;
-        }
-    }
-
-    protected static String formatFloat(float value) {
-        if (value == (int) value) {
-            return Integer.toString((int) value);
-        }
-        return Float.toString(value);
-    }
-
-    public record FieldRow(TextTexture label, Widget control, ItemStackTexture icon, boolean disabled) {
-        public FieldRow(TextTexture label, Widget control, ItemStackTexture icon) {
-            this(label, control, icon, false);
         }
     }
 }

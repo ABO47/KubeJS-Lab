@@ -30,14 +30,14 @@ final class RecipeSaver {
     }
 
     void saveRecipe() {
-        KubeJSLab.LOGGER.info("[RecipeSaver] saveRecipe: mode={}, modifyTarget={}", panel.mode,
-                panel.modifyTarget == null ? null : panel.modifyTarget.id());
-        boolean overriding = panel.mode == WorkspacePanel.EditMode.MODIFY && panel.modifyTarget != null;
+        KubeJSLab.LOGGER.info("[RecipeSaver] saveRecipe: mode={}, modifyTarget={}", panel.recipes.mode,
+                panel.recipes.modifyTarget == null ? null : panel.recipes.modifyTarget.id());
+        boolean overriding = panel.recipes.mode == WorkspacePanel.EditMode.MODIFY && panel.recipes.modifyTarget != null;
         if (!overriding) {
             saveNewRecipe();
             return;
         }
-        ResourceLocation uid = resolveModifyUid(panel.modifyTarget);
+        ResourceLocation uid = resolveModifyUid(panel.recipes.modifyTarget);
         if (uid == null) {
             saveGenericOverride();
             return;
@@ -52,14 +52,14 @@ final class RecipeSaver {
             return;
         }
         List<RecipeOutput> outputs = panel.machineLayout.getOutputs();
-        Recipe<?> original = RecipeIndex.recipeById(panel.modifyTarget.id());
+        Recipe<?> original = RecipeIndex.recipeById(panel.recipes.modifyTarget.id());
         if (outputs.isEmpty() && (original == null || !support.allowsEmptyResult(original))) {
             KubeJSLab.LOGGER.info("[RecipeSaver] saveRecipe: no outputs, aborting");
             return;
         }
         KubeJSLab.LOGGER.info("[RecipeSaver] OVERRIDE {}: inputs={}, outputs={}, values={}", uid, inputs.size(),
                 outputs.size(), panel.settingsWidget.getValues());
-        sendRecipeEdit(RecipeEditAction.OVERRIDE, panel.modifyTarget.id(),
+        sendRecipeEdit(RecipeEditAction.OVERRIDE, panel.recipes.modifyTarget.id(),
                 new RecipePayload(uid, inputs, outputs,
                         outputName(outputs), panel.settingsWidget.getValues()));
     }
@@ -100,7 +100,7 @@ final class RecipeSaver {
             return;
         }
         KubeJSLab.LOGGER.info("[RecipeSaver] saveGenericOverride: inputs={}, outputs={}", inputs.size(), outputs.size());
-        sendRecipeEdit(RecipeEditAction.OVERRIDE, panel.modifyTarget.id(),
+        sendRecipeEdit(RecipeEditAction.OVERRIDE, panel.recipes.modifyTarget.id(),
                 new RecipePayload(null, inputs, outputs,
                         outputName(outputs), RecipeFieldValues.defaults()));
     }
