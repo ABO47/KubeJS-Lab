@@ -779,15 +779,12 @@ public final class LabLootPoolSettingsWidget extends LabRowCardSettingsWidget {
                     pool.rollsValueField));
         }
 
-        rows.add(row(LabLootField.POOL_RANDOM_CHANCE, LabGuiKeys.LAB_LOOT_RANDOM_CHANCE, pool.randomChanceField));
         rows.add(row(LabLootField.POOL_SURVIVES_EXPLOSION, LabGuiKeys.LAB_LOOT_SURVIVES_EXPLOSION,
                 pool.survivesExplosionToggle));
         if (LabLootService.LOOT_TYPE_ENTITY.equals(lootType)) {
             rows.add(row(LabLootField.POOL_KILLED_BY_PLAYER, LabGuiKeys.LAB_LOOT_KILLED_BY_PLAYER,
                     pool.killedByPlayerToggle));
         }
-        rows.add(row(LabLootField.POOL_FURNACE_SMELT, LabGuiKeys.LAB_LOOT_FURNACE_SMELT,
-                pool.furnaceSmeltToggle));
         rows.add(row(LabLootField.POOL_LOOTING_ENCHANT, LabGuiKeys.LAB_LOOT_LOOTING_ENCHANT,
                 pool.lootingEnchantToggle));
         if (pool.lootingEnchant) {
@@ -796,6 +793,9 @@ public final class LabLootPoolSettingsWidget extends LabRowCardSettingsWidget {
             rows.add(row(LabLootField.POOL_LOOTING_LIMIT, LabGuiKeys.LAB_LOOT_LOOTING_LIMIT,
                     pool.lootingLimitField));
         }
+        rows.add(row(LabLootField.POOL_RANDOM_CHANCE, LabGuiKeys.LAB_LOOT_RANDOM_CHANCE, pool.randomChanceField));
+        rows.add(row(LabLootField.POOL_FURNACE_SMELT, LabGuiKeys.LAB_LOOT_FURNACE_SMELT,
+                pool.furnaceSmeltToggle));
 
         int sel = Math.max(0, Math.min(selectedEntry, pool.entries.size() - 1));
         EntryState entry = pool.entries.get(sel);
@@ -816,6 +816,10 @@ public final class LabLootPoolSettingsWidget extends LabRowCardSettingsWidget {
                     : LabGuiKeys.LAB_LOOT_ENTRY_ITEM;
             rows.add(row(pickField, pickKey, entry.pickSlot));
         }
+        rows.add(row(LabLootField.ENTRY_WEIGHT, LabGuiKeys.LAB_LOOT_ENTRY_WEIGHT, entry.weightField));
+        if ("item".equals(entryType)) {
+            rows.add(row(LabLootField.ENTRY_QUALITY, LabGuiKeys.LAB_LOOT_ENTRY_QUALITY, entry.qualityField));
+        }
         if (!"empty".equals(entryType) && !"tag".equals(entryType)) {
             String countType = entry.countTypeDropdown.getSelected() == null ? "constant"
                     : entry.countTypeDropdown.getSelected();
@@ -830,10 +834,6 @@ public final class LabLootPoolSettingsWidget extends LabRowCardSettingsWidget {
                 rows.add(row(LabLootField.ENTRY_COUNT_VALUE, LabGuiKeys.LAB_LOOT_ENTRY_COUNT_VALUE,
                         entry.countValueField));
             }
-        }
-        rows.add(row(LabLootField.ENTRY_WEIGHT, LabGuiKeys.LAB_LOOT_ENTRY_WEIGHT, entry.weightField));
-        if ("item".equals(entryType)) {
-            rows.add(row(LabLootField.ENTRY_QUALITY, LabGuiKeys.LAB_LOOT_ENTRY_QUALITY, entry.qualityField));
         }
         rows.add(row(LabLootField.ENTRY_TOOL, LabGuiKeys.LAB_LOOT_ENTRY_TOOL, entry.toolDropdown));
         rows.add(row(LabLootField.ENTRY_KILLED_BY_PLAYER, LabGuiKeys.LAB_LOOT_ENTRY_KILLED_BY_PLAYER,
