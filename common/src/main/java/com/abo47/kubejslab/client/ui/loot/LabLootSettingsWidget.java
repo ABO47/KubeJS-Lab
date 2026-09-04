@@ -46,6 +46,8 @@ public final class LabLootSettingsWidget extends LabRowCardSettingsWidget {
 
     private String targetId = "";
     private String customId = "";
+    private int droppedPools = 0;
+    private int droppedEntries = 0;
     private final List<LabLootPoolValues> pools = new ArrayList<>();
     private PoolEditHandler editHandler;
     private Runnable previewListener;
@@ -208,7 +210,7 @@ public final class LabLootSettingsWidget extends LabRowCardSettingsWidget {
         List<LabLootPoolValues> snapshot = pools.isEmpty()
                 ? List.of(LabLootPoolValues.defaults())
                 : List.copyOf(pools);
-        return new LabLootFieldValues(targetId, customId, snapshot);
+        return new LabLootFieldValues(targetId, customId, snapshot, droppedPools, droppedEntries);
     }
 
     public List<String> getTags() {
@@ -222,9 +224,12 @@ public final class LabLootSettingsWidget extends LabRowCardSettingsWidget {
     public void applyValues(LabLootFieldValues v) {
         targetId = v.targetId();
         customId = v.customId();
+        droppedPools = v.droppedPools();
+        droppedEntries = v.droppedEntries();
         pools.clear();
         List<LabLootPoolValues> source = v.pools().isEmpty() ? List.of(LabLootPoolValues.defaults()) : v.pools();
         int poolCount = Math.min(source.size(), MAX_POOLS);
+        droppedPools += Math.max(0, source.size() - poolCount);
         for (int i = 0; i < poolCount; i++) {
             pools.add(source.get(i));
         }

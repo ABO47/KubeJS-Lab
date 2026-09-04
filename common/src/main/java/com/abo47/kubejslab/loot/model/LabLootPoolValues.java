@@ -7,7 +7,8 @@ import net.minecraft.network.FriendlyByteBuf;
 
 public record LabLootPoolValues(String rollsType, float rollsValue, float rollsMin, float rollsMax, int rollsN,
         float rollsP, boolean survivesExplosion, float randomChance, boolean killedByPlayer, boolean furnaceSmelt,
-        boolean lootingEnchant, float lootingCount, int lootingLimit, List<LabLootEntryValues> entries) {
+        boolean lootingEnchant, float lootingCount, int lootingLimit, List<LabLootEntryValues> entries,
+        float bonusRolls, List<String> poolConditionNotes) {
 
     public LabLootPoolValues {
         rollsType = rollsType == null ? "" : rollsType;
@@ -20,11 +21,13 @@ public record LabLootPoolValues(String rollsType, float rollsValue, float rollsM
         lootingCount = Math.max(0f, lootingCount);
         lootingLimit = Math.max(0, lootingLimit);
         entries = entries == null ? List.of() : List.copyOf(entries);
+        bonusRolls = Math.max(0f, bonusRolls);
+        poolConditionNotes = poolConditionNotes == null ? List.of() : List.copyOf(poolConditionNotes);
     }
 
     public static LabLootPoolValues defaults() {
         return new LabLootPoolValues("constant", 1f, 0f, 0f, 0, 0.5f, true, 1f, false, false, false, 0f, 0,
-                List.of(LabLootEntryValues.defaults()));
+                List.of(LabLootEntryValues.defaults()), 0f, List.of());
     }
 
     public static void write(FriendlyByteBuf buf, LabLootPoolValues v) {
@@ -44,6 +47,11 @@ public record LabLootPoolValues(String rollsType, float rollsValue, float rollsM
         buf.writeVarInt(v.entries().size());
         for (LabLootEntryValues e : v.entries()) {
             LabLootEntryValues.write(buf, e);
+        }
+        buf.writeFloat(v.bonusRolls());
+        buf.writeVarInt(Math.min(v.poolConditionNotes().size(), 16));
+        for (int i = 0; i < Math.min(v.poolConditionNotes().size(), 16); i++) {
+            buf.writeUtf(v.poolConditionNotes().get(i), 256);
         }
     }
 
@@ -69,7 +77,14 @@ public record LabLootPoolValues(String rollsType, float rollsValue, float rollsM
         if (entries.isEmpty()) {
             entries.add(LabLootEntryValues.defaults());
         }
+        float bonusRolls = Math.max(0f, buf.readFloat());
+        int noteCount = Math.max(0, Math.min(16, buf.readVarInt()));
+        List<String> poolNotes = new ArrayList<>(noteCount);
+        for (int i = 0; i < noteCount; i++) {
+            poolNotes.add(buf.readUtf(256));
+        }
         return new LabLootPoolValues(rollsType, rollsValue, rollsMin, rollsMax, rollsN, rollsP, survivesExplosion,
-                randomChance, killedByPlayer, furnaceSmelt, lootingEnchant, lootingCount, lootingLimit, entries);
+                randomChance, killedByPlayer, furnaceSmelt, lootingEnchant, lootingCount, lootingLimit, entries,
+                bonusRolls, poolNotes);
     }
 }

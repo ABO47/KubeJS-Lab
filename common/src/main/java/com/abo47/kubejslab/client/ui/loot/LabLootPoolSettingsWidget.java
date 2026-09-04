@@ -9,6 +9,7 @@ import javax.annotation.Nonnull;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.resources.language.I18n;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -19,6 +20,7 @@ import com.lowdragmc.lowdraglib.gui.texture.TextTexture;
 import com.lowdragmc.lowdraglib.gui.widget.SlotWidget;
 import com.lowdragmc.lowdraglib.gui.widget.TextFieldWidget;
 import com.lowdragmc.lowdraglib.gui.widget.Widget;
+import com.lowdragmc.lowdraglib.gui.widget.WidgetGroup;
 
 import com.abo47.kubejslab.client.ui.base.LabColors;
 import com.abo47.kubejslab.client.ui.base.LabCommitFieldWidget;
@@ -40,8 +42,11 @@ public final class LabLootPoolSettingsWidget extends LabRowCardSettingsWidget {
     public static final int MAX_ENTRIES = 64;
 
     private static final List<String> ROLLS_TYPES = List.of("constant", "uniform", "binomial");
-    private static final List<String> ENTRY_TYPES = List.of("item", "tag", "empty", "loot_table");
+    private static final List<String> ENTRY_TYPES = List.of("item", "tag", "empty", "loot_table", "dynamic");
     private static final List<String> COUNT_TYPES = List.of("constant", "uniform");
+    private static final List<String> TOOL_OPTIONS = List.of("none", "silk_touch", "fortune");
+    private static final String GROUP_NONE = "none";
+    private static final String GROUP_NEW = "new group";
 
     private final PoolState pool = new PoolState();
     private String lootType = LabLootService.LOOT_TYPE_BLOCK;
@@ -190,6 +195,55 @@ public final class LabLootPoolSettingsWidget extends LabRowCardSettingsWidget {
         String countMaxText = "0";
         String weightText = "1";
         String qualityText = "0";
+        List<String> conditionNotes = List.of();
+        boolean entryKilledByPlayer = false;
+        String chanceText = "100";
+        String chanceLootingText = "0";
+        int alternativeGroup = 0;
+        boolean fortuneBonus = false;
+        LabOptionDropdownWidget toolDropdown;
+        LabToggleSwitchWidget killedToggle;
+        TextFieldWidget chanceField;
+        TextFieldWidget chanceLootingField;
+        LabToggleSwitchWidget fortuneToggle;
+        LabOptionDropdownWidget groupDropdown;
+        TextFieldWidget dynamicField;
+        LabToggleSwitchWidget explosionToggle;
+        LabToggleSwitchWidget lootingBonusToggle;
+        boolean lootingBonusOn = false;
+        TextFieldWidget bonusMinField;
+        TextFieldWidget bonusMaxField;
+        TextFieldWidget bonusLimitField;
+        TextFieldWidget extraConditionsField;
+        TextFieldWidget extraFunctionsField;
+        boolean explosionDecay = false;
+        String bonusMinText = "0";
+        String bonusMaxText = "0";
+        String bonusLimitText = "0";
+        String extraConditionsText = "";
+        String extraFunctionsText = "";
+        InfoText notesInfo;
+    }
+
+    private static final class InfoText extends WidgetGroup {
+        private TextTexture text;
+
+        InfoText() {
+            super(0, 0, CONTROL_W, FIELD_H);
+            setValue("");
+        }
+
+        void setValue(String value) {
+            this.text = new TextTexture(value == null ? "" : value, LabColors.TEXT_MUTED)
+                    .setType(TextTexture.TextType.LEFT)
+                    .setWidth(CONTROL_W);
+            setHoverTooltips(List.of(Component.literal(value == null ? "" : value)));
+        }
+
+        @Override
+        public void drawInBackground(@Nonnull GuiGraphics g, int mx, int my, float pt) {
+            text.draw(g, mx, my, getPositionX(), getPositionY(), getSizeWidth(), getSizeHeight());
+        }
     }
 
     private static final class PoolState {
@@ -218,6 +272,9 @@ public final class LabLootPoolSettingsWidget extends LabRowCardSettingsWidget {
         boolean lootingEnchant = false;
         String lootingCountText = "0";
         String lootingLimitText = "0";
+        float bonusRolls = 0f;
+        List<String> poolConditionNotes = List.of();
+        InfoText poolNotesInfo;
         final List<EntryState> entries = new ArrayList<>();
     }
 
@@ -248,6 +305,8 @@ public final class LabLootPoolSettingsWidget extends LabRowCardSettingsWidget {
         pool.lootingEnchant = values.lootingEnchant();
         pool.lootingCountText = formatFloat(values.lootingCount());
         pool.lootingLimitText = Integer.toString(values.lootingLimit());
+        pool.bonusRolls = values.bonusRolls();
+        pool.poolConditionNotes = values.poolConditionNotes();
         pool.entries.clear();
         List<LabLootEntryValues> entries = values.entries().isEmpty()
                 ? List.of(LabLootEntryValues.defaults())
@@ -264,6 +323,19 @@ public final class LabLootPoolSettingsWidget extends LabRowCardSettingsWidget {
             entry.countMaxText = formatFloat(e.countMax());
             entry.weightText = Integer.toString(e.weight());
             entry.qualityText = Integer.toString(e.quality());
+            entry.conditionNotes = e.conditionNotes();
+            entry.entryKilledByPlayer = e.entryKilledByPlayer();
+            entry.chanceText = formatPercent(e.entryChance());
+            entry.chanceLootingText = formatPercent(e.entryChanceLooting());
+            entry.alternativeGroup = e.alternativeGroup();
+            entry.fortuneBonus = e.fortuneBonus();
+            entry.explosionDecay = e.explosionDecay();
+            entry.lootingBonusOn = e.lootBonusMax() > 0f;
+            entry.bonusMinText = formatFloat(e.lootBonusMin());
+            entry.bonusMaxText = formatFloat(e.lootBonusMax());
+            entry.bonusLimitText = Integer.toString(e.lootBonusLimit());
+            entry.extraConditionsText = e.extraConditions();
+            entry.extraFunctionsText = e.extraFunctions();
             pool.entries.add(entry);
         }
         rebuildStateWidgets();
@@ -273,6 +345,10 @@ public final class LabLootPoolSettingsWidget extends LabRowCardSettingsWidget {
             LabLootEntryValues e = entries.get(j);
             entry.typeDropdown.setSelected(e.type());
             entry.countTypeDropdown.setSelected(e.countType());
+            entry.toolDropdown.setSelected(
+                    e.toolRequirement().isBlank() ? GROUP_NONE : e.toolRequirement());
+            entry.groupDropdown.setOptions(groupOptions(entry));
+            entry.groupDropdown.setSelected(groupSelected(entry));
         }
         syncWidgetContents();
         rebuildRows();
@@ -312,7 +388,7 @@ public final class LabLootPoolSettingsWidget extends LabRowCardSettingsWidget {
         EntryState entry = pool.entries.get(index);
         String entryType = entry.typeDropdown == null || entry.typeDropdown.getSelected() == null ? "item"
                 : entry.typeDropdown.getSelected();
-        return switch (entryType) {
+        String base = switch (entryType) {
             case "tag" -> entry.tag.isBlank() ? "" : "#" + entry.tag;
             case "loot_table" -> shortId(entry.table);
             case "empty" -> "empty";
@@ -321,6 +397,9 @@ public final class LabLootPoolSettingsWidget extends LabRowCardSettingsWidget {
                 yield icon.isEmpty() ? entry.item : icon.getHoverName().getString();
             }
         };
+        return entry.alternativeGroup > 0 && !base.isBlank()
+                ? base + " " + I18n.get(LabGuiKeys.LAB_LOOT_ENTRY_GROUP_SUFFIX)
+                : base;
     }
 
     public String entryCardId(int index) {
@@ -359,6 +438,8 @@ public final class LabLootPoolSettingsWidget extends LabRowCardSettingsWidget {
                     : entry.typeDropdown.getSelected();
             String countType = entry.countTypeDropdown.getSelected() == null ? "constant"
                     : entry.countTypeDropdown.getSelected();
+            String toolSelected = entry.toolDropdown.getSelected();
+            String toolRequirement = toolSelected == null || GROUP_NONE.equals(toolSelected) ? "" : toolSelected;
             entryValues.add(new LabLootEntryValues(
                     entryType,
                     entry.item,
@@ -369,7 +450,20 @@ public final class LabLootPoolSettingsWidget extends LabRowCardSettingsWidget {
                     parseFloat(entry.countMinText, 0f),
                     parseFloat(entry.countMaxText, 0f),
                     parseInt(entry.weightText, 1),
-                    parseInt(entry.qualityText, 0)));
+                    parseInt(entry.qualityText, 0),
+                    entry.lootingBonusOn ? Math.max(0f, parseFloat(entry.bonusMinText, 0f)) : 0f,
+                    entry.lootingBonusOn ? Math.max(0f, parseFloat(entry.bonusMaxText, 0f)) : 0f,
+                    entry.conditionNotes,
+                    toolRequirement,
+                    entry.entryKilledByPlayer,
+                    clampChance(parseFloat(entry.chanceText, 100f) / 100f),
+                    Math.max(0f, parseFloat(entry.chanceLootingText, 0f) / 100f),
+                    entry.alternativeGroup,
+                    entry.fortuneBonus,
+                    entry.lootingBonusOn ? parseInt(entry.bonusLimitText, 0) : 0,
+                    entry.explosionDecay,
+                    entry.extraConditionsText,
+                    entry.extraFunctionsText));
         }
         if (entryValues.isEmpty()) {
             entryValues.add(LabLootEntryValues.defaults());
@@ -390,7 +484,9 @@ public final class LabLootPoolSettingsWidget extends LabRowCardSettingsWidget {
                 pool.lootingEnchant,
                 parseFloat(pool.lootingCountText, 0f),
                 parseInt(pool.lootingLimitText, 0),
-                entryValues);
+                entryValues,
+                pool.bonusRolls,
+                pool.poolConditionNotes);
     }
 
     private void track(Widget w) {
@@ -459,6 +555,8 @@ public final class LabLootPoolSettingsWidget extends LabRowCardSettingsWidget {
                 pool.lootingCountText, 4);
         pool.lootingLimitField = number(() -> pool.lootingLimitText, v -> pool.lootingLimitText = v,
                 pool.lootingLimitText);
+        pool.poolNotesInfo = new InfoText();
+        track(pool.poolNotesInfo);
         for (EntryState entry : pool.entries) {
             createEntryWidgets(entry);
         }
@@ -479,6 +577,72 @@ public final class LabLootPoolSettingsWidget extends LabRowCardSettingsWidget {
         entry.weightField = number(() -> entry.weightText, v -> entry.weightText = v, entry.weightText);
         entry.qualityField = number(() -> entry.qualityText, v -> entry.qualityText = v,
                 entry.qualityText);
+        entry.toolDropdown = dropdown(TOOL_OPTIONS);
+        entry.toolDropdown.setLabelMapper(value -> GROUP_NONE.equals(value)
+                ? I18n.get(LabGuiKeys.LAB_LOOT_TOOL_NONE)
+                : I18n.get("enchantment.minecraft." + value));
+        entry.killedToggle = toggle(() -> entry.entryKilledByPlayer, v -> entry.entryKilledByPlayer = v);
+        entry.chanceField = number(() -> entry.chanceText, v -> entry.chanceText = v, entry.chanceText, 5);
+        entry.chanceLootingField = number(() -> entry.chanceLootingText, v -> entry.chanceLootingText = v,
+                entry.chanceLootingText, 5);
+        entry.fortuneToggle = toggle(() -> entry.fortuneBonus, v -> entry.fortuneBonus = v);
+        entry.dynamicField = commit(v -> entry.item = v);
+        entry.explosionToggle = toggle(() -> entry.explosionDecay, v -> entry.explosionDecay = v);
+        entry.lootingBonusToggle = toggle(() -> entry.lootingBonusOn, v -> entry.lootingBonusOn = v);
+        entry.bonusMinField = number(() -> entry.bonusMinText, v -> entry.bonusMinText = v,
+                entry.bonusMinText);
+        entry.bonusMaxField = number(() -> entry.bonusMaxText, v -> entry.bonusMaxText = v,
+                entry.bonusMaxText);
+        entry.bonusLimitField = number(() -> entry.bonusLimitText, v -> entry.bonusLimitText = v,
+                entry.bonusLimitText, 4);
+        entry.extraConditionsField = commit(v -> entry.extraConditionsText = v);
+        entry.extraConditionsField.setMaxStringLength(2048);
+        entry.extraFunctionsField = commit(v -> entry.extraFunctionsText = v);
+        entry.extraFunctionsField.setMaxStringLength(2048);
+        entry.notesInfo = new InfoText();
+        track(entry.notesInfo);
+        entry.groupDropdown = dropdown(groupOptions(entry));
+        entry.groupDropdown.setLabelMapper(value -> {
+            if (GROUP_NONE.equals(value)) {
+                return I18n.get(LabGuiKeys.LAB_LOOT_TOOL_NONE);
+            }
+            if (GROUP_NEW.equals(value)) {
+                return I18n.get(LabGuiKeys.LAB_LOOT_GROUP_NEW);
+            }
+            return value;
+        });
+        entry.groupDropdown.setOnSelect(value -> {
+            if (GROUP_NONE.equals(value)) {
+                entry.alternativeGroup = 0;
+            } else if (GROUP_NEW.equals(value)) {
+                entry.alternativeGroup = maxGroup() + 1;
+            } else {
+                entry.alternativeGroup = parseInt(value, 0);
+            }
+            rebuildRows();
+        });
+    }
+
+    private List<String> groupOptions(EntryState entry) {
+        List<String> options = new ArrayList<>();
+        options.add(GROUP_NONE);
+        for (int g = 1; g <= Math.max(maxGroup(), entry.alternativeGroup); g++) {
+            options.add(Integer.toString(g));
+        }
+        options.add(GROUP_NEW);
+        return options;
+    }
+
+    private int maxGroup() {
+        int max = 0;
+        for (EntryState entry : pool.entries) {
+            max = Math.max(max, entry.alternativeGroup);
+        }
+        return max;
+    }
+
+    private static String groupSelected(EntryState entry) {
+        return entry.alternativeGroup <= 0 ? GROUP_NONE : Integer.toString(entry.alternativeGroup);
     }
 
     private void rebuildStateWidgets() {
@@ -510,11 +674,19 @@ public final class LabLootPoolSettingsWidget extends LabRowCardSettingsWidget {
                 entry.countTypeDropdown.setSelected("constant");
             }
             setText(entry.tableField, entry.table);
+            setText(entry.dynamicField, entry.item);
             setText(entry.countValueField, entry.countValueText);
             setText(entry.countMinField, entry.countMinText);
             setText(entry.countMaxField, entry.countMaxText);
             setText(entry.weightField, entry.weightText);
             setText(entry.qualityField, entry.qualityText);
+            setText(entry.chanceField, entry.chanceText);
+            setText(entry.chanceLootingField, entry.chanceLootingText);
+            setText(entry.bonusMinField, entry.bonusMinText);
+            setText(entry.bonusMaxField, entry.bonusMaxText);
+            setText(entry.bonusLimitField, entry.bonusLimitText);
+            setText(entry.extraConditionsField, entry.extraConditionsText);
+            setText(entry.extraFunctionsField, entry.extraFunctionsText);
         }
     }
 
@@ -556,6 +728,20 @@ public final class LabLootPoolSettingsWidget extends LabRowCardSettingsWidget {
             String rawTable = entry.tableField.getRawCurrentString();
             if (rawTable != null) {
                 entry.table = rawTable.trim();
+            }
+            if (entry.typeDropdown != null && "dynamic".equals(entry.typeDropdown.getSelected())) {
+                String rawItem = entry.dynamicField.getRawCurrentString();
+                if (rawItem != null) {
+                    entry.item = rawItem.trim();
+                }
+            }
+            String rawExtraConditions = entry.extraConditionsField.getRawCurrentString();
+            if (rawExtraConditions != null) {
+                entry.extraConditionsText = rawExtraConditions.trim();
+            }
+            String rawExtraFunctions = entry.extraFunctionsField.getRawCurrentString();
+            if (rawExtraFunctions != null) {
+                entry.extraFunctionsText = rawExtraFunctions.trim();
             }
         }
     }
@@ -619,6 +805,9 @@ public final class LabLootPoolSettingsWidget extends LabRowCardSettingsWidget {
         if ("loot_table".equals(entryType)) {
             rows.add(row(LabLootField.ENTRY_LOOT_TABLE,
                     LabGuiKeys.LAB_LOOT_ENTRY_LOOT_TABLE, entry.tableField));
+        } else if ("dynamic".equals(entryType)) {
+            rows.add(row(LabLootField.ENTRY_DYNAMIC_NAME, LabGuiKeys.LAB_LOOT_ENTRY_DYNAMIC_NAME,
+                    entry.dynamicField));
         } else if (!"empty".equals(entryType)) {
             LabLootField pickField =
                     "tag".equals(entryType) ? LabLootField.ENTRY_TAG : LabLootField.ENTRY_ITEM;
@@ -646,9 +835,51 @@ public final class LabLootPoolSettingsWidget extends LabRowCardSettingsWidget {
         if ("item".equals(entryType)) {
             rows.add(row(LabLootField.ENTRY_QUALITY, LabGuiKeys.LAB_LOOT_ENTRY_QUALITY, entry.qualityField));
         }
+        rows.add(row(LabLootField.ENTRY_TOOL, LabGuiKeys.LAB_LOOT_ENTRY_TOOL, entry.toolDropdown));
+        rows.add(row(LabLootField.ENTRY_KILLED_BY_PLAYER, LabGuiKeys.LAB_LOOT_ENTRY_KILLED_BY_PLAYER,
+                entry.killedToggle));
+        rows.add(row(LabLootField.ENTRY_CHANCE, LabGuiKeys.LAB_LOOT_ENTRY_CHANCE, entry.chanceField));
+        rows.add(row(LabLootField.ENTRY_CHANCE_LOOTING, LabGuiKeys.LAB_LOOT_ENTRY_CHANCE_LOOTING,
+                entry.chanceLootingField));
+        rows.add(row(LabLootField.ENTRY_FORTUNE_BONUS, LabGuiKeys.LAB_LOOT_ENTRY_FORTUNE_BONUS,
+                entry.fortuneToggle));
+        rows.add(row(LabLootField.ENTRY_EXPLOSION_DECAY, LabGuiKeys.LAB_LOOT_ENTRY_EXPLOSION_DECAY,
+                entry.explosionToggle));
+        rows.add(row(LabLootField.ENTRY_LOOTING_BONUS, LabGuiKeys.LAB_LOOT_ENTRY_LOOTING_BONUS,
+                entry.lootingBonusToggle));
+        if (entry.lootingBonusOn) {
+            rows.add(row(LabLootField.ENTRY_LOOTING_MIN, LabGuiKeys.LAB_LOOT_ENTRY_LOOTING_MIN,
+                    entry.bonusMinField));
+            rows.add(row(LabLootField.ENTRY_LOOTING_MAX, LabGuiKeys.LAB_LOOT_ENTRY_LOOTING_MAX,
+                    entry.bonusMaxField));
+            rows.add(row(LabLootField.ENTRY_LOOTING_LIMIT, LabGuiKeys.LAB_LOOT_ENTRY_LOOTING_LIMIT,
+                    entry.bonusLimitField));
+        }
+        entry.groupDropdown.setOptions(groupOptions(entry));
+        entry.groupDropdown.setSelected(groupSelected(entry));
+        rows.add(row(LabLootField.ENTRY_GROUP, LabGuiKeys.LAB_LOOT_ENTRY_GROUP, entry.groupDropdown));
+        rows.add(row(LabLootField.ENTRY_EXTRA_CONDITIONS, LabGuiKeys.LAB_LOOT_ENTRY_EXTRA_CONDITIONS,
+                entry.extraConditionsField));
+        rows.add(row(LabLootField.ENTRY_EXTRA_FUNCTIONS, LabGuiKeys.LAB_LOOT_ENTRY_EXTRA_FUNCTIONS,
+                entry.extraFunctionsField));
+        if (!entry.conditionNotes.isEmpty()) {
+            entry.notesInfo.setValue(LabLootNoteText.joinStrings(entry.conditionNotes, ", "));
+            rows.add(infoRow(LabGuiKeys.LAB_LOOT_ENTRY_VANILLA, entry.notesInfo));
+        }
+        if (!pool.poolConditionNotes.isEmpty()) {
+            pool.poolNotesInfo.setValue(LabLootNoteText.joinStrings(pool.poolConditionNotes, ", "));
+            rows.add(infoRow(LabGuiKeys.LAB_LOOT_POOL_VANILLA, pool.poolNotesInfo));
+        }
 
         setRows(rows);
         notifyEntryList();
+    }
+
+    private FieldRow infoRow(String labelKey, InfoText info) {
+        return new FieldRow(
+                new TextTexture(Component.translatable(labelKey).getString(), LabColors.TEXT_MUTED)
+                        .setType(TextTexture.TextType.LEFT),
+                info, null);
     }
 
     private static String formatPercent(float fraction) {

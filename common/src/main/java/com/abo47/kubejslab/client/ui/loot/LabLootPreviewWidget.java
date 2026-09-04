@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
@@ -16,8 +17,10 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
+import net.minecraft.client.resources.language.I18n;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
@@ -27,11 +30,13 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Block;
 
 import com.lowdragmc.lowdraglib.gui.texture.ItemStackTexture;
+import com.lowdragmc.lowdraglib.gui.texture.TextTexture;
 import com.lowdragmc.lowdraglib.gui.widget.SlotWidget;
 import com.lowdragmc.lowdraglib.gui.widget.WidgetGroup;
 
 import com.abo47.kubejslab.client.ui.base.LabColors;
 import com.abo47.kubejslab.client.ui.base.LabGlow;
+import com.abo47.kubejslab.client.ui.base.LabGuiKeys;
 import com.abo47.kubejslab.client.ui.picker.LabPickerEntries;
 import com.abo47.kubejslab.loot.model.LabLootEntryValues;
 import com.abo47.kubejslab.loot.model.LabLootFieldValues;
@@ -47,6 +52,7 @@ public final class LabLootPreviewWidget extends WidgetGroup {
     private static final int GAP = 2;
     private static final int PAD = 4;
     private static final int TARGET_BOX = 44;
+    private static final int FOOTER_H = 10;
 
     public interface DropClick {
         void onDropClick(int poolIndex, int entryIndex);
@@ -127,7 +133,25 @@ public final class LabLootPreviewWidget extends WidgetGroup {
     }
 
     private int gridHeight() {
-        return Math.max(1, getSizeHeight() - PAD * 2);
+        return Math.max(1, getSizeHeight() - PAD * 2 - (overflowText().isBlank() ? 0 : FOOTER_H));
+    }
+
+    private String overflowText() {
+        if (values == null) {
+            return "";
+        }
+        int pools = values.droppedPools();
+        int entries = values.droppedEntries();
+        if (pools > 0 && entries > 0) {
+            return I18n.get(LabGuiKeys.LAB_LOOT_PREVIEW_OVERFLOW_BOTH, pools, entries);
+        }
+        if (pools > 0) {
+            return I18n.get(LabGuiKeys.LAB_LOOT_PREVIEW_OVERFLOW_POOLS, pools);
+        }
+        if (entries > 0) {
+            return I18n.get(LabGuiKeys.LAB_LOOT_PREVIEW_OVERFLOW_ENTRIES, entries);
+        }
+        return "";
     }
 
     private int columns() {
@@ -197,6 +221,11 @@ public final class LabLootPreviewWidget extends WidgetGroup {
         }
         g.flush();
         g.disableScissor();
+        String overflow = overflowText();
+        if (!overflow.isBlank()) {
+            overflowTexture(overflow).draw(g, mx, my, getPositionX() + gridX(),
+                    getPositionY() + getSizeHeight() - PAD - FOOTER_H + 1, gridW(), FOOTER_H);
+        }
         int hovered = dropAt(mx, my);
         if (hovered >= 0) {
             int row = hovered / cols;
@@ -248,6 +277,12 @@ public final class LabLootPreviewWidget extends WidgetGroup {
         return List.of(Component.literal(lootType));
     }
 
+    private TextTexture overflowTexture(String text) {
+        return new TextTexture(text, LabColors.TEXT_MUTED)
+                .setType(TextTexture.TextType.LEFT)
+                .setWidth(gridW());
+    }
+
     private static ItemStack dropIcon(LabLootEntryValues entry) {
         if (entry == null) {
             return ItemStack.EMPTY;
@@ -262,6 +297,7 @@ public final class LabLootPreviewWidget extends WidgetGroup {
             }
             case "loot_table" -> new ItemStack(Items.CHEST);
             case "empty" -> new ItemStack(Items.BARRIER);
+            case "dynamic" -> new ItemStack(Items.BUNDLE);
             default -> {
                 if (entry.item().isBlank()) {
                     yield ItemStack.EMPTY;
@@ -286,24 +322,77 @@ public final class LabLootPreviewWidget extends WidgetGroup {
         if (!idLine.isBlank()) {
             tips.add(Component.literal(idLine).withStyle(ChatFormatting.GRAY));
         }
-        tips.add(Component.literal("Pool " + (slot.poolIndex() + 1) + " - Entry " + (slot.entryIndex() + 1))
-                .withStyle(ChatFormatting.YELLOW));
-        tips.add(statLine("Weight: ", Integer.toString(entry.weight())));
-        tips.add(statLine("Quality: ", Integer.toString(entry.quality())));
-        tips.add(statLine("Count: ", countLine(entry)));
-        tips.add(statLine("Chance: ", Math.round(pool.randomChance() * 100f) + "%"));
-        tips.add(statLine("Rolls: ", rollsLine(pool)));
-        String conditions = conditionsLine(pool);
-        if (!conditions.isBlank()) {
-            tips.add(Component.literal(conditions).withStyle(ChatFormatting.GOLD));
+        tips.add(Component.translatable(LabGuiKeys.LAB_LOOT_PREVIEW_POOL_ENTRY,
+                slot.poolIndex() + 1, slot.entryIndex() + 1).withStyle(ChatFormatting.YELLOW));
+        if (entry.alternativeGroup() > 0) {
+            tips.add(Component.translatable(LabGuiKeys.LAB_LOOT_PREVIEW_GROUP, entry.alternativeGroup())
+                    .withStyle(ChatFormatting.YELLOW));
         }
-        tips.add(Component.literal("Click to edit").withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.ITALIC));
+        tips.add(statLine(LabGuiKeys.LAB_LOOT_PREVIEW_WEIGHT, Component.literal(Integer.toString(entry.weight()))));
+        tips.add(statLine(LabGuiKeys.LAB_LOOT_PREVIEW_QUALITY, Component.literal(Integer.toString(entry.quality()))));
+        tips.add(statLine(LabGuiKeys.LAB_LOOT_PREVIEW_COUNT, Component.literal(countLine(entry))));
+        if (!entry.toolRequirement().isBlank()) {
+            tips.add(statLine(LabGuiKeys.LAB_LOOT_PREVIEW_REQUIRES,
+                    Component.translatable("enchantment.minecraft." + entry.toolRequirement())));
+        }
+        if (entry.entryKilledByPlayer()) {
+            tips.add(statLine(LabGuiKeys.LAB_LOOT_PREVIEW_REQUIRES,
+                    Component.translatable(LabGuiKeys.LAB_LOOT_PREVIEW_KILL)));
+        }
+        if (entry.entryChance() < 1f) {
+            String percent = Math.round(entry.entryChance() * 100f) + "%";
+            Component chance = entry.entryChanceLooting() > 0f
+                    ? Component.translatable(LabGuiKeys.LAB_LOOT_PREVIEW_ENTRY_CHANCE_LOOTING, percent,
+                            formatCount(entry.entryChanceLooting() * 100f) + "%")
+                    : Component.literal(percent);
+            tips.add(statLine(LabGuiKeys.LAB_LOOT_PREVIEW_ENTRY_CHANCE, chance));
+        }
+        if (entry.fortuneBonus()) {
+            tips.add(statLine(LabGuiKeys.LAB_LOOT_PREVIEW_FORTUNE,
+                    Component.translatable(LabGuiKeys.LAB_LOOT_PREVIEW_ORE_BONUS)));
+        }
+        if (entry.explosionDecay()) {
+            tips.add(Component.translatable(LabGuiKeys.LAB_LOOT_PREVIEW_EXPLOSION)
+                    .withStyle(ChatFormatting.WHITE));
+        }
+        tips.add(statLine(LabGuiKeys.LAB_LOOT_PREVIEW_CHANCE,
+                Component.literal(Math.round(pool.randomChance() * 100f) + "%")));
+        tips.add(statLine(LabGuiKeys.LAB_LOOT_PREVIEW_ROLLS, rollsValue(pool)));
+        if (entry.lootBonusMax() > 0f) {
+            tips.add(statLine(LabGuiKeys.LAB_LOOT_PREVIEW_LOOTING_BONUS,
+                    Component.literal("+" + lootBonusLine(entry))));
+        }
+        Component conditions = conditionsLine(pool);
+        if (conditions != null) {
+            tips.add(conditions.copy().withStyle(ChatFormatting.GOLD));
+        }
+        for (String note : pool.poolConditionNotes()) {
+            Component resolved = LabLootNoteText.resolve(note);
+            if (resolved != null) {
+                tips.add(resolved.copy().withStyle(ChatFormatting.GOLD));
+            }
+        }
+        for (String note : entry.conditionNotes()) {
+            Component resolved = LabLootNoteText.resolve(note);
+            if (resolved != null) {
+                tips.add(resolved.copy().withStyle(ChatFormatting.GOLD));
+            }
+        }
+        tips.add(Component.translatable(LabGuiKeys.LAB_LOOT_PREVIEW_CLICK_EDIT)
+                .withStyle(ChatFormatting.DARK_GRAY, ChatFormatting.ITALIC));
         return tips;
     }
 
-    private static Component statLine(String label, String value) {
-        return Component.literal(label).withStyle(ChatFormatting.GRAY)
-                .append(Component.literal(value).withStyle(ChatFormatting.WHITE));
+    private static String lootBonusLine(LabLootEntryValues entry) {
+        if (entry.lootBonusMin() == entry.lootBonusMax()) {
+            return formatCount(entry.lootBonusMax());
+        }
+        return formatCount(entry.lootBonusMin()) + "-" + formatCount(entry.lootBonusMax());
+    }
+
+    private static Component statLine(String labelKey, Component value) {
+        return Component.translatable(labelKey).withStyle(ChatFormatting.GRAY)
+                .append(value.copy().withStyle(ChatFormatting.WHITE));
     }
 
     private static String entryName(LabLootEntryValues entry) {
@@ -331,29 +420,44 @@ public final class LabLootPreviewWidget extends WidgetGroup {
         return formatCount(entry.countValue());
     }
 
-    private static String rollsLine(LabLootPoolValues pool) {
-        return switch (pool.rollsType()) {
-            case "uniform" -> formatCount(pool.rollsMin()) + "-" + formatCount(pool.rollsMax());
-            case "binomial" -> "n=" + pool.rollsN() + " p=" + pool.rollsP();
-            default -> formatCount(pool.rollsValue());
+    private static Component rollsValue(LabLootPoolValues pool) {
+        Component base = switch (pool.rollsType()) {
+            case "uniform" -> Component.translatable(LabGuiKeys.LAB_LOOT_PREVIEW_ROLLS_RANGE,
+                    formatCount(pool.rollsMin()), formatCount(pool.rollsMax()));
+            case "binomial" -> Component.translatable(LabGuiKeys.LAB_LOOT_PREVIEW_ROLLS_BINOMIAL,
+                    pool.rollsN(), formatCount(pool.rollsP()));
+            default -> Component.literal(formatCount(pool.rollsValue()));
         };
+        if (pool.bonusRolls() <= 0f) {
+            return base;
+        }
+        return base.copy().append(Component.literal(" ")).append(Component.translatable(
+                LabGuiKeys.LAB_LOOT_PREVIEW_ROLLS_BONUS, formatCount(pool.bonusRolls())));
     }
 
-    private static String conditionsLine(LabLootPoolValues pool) {
-        List<String> parts = new ArrayList<>();
+    @Nullable
+    private static Component conditionsLine(LabLootPoolValues pool) {
+        List<Component> parts = new ArrayList<>();
         if (pool.killedByPlayer()) {
-            parts.add("killed by player");
+            parts.add(Component.translatable(LabGuiKeys.LAB_LOOT_PREVIEW_COND_KILLED));
         }
         if (pool.furnaceSmelt()) {
-            parts.add("smelted");
+            parts.add(Component.translatable(LabGuiKeys.LAB_LOOT_PREVIEW_COND_SMELTED));
         }
         if (pool.lootingEnchant()) {
-            parts.add("looting");
+            parts.add(Component.translatable(LabGuiKeys.LAB_LOOT_PREVIEW_COND_LOOTING));
         }
         if (!pool.survivesExplosion()) {
-            parts.add("no explosion guard");
+            parts.add(Component.translatable(LabGuiKeys.LAB_LOOT_PREVIEW_COND_NO_GUARD));
         }
-        return String.join(", ", parts);
+        if (parts.isEmpty()) {
+            return null;
+        }
+        MutableComponent out = parts.get(0).copy();
+        for (int i = 1; i < parts.size(); i++) {
+            out.append(Component.literal(", ")).append(parts.get(i));
+        }
+        return out;
     }
 
     private static String formatCount(float value) {
