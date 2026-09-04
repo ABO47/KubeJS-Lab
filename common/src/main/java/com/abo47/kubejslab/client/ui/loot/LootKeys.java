@@ -45,8 +45,6 @@ public final class LootKeys {
     public static final String LOOT_ENTRY_CHANCE_LOOTING = "kubejslab.gui.lab_loot_entry_chance_looting";
     public static final String LOOT_ENTRY_GROUP = "kubejslab.gui.lab_loot_entry_group";
     public static final String LOOT_ENTRY_FORTUNE_BONUS = "kubejslab.gui.lab_loot_entry_fortune_bonus";
-    public static final String LOOT_ENTRY_VANILLA = "kubejslab.gui.lab_loot_entry_vanilla";
-    public static final String LOOT_POOL_VANILLA = "kubejslab.gui.lab_loot_pool_vanilla";
     public static final String LOOT_ENTRY_EXPLOSION_DECAY = "kubejslab.gui.lab_loot_entry_explosion_decay";
     public static final String LOOT_ENTRY_LOOTING_BONUS = "kubejslab.gui.lab_loot_entry_looting_bonus";
     public static final String LOOT_ENTRY_LOOTING_MIN = "kubejslab.gui.lab_loot_entry_looting_min";
@@ -84,7 +82,6 @@ public final class LootKeys {
     public static final String LOOT_ENTRY_GROUP_SUFFIX = "kubejslab.gui.lab_loot_entry_group_suffix";
     public static final String LOOT_TOOL_NONE = "kubejslab.gui.lab_loot_tool_none";
     public static final String LOOT_GROUP_NEW = "kubejslab.gui.lab_loot_group_new";
-    public static final String LOOT_ENTRY_VANILLA_BONUS = "kubejslab.gui.lab_loot_entry_vanilla_bonus";
     public static final String LOOT_SURVIVES_EXPLOSION = "kubejslab.gui.lab_loot_survives_explosion";
     public static final String LOOT_RANDOM_CHANCE = "kubejslab.gui.lab_loot_random_chance";
     public static final String LOOT_KILLED_BY_PLAYER = "kubejslab.gui.lab_loot_killed_by_player";

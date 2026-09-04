@@ -221,28 +221,6 @@ public final class LootPoolSettingsWidget extends RowCardSettings {
         String bonusLimitText = "0";
         String extraConditionsText = "";
         String extraFunctionsText = "";
-        InfoText notesInfo;
-    }
-
-    private static final class InfoText extends WidgetGroup {
-        private TextTexture text;
-
-        InfoText() {
-            super(0, 0, CONTROL_W, FIELD_H);
-            setValue("");
-        }
-
-        void setValue(String value) {
-            this.text = new TextTexture(value == null ? "" : value, UiColors.TEXT_MUTED)
-                    .setType(TextTexture.TextType.LEFT)
-                    .setWidth(CONTROL_W);
-            setHoverTooltips(List.of(Component.literal(value == null ? "" : value)));
-        }
-
-        @Override
-        public void drawInBackground(@Nonnull GuiGraphics g, int mx, int my, float pt) {
-            text.draw(g, mx, my, getPositionX(), getPositionY(), getSizeWidth(), getSizeHeight());
-        }
     }
 
     private static final class PoolState {
@@ -273,7 +251,6 @@ public final class LootPoolSettingsWidget extends RowCardSettings {
         String lootingLimitText = "0";
         float bonusRolls = 0f;
         List<String> poolConditionNotes = List.of();
-        InfoText poolNotesInfo;
         final List<EntryState> entries = new ArrayList<>();
     }
 
@@ -554,8 +531,6 @@ public final class LootPoolSettingsWidget extends RowCardSettings {
                 pool.lootingCountText, 4);
         pool.lootingLimitField = number(() -> pool.lootingLimitText, v -> pool.lootingLimitText = v,
                 pool.lootingLimitText);
-        pool.poolNotesInfo = new InfoText();
-        track(pool.poolNotesInfo);
         for (EntryState entry : pool.entries) {
             createEntryWidgets(entry);
         }
@@ -598,8 +573,6 @@ public final class LootPoolSettingsWidget extends RowCardSettings {
         entry.extraConditionsField.setMaxStringLength(2048);
         entry.extraFunctionsField = commit(v -> entry.extraFunctionsText = v);
         entry.extraFunctionsField.setMaxStringLength(2048);
-        entry.notesInfo = new InfoText();
-        track(entry.notesInfo);
         entry.groupDropdown = dropdown(groupOptions(entry));
         entry.groupDropdown.setLabelMapper(value -> {
             if (GROUP_NONE.equals(value)) {
@@ -841,6 +814,8 @@ public final class LootPoolSettingsWidget extends RowCardSettings {
                     pool.lootingCountField));
             rows.add(row(LootField.POOL_LOOTING_LIMIT, LootKeys.LOOT_LOOTING_LIMIT,
                     pool.lootingLimitField));
+        }
+        if (pool.lootingEnchant) {
             rows.add(row(LootField.ENTRY_CHANCE_LOOTING, LootKeys.LOOT_ENTRY_CHANCE_LOOTING,
                     entry.chanceLootingField));
         }
@@ -863,24 +838,9 @@ public final class LootPoolSettingsWidget extends RowCardSettings {
                 entry.extraConditionsField));
         rows.add(row(LootField.ENTRY_EXTRA_FUNCTIONS, LootKeys.LOOT_ENTRY_EXTRA_FUNCTIONS,
                 entry.extraFunctionsField));
-        if (!entry.conditionNotes.isEmpty()) {
-            entry.notesInfo.setValue(LootNoteText.joinStrings(entry.conditionNotes, ", "));
-            rows.add(infoRow(LootKeys.LOOT_ENTRY_VANILLA, entry.notesInfo));
-        }
-        if (!pool.poolConditionNotes.isEmpty()) {
-            pool.poolNotesInfo.setValue(LootNoteText.joinStrings(pool.poolConditionNotes, ", "));
-            rows.add(infoRow(LootKeys.LOOT_POOL_VANILLA, pool.poolNotesInfo));
-        }
 
         setRows(rows);
         notifyEntryList();
-    }
-
-    private FieldRow infoRow(String labelKey, InfoText info) {
-        return new FieldRow(
-                new TextTexture(Component.translatable(labelKey).getString(), UiColors.TEXT_MUTED)
-                        .setType(TextTexture.TextType.LEFT),
-                info, null);
     }
 
     private static String formatPercent(float fraction) {
