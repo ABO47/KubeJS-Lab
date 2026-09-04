@@ -1,13 +1,17 @@
 package com.abo47.kubejslab.client.ui.picker;
 
+import java.util.ArrayList;
 import java.util.function.Consumer;
 import java.util.List;
 import javax.annotation.Nonnull;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.Minecraft;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
 
 import com.lowdragmc.lowdraglib.gui.texture.ItemStackTexture;
 import com.lowdragmc.lowdraglib.gui.util.DrawerHelper;
@@ -39,8 +43,20 @@ public final class LabPickTile extends Widget {
 
     public static LabPickTile item(LabPick pick, Consumer<LabPick> onPick) {
         ItemStack stack = ((LabPick.Item) pick).stack();
-        return new LabPickTile(pick, List.of(new ItemStackTexture(stack)), null,
-                List.of(Component.literal(stack.getHoverName().getString())), onPick);
+        return new LabPickTile(pick, List.of(new ItemStackTexture(stack)), null, itemTooltip(stack), onPick);
+    }
+
+    static List<Component> itemTooltip(ItemStack stack) {
+        Minecraft minecraft = Minecraft.getInstance();
+        TooltipFlag flag = minecraft.options.advancedItemTooltips
+                ? TooltipFlag.Default.ADVANCED
+                : TooltipFlag.Default.NORMAL;
+        List<Component> lines = new ArrayList<>(stack.getTooltipLines(minecraft.player, flag));
+        String namespace = BuiltInRegistries.ITEM.getKey(stack.getItem()).getNamespace();
+        String modName = dev.architectury.platform.Platform.getOptionalMod(namespace)
+                .map(dev.architectury.platform.Mod::getName).orElse(namespace);
+        lines.add(Component.literal(modName).withStyle(ChatFormatting.BLUE, ChatFormatting.ITALIC));
+        return List.copyOf(lines);
     }
 
     public static LabPickTile tag(LabPick pick, Consumer<LabPick> onPick) {
@@ -48,7 +64,7 @@ public final class LabPickTile extends Widget {
         List<ItemStackTexture> previews = LabPickerEntries.tagPreviews(tag).stream()
                 .map(ItemStackTexture::new).toList();
         List<Component> tooltip = previews.isEmpty() ? List.of(Component.literal("#" + tag))
-                : List.of(Component.literal("#" + tag),
+                : List.of(Component.literal("#" + tag + " (" + previews.size() + ")"),
                         Component.literal(previews.get(0).items[0].getHoverName().getString()));
         return new LabPickTile(pick, previews, null, tooltip, onPick);
     }
@@ -56,7 +72,9 @@ public final class LabPickTile extends Widget {
     public static LabPickTile fluid(LabPick pick, Consumer<LabPick> onPick) {
         FluidStack fluid = ((LabPick.Fluid) pick).fluid();
         return new LabPickTile(pick, List.of(), fluid,
-                List.of(fluid.getDisplayName()), onPick);
+                List.of(fluid.getDisplayName(),
+                        Component.literal(BuiltInRegistries.FLUID.getKey(fluid.getFluid()).toString())),
+                onPick);
     }
 
     @Override

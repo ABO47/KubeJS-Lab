@@ -318,6 +318,9 @@ public final class LabScreen {
         public void drawInForeground(@Nonnull GuiGraphics g, int mx, int my, float pt) {
             if (isModalOpen()) {
                 modalLayer.drawInForeground(g, mx, my, pt);
+                if (pickerWidget != null && pickerWidget.isVisible()) {
+                    pickerWidget.drawInForeground(g, mx, my, pt);
+                }
                 return;
             }
             super.drawInForeground(g, mx, my, pt);
