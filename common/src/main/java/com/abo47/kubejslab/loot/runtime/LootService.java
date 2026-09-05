@@ -24,6 +24,7 @@ import com.abo47.kubejslab.loot.model.LootState;
 import com.abo47.kubejslab.loot.model.LootStatus;
 import com.abo47.kubejslab.network.NetworkRegistry;
 import com.abo47.kubejslab.network.loot.S2CLootStatePacket;
+import com.abo47.kubejslab.reload.ReloadKind;
 import com.abo47.kubejslab.workspace.ServerCommands;
 import com.abo47.kubejslab.workspace.UniqueIds;
 import com.abo47.kubejslab.workspace.WorkspacePaths;
@@ -72,8 +73,8 @@ public final class LootService {
             LootScriptWriter.writeServerScript(STATE);
             MinecraftServer server = player.getServer();
             ServerCommands.kubejsStartupReload(server);
-            ServerCommands.reload(server);
-            KubeJSLab.LOGGER.info("[LootService] sent /kubejs reload startup_scripts and /reload after {}", action);
+            ServerCommands.reloadKind(server, ReloadKind.LOOT);
+            KubeJSLab.LOGGER.info("[LootService] sent /kubejs reload startup_scripts and selective loot reload after {}", action);
             NetworkRegistry.sendLootState(player, statePacket());
         } catch (IOException e) {
             e.printStackTrace();

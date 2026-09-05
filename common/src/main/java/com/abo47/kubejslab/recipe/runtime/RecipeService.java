@@ -31,6 +31,7 @@ import com.abo47.kubejslab.recipe.model.RecipeOutput;
 import com.abo47.kubejslab.recipe.model.RecipePayload;
 import com.abo47.kubejslab.recipe.model.RecipeStateEntry;
 import com.abo47.kubejslab.recipe.model.RecipeStatus;
+import com.abo47.kubejslab.reload.ReloadKind;
 import com.abo47.kubejslab.workspace.JsonStateFile;
 import com.abo47.kubejslab.workspace.ScriptWriter;
 import com.abo47.kubejslab.workspace.ServerCommands;
@@ -68,8 +69,8 @@ public final class RecipeService {
             if (action != RecipeEditAction.SAVE_NEW) {
                 writeDisabledScript();
             }
-            ServerCommands.reload(player.getServer());
-            KubeJSLab.LOGGER.info("[RecipeService] sent /reload after {}", action);
+            ServerCommands.reloadKind(player.getServer(), ReloadKind.RECIPES);
+            KubeJSLab.LOGGER.info("[RecipeService] sent selective recipe reload after {}", action);
             NetworkRegistry.sendRecipeState(player, statePacket());
         } catch (IOException e) {
             e.printStackTrace();

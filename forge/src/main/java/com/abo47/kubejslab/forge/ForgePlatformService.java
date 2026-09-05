@@ -1,13 +1,21 @@
 package com.abo47.kubejslab.forge;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
+import com.google.gson.JsonElement;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.util.profiling.InactiveProfiler;
 import net.minecraft.world.item.crafting.Recipe;
+import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+
+import com.abo47.kubejslab.forge.mixin.RecipeManagerInvoker;
 
 import com.lowdragmc.lowdraglib.side.fluid.FluidStack;
 
@@ -115,6 +123,12 @@ public final class ForgePlatformService implements PlatformService {
     @Override
     public void sendLootTableList(ServerPlayer player, S2CLootTableListPacket packet) {
         ForgeNetwork.sendToClient(packet, player);
+    }
+
+    @Override
+    public void applyRecipeData(RecipeManager manager, Map<ResourceLocation, JsonElement> recipes,
+            ResourceManager resources) {
+        ((RecipeManagerInvoker) manager).kubejslab$apply(recipes, resources, InactiveProfiler.INSTANCE);
     }
 
     @Override
