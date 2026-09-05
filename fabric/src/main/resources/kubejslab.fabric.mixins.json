@@ -2,7 +2,10 @@
   "required": true,
   "package": "com.abo47.kubejslab.fabric.mixin",
   "compatibilityLevel": "JAVA_17",
-  "mixins": [],
+  "minVersion": "0.8",
+  "mixins": [
+    "RecipeManagerInvoker"
+  ],
   "injectors": {
     "defaultRequire": 1
   }

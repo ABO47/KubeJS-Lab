@@ -9,6 +9,7 @@ architectury {
 
 loom {
     forge {
+        mixinConfigs "kubejslab.forge.mixins.json"
         dataGen {
             mod(mod_id)
         }

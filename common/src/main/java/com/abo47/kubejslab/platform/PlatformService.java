@@ -1,10 +1,15 @@
 package com.abo47.kubejslab.platform;
 
+import java.util.Map;
 import java.util.Optional;
 
+import com.google.gson.JsonElement;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.world.item.crafting.Recipe;
+import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.item.ItemStack;
 
 import com.lowdragmc.lowdraglib.side.fluid.FluidStack;
@@ -54,6 +59,9 @@ public interface PlatformService {
     void sendLootTableList(ServerPlayer player, S2CLootTableListPacket packet);
 
     Optional<FluidStack> readFluidIngredient(IRecipeSlotView view);
+
+    void applyRecipeData(RecipeManager manager, Map<ResourceLocation, JsonElement> recipes,
+            ResourceManager resources);
 
     default ItemStack fluidOutputDisplay(Recipe<?> recipe) {
         return ItemStack.EMPTY;

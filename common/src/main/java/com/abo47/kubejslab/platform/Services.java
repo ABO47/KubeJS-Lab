@@ -1,10 +1,15 @@
 package com.abo47.kubejslab.platform;
 
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
+import com.google.gson.JsonElement;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.world.item.crafting.RecipeManager;
 
 import com.lowdragmc.lowdraglib.side.fluid.FluidStack;
 
@@ -97,6 +102,11 @@ public final class Services {
         @Override
         public Optional<FluidStack> readFluidIngredient(IRecipeSlotView view) {
             return Optional.empty();
+        }
+
+        @Override
+        public void applyRecipeData(RecipeManager manager, Map<ResourceLocation, JsonElement> recipes,
+                ResourceManager resources) {
         }
     }
 }

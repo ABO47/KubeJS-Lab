@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -24,6 +25,7 @@ import com.abo47.kubejslab.loot.model.LootState;
 import com.abo47.kubejslab.loot.model.LootStatus;
 import com.abo47.kubejslab.network.NetworkRegistry;
 import com.abo47.kubejslab.network.loot.S2CLootStatePacket;
+import com.abo47.kubejslab.reload.ReloadKind;
 import com.abo47.kubejslab.workspace.ServerCommands;
 import com.abo47.kubejslab.workspace.UniqueIds;
 import com.abo47.kubejslab.workspace.WorkspacePaths;
@@ -63,7 +65,7 @@ public final class LootService {
                 case SAVE_NEW -> saveNew(payload);
                 case MODIFY -> modify(targetId, payload);
                 case DUPLICATE -> duplicate(targetId);
-                case DISABLE -> disable(targetId);
+                case DISABLE -> disable(player.getServer(), targetId, payload);
                 case ENABLE -> enable(targetId);
                 case RESET -> reset(targetId);
                 case DELETE -> delete(targetId);
@@ -72,8 +74,8 @@ public final class LootService {
             LootScriptWriter.writeServerScript(STATE);
             MinecraftServer server = player.getServer();
             ServerCommands.kubejsStartupReload(server);
-            ServerCommands.reload(server);
-            KubeJSLab.LOGGER.info("[LootService] sent /kubejs reload startup_scripts and /reload after {}", action);
+            ServerCommands.reloadKind(server, ReloadKind.LOOT);
+            KubeJSLab.LOGGER.info("[LootService] sent /kubejs reload startup_scripts and selective loot reload after {}", action);
             NetworkRegistry.sendLootState(player, statePacket());
         } catch (IOException e) {
             e.printStackTrace();
@@ -164,22 +166,50 @@ public final class LootService {
         KubeJSLab.LOGGER.info("[LootService] DUPLICATE created {}", id);
     }
 
-    private static void disable(ResourceLocation targetId) {
+    private static void disable(MinecraftServer server, ResourceLocation targetId, LootPayload payload) {
         if (targetId == null) {
             return;
         }
         LootSaveEntry entry = STATE.get(targetId);
-        if (entry == null) {
-            entry = new LootSaveEntry(LOOT_TYPE_BLOCK, LootStatus.NORMAL, targetId.getPath(), false,
-                    LootFieldValues.defaults(), List.of(), List.of());
+        String lootType = entry != null ? entry.lootType() : null;
+        if (lootType == null || lootType.isBlank()) {
+            lootType = inferLootType(server, targetId);
         }
-        List<LootAction> actions = new ArrayList<>(entry.actions());
+        if (lootType == null || lootType.isBlank()) {
+            lootType = knownLootType(payload.lootType()) ? payload.lootType() : LOOT_TYPE_BLOCK;
+        }
+        LootFieldValues values = entry != null && entry.values().targetId() != null
+                && !entry.values().targetId().isBlank()
+                        ? entry.values()
+                        : new LootFieldValues(targetId.toString(), "", List.of(), 0, 0);
+        String name = entry != null && !entry.name().isBlank() ? entry.name() : targetId.getPath();
+        boolean wasModified = entry != null && entry.wasModified();
+        List<LootAction> actions = new ArrayList<>(entry != null ? entry.actions() : List.of());
         if (!actions.contains(LootAction.NO_EXPLOSION_DROP)) {
             actions.add(LootAction.NO_EXPLOSION_DROP);
         }
-        STATE.put(targetId, new LootSaveEntry(entry.lootType(), LootStatus.DISABLED, entry.name(),
-                entry.wasModified(), entry.values(), entry.tags(), actions));
+        STATE.put(targetId, new LootSaveEntry(lootType, LootStatus.DISABLED, name, wasModified, values,
+                entry != null ? entry.tags() : List.of(), actions));
         KubeJSLab.LOGGER.info("[LootService] DISABLE {}", targetId);
+    }
+
+    private static boolean knownLootType(String lootType) {
+        return LOOT_TYPE_BLOCK.equals(lootType) || LOOT_TYPE_ENTITY.equals(lootType)
+                || LOOT_TYPE_CHEST.equals(lootType) || LOOT_TYPE_FISHING.equals(lootType)
+                || LOOT_TYPE_GIFT.equals(lootType) || LOOT_TYPE_GENERIC.equals(lootType);
+    }
+
+    private static String inferLootType(MinecraftServer server, ResourceLocation targetId) {
+        if (server == null) {
+            return null;
+        }
+        if (server.registryAccess().registryOrThrow(Registries.ENTITY_TYPE).containsKey(targetId)) {
+            return LOOT_TYPE_ENTITY;
+        }
+        if (server.registryAccess().registryOrThrow(Registries.BLOCK).containsKey(targetId)) {
+            return LOOT_TYPE_BLOCK;
+        }
+        return null;
     }
 
     private static void enable(ResourceLocation targetId) {

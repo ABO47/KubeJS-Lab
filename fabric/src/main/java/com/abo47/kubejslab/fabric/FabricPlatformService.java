@@ -1,9 +1,17 @@
 package com.abo47.kubejslab.fabric;
 
+import java.util.Map;
 import java.util.Optional;
 
+import com.google.gson.JsonElement;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.util.profiling.InactiveProfiler;
+import net.minecraft.world.item.crafting.RecipeManager;
+
+import com.abo47.kubejslab.fabric.mixin.RecipeManagerInvoker;
 
 import com.lowdragmc.lowdraglib.side.fluid.FluidStack;
 
@@ -118,6 +126,12 @@ public final class FabricPlatformService implements PlatformService {
         FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
         packet.write(buf);
         ServerPlayNetworking.send(player, FabricNetwork.LOOT_TABLES_SYNC, buf);
+    }
+
+    @Override
+    public void applyRecipeData(RecipeManager manager, Map<ResourceLocation, JsonElement> recipes,
+            ResourceManager resources) {
+        ((RecipeManagerInvoker) manager).kubejslab$apply(recipes, resources, InactiveProfiler.INSTANCE);
     }
 
     @Override

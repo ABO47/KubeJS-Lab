@@ -1,8 +1,5 @@
 package com.abo47.kubejslab.client.ui.picker;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.function.Consumer;
 import java.util.List;
@@ -28,9 +25,7 @@ import com.abo47.kubejslab.client.ui.widgets.ScrollBarWidget;
 import com.abo47.kubejslab.client.ui.widgets.ScrollMath;
 import com.abo47.kubejslab.client.ui.widgets.TextField;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import dev.architectury.platform.Platform;
+import com.abo47.kubejslab.workspace.ModConfig;
 
 
 public final class PickerWindowWidget extends WidgetGroup {
@@ -52,7 +47,6 @@ public final class PickerWindowWidget extends WidgetGroup {
             UiColors.bordered(UiColors.SURFACE_PANEL_ALT, UiColors.BORDER_BASE);
     private static final IGuiTexture HEADER_BTN_TEX =
             UiColors.bordered(UiColors.SURFACE_BASE, UiColors.BORDER_BASE);
-    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
     private enum Mode {
         ITEMS,
@@ -106,10 +100,18 @@ public final class PickerWindowWidget extends WidgetGroup {
     }
 
     public static PickerWindowWidget create() {
-        State state = loadState();
-        PickerWindowWidget window = new PickerWindowWidget(state.x(), state.y());
-        window.minimized = state.minimized();
-        window.setSize(WINDOW_W, state.minimized() ? HEADER_H : HEADER_H + BODY_H);
+        ModConfig.PickerState state = ModConfig.loadPicker();
+        int x = Math.max(4, UiLayout.ROOT_W - WINDOW_W - 24);
+        int y = 12;
+        boolean minimized = false;
+        if (state != null) {
+            x = state.x();
+            y = state.y();
+            minimized = state.minimized();
+        }
+        PickerWindowWidget window = new PickerWindowWidget(x, y);
+        window.minimized = minimized;
+        window.setSize(WINDOW_W, minimized ? HEADER_H : HEADER_H + BODY_H);
         window.rebuildBody();
         return window;
     }
@@ -347,32 +349,7 @@ public final class PickerWindowWidget extends WidgetGroup {
         }
     }
 
-    private record State(int x, int y, boolean minimized) {
-    }
-
-    private static Path stateFile() {
-        return Platform.getConfigFolder().resolve("kubejslab_picker.json");
-    }
-
-    private static State loadState() {
-        Path file = stateFile();
-        if (Files.exists(file)) {
-            try {
-                State state = GSON.fromJson(Files.readString(file), State.class);
-                if (state != null) {
-                    return state;
-                }
-            } catch (IOException | RuntimeException ignored) {
-            }
-        }
-        return new State(Math.max(4, UiLayout.ROOT_W - WINDOW_W - 24), 12, false);
-    }
-
     private void saveState() {
-        try {
-            Path file = stateFile();
-            Files.writeString(file, GSON.toJson(new State(getWindowX(), getWindowY(), minimized)));
-        } catch (IOException ignored) {
-        }
+        ModConfig.savePicker(getWindowX(), getWindowY(), minimized);
     }
 }
