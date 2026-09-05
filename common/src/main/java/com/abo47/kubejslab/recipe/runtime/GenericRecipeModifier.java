@@ -13,10 +13,10 @@ import net.minecraft.server.packs.repository.Pack;
 import net.minecraft.server.packs.repository.PackRepository;
 import net.minecraft.server.packs.resources.IoSupplier;
 
-import com.abo47.kubejslab.recipe.model.LabIngredient;
-import com.abo47.kubejslab.recipe.model.LabRecipeJson;
-import com.abo47.kubejslab.recipe.model.LabRecipeOutput;
-import com.abo47.kubejslab.recipe.model.LabRecipePayload;
+import com.abo47.kubejslab.recipe.model.RecipeIngredient;
+import com.abo47.kubejslab.recipe.model.RecipeJson;
+import com.abo47.kubejslab.recipe.model.RecipeOutput;
+import com.abo47.kubejslab.recipe.model.RecipePayload;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -47,12 +47,12 @@ public final class GenericRecipeModifier {
         return found;
     }
 
-    public static JsonObject modify(JsonObject original, LabRecipePayload payload) {
-        List<LabRecipeOutput> outputs = payload.outputs();
+    public static JsonObject modify(JsonObject original, RecipePayload payload) {
+        List<RecipeOutput> outputs = payload.outputs();
         if (outputs.isEmpty()) {
             return null;
         }
-        List<LabIngredient> inputs = payload.inputs();
+        List<RecipeIngredient> inputs = payload.inputs();
         JsonObject json = original.deepCopy();
         if (!inputs.isEmpty()) {
             JsonElement ingredientField = ingredientField(json);
@@ -89,29 +89,29 @@ public final class GenericRecipeModifier {
         return object.has("item") || object.has("tag");
     }
 
-    private static void replaceIngredients(JsonElement field, List<LabIngredient> inputs) {
+    private static void replaceIngredients(JsonElement field, List<RecipeIngredient> inputs) {
         if (field.isJsonArray()) {
             JsonArray array = field.getAsJsonArray();
             int inputIndex = 0;
             for (int i = 0; i < array.size() && inputIndex < inputs.size(); i++) {
                 JsonElement element = array.get(i);
                 if (element.isJsonObject() && isItemShaped(element.getAsJsonObject())) {
-                    array.set(i, LabRecipeJson.ingredientJson(inputs.get(inputIndex)));
+                    array.set(i, RecipeJson.ingredientJson(inputs.get(inputIndex)));
                     inputIndex++;
                 }
             }
             for (int i = inputIndex; i < inputs.size(); i++) {
-                array.add(LabRecipeJson.ingredientJson(inputs.get(i)));
+                array.add(RecipeJson.ingredientJson(inputs.get(i)));
             }
             return;
         }
         JsonObject target = field.getAsJsonObject();
-        JsonObject replacement = LabRecipeJson.ingredientJson(inputs.get(0));
+        JsonObject replacement = RecipeJson.ingredientJson(inputs.get(0));
         for (String key : List.copyOf(target.keySet())) target.remove(key);
         for (Map.Entry<String, JsonElement> entry : replacement.entrySet()) target.add(entry.getKey(), entry.getValue());
     }
 
-    private static boolean replaceOutputs(JsonObject json, List<LabRecipeOutput> outputs) {
+    private static boolean replaceOutputs(JsonObject json, List<RecipeOutput> outputs) {
         JsonElement result = json.get("result");
         if (result == null) result = json.get("results");
         if (result == null) return false;
@@ -128,15 +128,15 @@ public final class GenericRecipeModifier {
                 }
             }
             for (int i = array.size(); i < outputs.size(); i++) {
-                array.add(LabRecipeJson.outputJson(outputs.get(i)));
+                array.add(RecipeJson.outputJson(outputs.get(i)));
             }
             return true;
         }
         return false;
     }
 
-    private static void applyOutput(JsonObject object, LabRecipeOutput output) {
-        JsonObject replacement = LabRecipeJson.outputJson(output);
+    private static void applyOutput(JsonObject object, RecipeOutput output) {
+        JsonObject replacement = RecipeJson.outputJson(output);
         for (String key : List.copyOf(object.keySet())) object.remove(key);
         for (Map.Entry<String, JsonElement> entry : replacement.entrySet()) object.add(entry.getKey(), entry.getValue());
     }

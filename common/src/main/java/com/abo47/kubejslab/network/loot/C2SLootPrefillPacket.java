@@ -5,9 +5,9 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 
 import com.abo47.kubejslab.KubeJSLab;
-import com.abo47.kubejslab.loot.model.LabLootFieldValues;
-import com.abo47.kubejslab.loot.runtime.LabLootPrefill;
-import com.abo47.kubejslab.network.ModNetwork;
+import com.abo47.kubejslab.loot.model.LootFieldValues;
+import com.abo47.kubejslab.loot.runtime.LootPrefill;
+import com.abo47.kubejslab.network.NetworkRegistry;
 
 
 public record C2SLootPrefillPacket(ResourceLocation id, String lootType) {
@@ -27,7 +27,7 @@ public record C2SLootPrefillPacket(ResourceLocation id, String lootType) {
                     player.getName().getString());
             return;
         }
-        LabLootFieldValues values = LabLootPrefill.prefill(player.getServer(), id, lootType);
-        ModNetwork.sendLootPrefill(player, new S2CLootPrefillPacket(id, lootType, values));
+        LootFieldValues values = LootPrefill.prefill(player.getServer(), id, lootType);
+        NetworkRegistry.sendLootPrefill(player, new S2CLootPrefillPacket(id, lootType, values));
     }
 }

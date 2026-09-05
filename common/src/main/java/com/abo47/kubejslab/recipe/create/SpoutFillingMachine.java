@@ -4,8 +4,8 @@ import java.util.List;
 
 import net.minecraft.resources.ResourceLocation;
 
-import com.abo47.kubejslab.recipe.model.LabSlotDescriptor;
-import com.abo47.kubejslab.recipe.model.LabSlotKind;
+import com.abo47.kubejslab.recipe.model.SlotDescriptor;
+import com.abo47.kubejslab.recipe.model.SlotKind;
 
 
 public class SpoutFillingMachine extends ProcessingRecipeMachine {
@@ -14,14 +14,14 @@ public class SpoutFillingMachine extends ProcessingRecipeMachine {
     }
 
     @Override
-    public List<LabSlotDescriptor> inputSlots() {
+    public List<SlotDescriptor> inputSlots() {
         return List.of(
-                new LabSlotDescriptor(true, LabSlotKind.ITEM, 0, 0, false),
-                new LabSlotDescriptor(true, LabSlotKind.FLUID, 1, 2, true));
+                new SlotDescriptor(true, SlotKind.ITEM, 0, 0, false),
+                new SlotDescriptor(true, SlotKind.FLUID, 1, 2, true));
     }
 
     @Override
-    public List<LabSlotDescriptor> outputSlots() {
-        return List.of(new LabSlotDescriptor(false, LabSlotKind.ITEM, 3, 0, false));
+    public List<SlotDescriptor> outputSlots() {
+        return List.of(new SlotDescriptor(false, SlotKind.ITEM, 3, 0, false));
     }
 }

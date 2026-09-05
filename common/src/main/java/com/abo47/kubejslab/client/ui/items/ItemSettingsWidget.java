@@ -1,0 +1,909 @@
+package com.abo47.kubejslab.client.ui.items;
+
+import java.util.ArrayList;
+import java.util.function.Consumer;
+import java.util.List;
+
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+
+import com.lowdragmc.lowdraglib.gui.texture.TextTexture;
+import com.lowdragmc.lowdraglib.gui.widget.TextFieldWidget;
+
+import com.abo47.kubejslab.client.ui.widgets.ActionButton;
+import com.abo47.kubejslab.client.ui.widgets.CommitField;
+import com.abo47.kubejslab.client.ui.widgets.FieldRow;
+import com.abo47.kubejslab.client.ui.widgets.OptionDropdownWidget;
+import com.abo47.kubejslab.client.ui.widgets.RowCardSettings;
+import com.abo47.kubejslab.client.ui.widgets.SearchDropdownWidget;
+import com.abo47.kubejslab.client.ui.widgets.ToggleSwitchWidget;
+import com.abo47.kubejslab.item.model.ItemAction;
+import com.abo47.kubejslab.item.model.ItemField;
+import com.abo47.kubejslab.item.model.ItemFieldValues;
+import com.abo47.kubejslab.workspace.ScriptEscaping;
+
+
+public final class ItemSettingsWidget extends RowCardSettings {
+    private static final List<String> TYPES = List.of("basic", "sword", "pickaxe", "axe", "shovel", "hoe", "shears",
+            "helmet", "chestplate", "leggings", "boots", "music_disc");
+    private static final List<String> TOOL_TIERS = List.of("", "wood", "stone", "gold", "iron", "diamond", "netherite");
+    private static final List<String> ARMOR_TIERS = List.of("", "leather", "chain", "gold", "iron", "diamond", "netherite");
+    private static final List<String> RARITIES = List.of("common", "uncommon", "rare", "epic");
+    private static final List<String> OPERATIONS = List.of("addition", "multiply_base", "multiply_total");
+    private static final List<String> BEHAVIORS = List.of("none", "cancel", "give", "damage");
+
+    private final OptionDropdownWidget typeDropdown;
+    private final TextFieldWidget nameField;
+    private final ActionButton texturePickButton;
+    private final OptionDropdownWidget rarityDropdown;
+    private final TextFieldWidget maxStackField;
+    private final TextFieldWidget maxDamageField;
+    private final TextFieldWidget burnTimeField;
+    private final ToggleSwitchWidget glowToggle;
+    private final ToggleSwitchWidget fireResistantToggle;
+    private final TextFieldWidget containerItemField;
+    private final TextFieldWidget tooltipField;
+    private final TextFieldWidget tagsField;
+    private final SearchDropdownWidget foodEffectDropdown;
+    private final TextFieldWidget foodHungerField;
+    private final TextFieldWidget foodSaturationField;
+    private final ToggleSwitchWidget foodMeatToggle;
+    private final ToggleSwitchWidget foodFastToEatToggle;
+    private final ToggleSwitchWidget foodAlwaysEdibleToggle;
+    private final TextFieldWidget foodEffectDurationField;
+    private final TextFieldWidget foodEffectAmplifierField;
+    private final TextFieldWidget foodEffectChanceField;
+    private final OptionDropdownWidget toolTierDropdown;
+    private final TextFieldWidget attackDamageField;
+    private final TextFieldWidget attackSpeedField;
+    private final TextFieldWidget digSpeedField;
+    private final OptionDropdownWidget armorTierField;
+    private final TextFieldWidget armorProtectionField;
+    private final TextFieldWidget armorToughnessField;
+    private final TextFieldWidget armorKnockbackField;
+    private final TextFieldWidget tierUsesField;
+    private final TextFieldWidget tierSpeedField;
+    private final TextFieldWidget tierAttackDamageBonusField;
+    private final TextFieldWidget tierLevelField;
+    private final TextFieldWidget tierEnchantValueField;
+    private final TextFieldWidget tierRepairIngredientField;
+    private final TextFieldWidget tierDurabilityMultiplierField;
+    private final TextFieldWidget tierProtectionsField;
+    private final TextFieldWidget tierEquipSoundField;
+    private final TextFieldWidget tierToughnessField;
+    private final TextFieldWidget tierKnockbackResistanceField;
+    private final TextFieldWidget attributeIdField;
+    private final TextFieldWidget attributeNameField;
+    private final TextFieldWidget attributeAmountField;
+    private final OptionDropdownWidget attributeOperationDropdown;
+    private final OptionDropdownWidget behaviorDropdown;
+    private final TextFieldWidget behaviorItemField;
+    private final TextFieldWidget behaviorDamageField;
+    private final ToggleSwitchWidget hideCreativeToggle;
+    private final ToggleSwitchWidget removeRecipesToggle;
+    private final ToggleSwitchWidget hideViewerToggle;
+
+    private final TextTexture typeLabel;
+    private final TextTexture nameLabel;
+    private final TextTexture textureLabel;
+    private final TextTexture rarityLabel;
+    private final TextTexture maxStackLabel;
+    private final TextTexture maxDamageLabel;
+    private final TextTexture burnTimeLabel;
+    private final TextTexture glowLabel;
+    private final TextTexture fireResistantLabel;
+    private final TextTexture containerItemLabel;
+    private final TextTexture tooltipLabel;
+    private final TextTexture tagsLabel;
+    private final TextTexture foodHungerLabel;
+    private final TextTexture foodSaturationLabel;
+    private final TextTexture foodMeatLabel;
+    private final TextTexture foodFastToEatLabel;
+    private final TextTexture foodAlwaysEdibleLabel;
+    private final TextTexture foodEffectLabel;
+    private final TextTexture foodEffectDurationLabel;
+    private final TextTexture foodEffectAmplifierLabel;
+    private final TextTexture foodEffectChanceLabel;
+    private final TextTexture toolTierLabel;
+    private final TextTexture attackDamageLabel;
+    private final TextTexture attackSpeedLabel;
+    private final TextTexture digSpeedLabel;
+    private final TextTexture armorTierLabel;
+    private final TextTexture armorProtectionLabel;
+    private final TextTexture armorToughnessLabel;
+    private final TextTexture armorKnockbackLabel;
+    private final TextTexture tierUsesLabel;
+    private final TextTexture tierSpeedLabel;
+    private final TextTexture tierAttackDamageBonusLabel;
+    private final TextTexture tierLevelLabel;
+    private final TextTexture tierEnchantValueLabel;
+    private final TextTexture tierRepairIngredientLabel;
+    private final TextTexture tierDurabilityMultiplierLabel;
+    private final TextTexture tierProtectionsLabel;
+    private final TextTexture tierEquipSoundLabel;
+    private final TextTexture tierToughnessLabel;
+    private final TextTexture tierKnockbackResistanceLabel;
+    private final TextTexture attributeIdLabel;
+    private final TextTexture attributeNameLabel;
+    private final TextTexture attributeAmountLabel;
+    private final TextTexture attributeOperationLabel;
+    private final TextTexture behaviorLabel;
+    private final TextTexture behaviorItemLabel;
+    private final TextTexture behaviorDamageLabel;
+    private final TextTexture hideCreativeLabel;
+    private final TextTexture removeRecipesLabel;
+    private final TextTexture hideViewerLabel;
+
+    private boolean glow;
+    private boolean fireResistant;
+    private boolean foodMeat;
+    private boolean foodFastToEat;
+    private boolean foodAlwaysEdible;
+    private boolean hideCreative;
+    private boolean removeRecipes;
+    private boolean hideViewer;
+    private String name = "";
+    private String texture = "";
+    private String containerItem = "";
+    private String tooltip = "";
+    private String tags = "";
+    private String foodEffect = "";
+    private String toolTier = "";
+    private String armorTier = "";
+    private String tierRepairIngredient = "";
+    private String tierProtections = "";
+    private String tierEquipSound = "";
+    private String attributeId = "";
+    private String attributeName = "";
+    private String attributeOperation = "addition";
+    private String behavior = "none";
+    private String behaviorItem = "";
+    private String maxStackText = "64";
+    private String maxDamageText = "0";
+    private String burnTimeText = "0";
+    private String foodHungerText = "0";
+    private String foodSaturationText = "0";
+    private String foodEffectDurationText = "0";
+    private String foodEffectAmplifierText = "0";
+    private String foodEffectChanceText = "0";
+    private String attackDamageText = "0";
+    private String attackSpeedText = "0";
+    private String digSpeedText = "0";
+    private String armorProtectionText = "0";
+    private String armorToughnessText = "0";
+    private String armorKnockbackText = "0";
+    private String tierUsesText = "0";
+    private String tierSpeedText = "0";
+    private String tierAttackDamageBonusText = "0";
+    private String tierLevelText = "0";
+    private String tierEnchantValueText = "0";
+    private String tierDurabilityMultiplierText = "0";
+    private String tierToughnessText = "0";
+    private String tierKnockbackResistanceText = "0";
+    private String attributeAmountText = "0";
+    private String behaviorDamageText = "0";
+
+    private List<ItemField> fields = List.of();
+    private Runnable onTexturePick;
+
+    public ItemSettingsWidget(int x, int y, int w, int h) {
+        super(x, y, w, h, Component.translatable(ItemKeys.ITEM_CLEAR).getString(),
+                Component.translatable(ItemKeys.ITEM_SAVE).getString());
+
+        int pad = 6;
+        int labelW = w - pad * 2 - CONTROL_W - 4;
+
+        typeLabel = rowLabel(ItemKeys.ITEM_TYPE, labelW);
+        nameLabel = rowLabel(ItemKeys.ITEM_NAME, labelW);
+        textureLabel = rowLabel(ItemKeys.ITEM_TEXTURE, labelW);
+        rarityLabel = rowLabel(ItemKeys.ITEM_RARITY, labelW);
+        maxStackLabel = rowLabel(ItemKeys.ITEM_MAX_STACK, labelW);
+        maxDamageLabel = rowLabel(ItemKeys.ITEM_MAX_DAMAGE, labelW);
+        burnTimeLabel = rowLabel(ItemKeys.ITEM_BURN_TIME, labelW);
+        glowLabel = rowLabel(ItemKeys.ITEM_GLOW, labelW);
+        fireResistantLabel = rowLabel(ItemKeys.ITEM_FIRE_RESISTANT, labelW);
+        containerItemLabel = rowLabel(ItemKeys.ITEM_CONTAINER_ITEM, labelW);
+        tooltipLabel = rowLabel(ItemKeys.ITEM_TOOLTIP, labelW);
+        tagsLabel = rowLabel(ItemKeys.ITEM_TAGS, labelW);
+        foodHungerLabel = rowLabel(ItemKeys.ITEM_FOOD_HUNGER, labelW);
+        foodSaturationLabel = rowLabel(ItemKeys.ITEM_FOOD_SATURATION, labelW);
+        foodMeatLabel = rowLabel(ItemKeys.ITEM_FOOD_MEAT, labelW);
+        foodFastToEatLabel = rowLabel(ItemKeys.ITEM_FOOD_FAST_TO_EAT, labelW);
+        foodAlwaysEdibleLabel = rowLabel(ItemKeys.ITEM_FOOD_ALWAYS_EDIBLE, labelW);
+        foodEffectLabel = rowLabel(ItemKeys.ITEM_FOOD_EFFECT, labelW);
+        foodEffectDurationLabel = rowLabel(ItemKeys.ITEM_FOOD_EFFECT_DURATION, labelW);
+        foodEffectAmplifierLabel = rowLabel(ItemKeys.ITEM_FOOD_EFFECT_AMPLIFIER, labelW);
+        foodEffectChanceLabel = rowLabel(ItemKeys.ITEM_FOOD_EFFECT_CHANCE, labelW);
+        toolTierLabel = rowLabel(ItemKeys.ITEM_TOOL_TIER, labelW);
+        attackDamageLabel = rowLabel(ItemKeys.ITEM_ATTACK_DAMAGE, labelW);
+        attackSpeedLabel = rowLabel(ItemKeys.ITEM_ATTACK_SPEED, labelW);
+        digSpeedLabel = rowLabel(ItemKeys.ITEM_DIG_SPEED, labelW);
+        armorTierLabel = rowLabel(ItemKeys.ITEM_ARMOR_TIER, labelW);
+        armorProtectionLabel = rowLabel(ItemKeys.ITEM_ARMOR_PROTECTION, labelW);
+        armorToughnessLabel = rowLabel(ItemKeys.ITEM_ARMOR_TOUGHNESS, labelW);
+        armorKnockbackLabel = rowLabel(ItemKeys.ITEM_ARMOR_KNOCKBACK, labelW);
+        tierUsesLabel = rowLabel(ItemKeys.ITEM_TIER_USES, labelW);
+        tierSpeedLabel = rowLabel(ItemKeys.ITEM_TIER_SPEED, labelW);
+        tierAttackDamageBonusLabel = rowLabel(ItemKeys.ITEM_TIER_ATTACK_DAMAGE_BONUS, labelW);
+        tierLevelLabel = rowLabel(ItemKeys.ITEM_TIER_LEVEL, labelW);
+        tierEnchantValueLabel = rowLabel(ItemKeys.ITEM_TIER_ENCHANT, labelW);
+        tierRepairIngredientLabel = rowLabel(ItemKeys.ITEM_TIER_REPAIR, labelW);
+        tierDurabilityMultiplierLabel = rowLabel(ItemKeys.ITEM_TIER_DURABILITY, labelW);
+        tierProtectionsLabel = rowLabel(ItemKeys.ITEM_TIER_PROTECTIONS, labelW);
+        tierEquipSoundLabel = rowLabel(ItemKeys.ITEM_TIER_EQUIP_SOUND, labelW);
+        tierToughnessLabel = rowLabel(ItemKeys.ITEM_TIER_TOUGHNESS, labelW);
+        tierKnockbackResistanceLabel = rowLabel(ItemKeys.ITEM_TIER_KNOCKBACK, labelW);
+        attributeIdLabel = rowLabel(ItemKeys.ITEM_ATTRIBUTE_ID, labelW);
+        attributeNameLabel = rowLabel(ItemKeys.ITEM_ATTRIBUTE_NAME, labelW);
+        attributeAmountLabel = rowLabel(ItemKeys.ITEM_ATTRIBUTE_AMOUNT, labelW);
+        attributeOperationLabel = rowLabel(ItemKeys.ITEM_ATTRIBUTE_OPERATION, labelW);
+        behaviorLabel = rowLabel(ItemKeys.ITEM_BEHAVIOR, labelW);
+        behaviorItemLabel = rowLabel(ItemKeys.ITEM_BEHAVIOR_ITEM, labelW);
+        behaviorDamageLabel = rowLabel(ItemKeys.ITEM_BEHAVIOR_DAMAGE_AMOUNT, labelW);
+        hideCreativeLabel = rowLabel(ItemKeys.ITEM_DISABLE_CREATIVE, labelW);
+        removeRecipesLabel = rowLabel(ItemKeys.ITEM_DISABLE_RECIPES, labelW);
+        hideViewerLabel = rowLabel(ItemKeys.ITEM_DISABLE_VIEWER, labelW);
+
+        typeDropdown = new OptionDropdownWidget(0, 0, CONTROL_W, FIELD_H);
+        typeDropdown.setOptions(TYPES);
+        typeDropdown.setOnSelect(value -> rebuildRows());
+        addWidget(typeDropdown);
+        addPopupDropdown(typeDropdown);
+
+        nameField = commitField(this::commitName);
+        addWidget(nameField);
+
+        texturePickButton = new ActionButton(0, 0, CONTROL_W, FIELD_H,
+                Component.translatable(ItemKeys.ITEM_TEXTURE_PICK).getString(), () -> {
+            if (onTexturePick != null) onTexturePick.run();
+        });
+        addWidget(texturePickButton);
+
+        rarityDropdown = new OptionDropdownWidget(0, 0, CONTROL_W, FIELD_H);
+        rarityDropdown.setOptions(RARITIES);
+        rarityDropdown.setOnSelect(value -> {});
+        addWidget(rarityDropdown);
+        addPopupDropdown(rarityDropdown);
+
+        maxStackField = numberField(0, 0, () -> maxStackText, value -> maxStackText = value, maxStackText, 3);
+        addWidget(maxStackField);
+
+        maxDamageField = numberField(0, 0, () -> maxDamageText, value -> maxDamageText = value, maxDamageText);
+        addWidget(maxDamageField);
+
+        burnTimeField = numberField(0, 0, () -> burnTimeText, value -> burnTimeText = value, burnTimeText);
+        addWidget(burnTimeField);
+
+        glowToggle = new ToggleSwitchWidget(0, 0, () -> glow, value -> glow = value, null);
+        addWidget(glowToggle);
+
+        fireResistantToggle = new ToggleSwitchWidget(0, 0, () -> fireResistant, value -> fireResistant = value, null);
+        addWidget(fireResistantToggle);
+
+        containerItemField = commitField(this::commitContainerItem);
+        addWidget(containerItemField);
+
+        tooltipField = commitField(this::commitTooltip);
+        addWidget(tooltipField);
+
+        tagsField = commitField(this::commitTags);
+        addWidget(tagsField);
+
+        foodHungerField = numberField(0, 0, () -> foodHungerText, value -> foodHungerText = value, foodHungerText);
+        addWidget(foodHungerField);
+
+        foodSaturationField = numberField(0, 0, () -> foodSaturationText, value -> foodSaturationText = value,
+                foodSaturationText);
+        addWidget(foodSaturationField);
+
+        foodMeatToggle = new ToggleSwitchWidget(0, 0, () -> foodMeat, value -> foodMeat = value, null);
+        addWidget(foodMeatToggle);
+
+        foodFastToEatToggle = new ToggleSwitchWidget(0, 0, () -> foodFastToEat, value -> foodFastToEat = value, null);
+        addWidget(foodFastToEatToggle);
+
+        foodAlwaysEdibleToggle = new ToggleSwitchWidget(0, 0, () -> foodAlwaysEdible, value -> foodAlwaysEdible = value, null);
+        addWidget(foodAlwaysEdibleToggle);
+
+        foodEffectDropdown = new SearchDropdownWidget(0, 0, CONTROL_W, FIELD_H);
+        foodEffectDropdown.setOptions(BuiltInRegistries.MOB_EFFECT.keySet().stream()
+                .map(ResourceLocation::toString).sorted(String.CASE_INSENSITIVE_ORDER).toList());
+        addWidget(foodEffectDropdown);
+        addPopupDropdown(foodEffectDropdown);
+
+        foodEffectDurationField = numberField(0, 0, () -> foodEffectDurationText, value -> foodEffectDurationText = value,
+                foodEffectDurationText);
+        addWidget(foodEffectDurationField);
+
+        foodEffectAmplifierField = numberField(0, 0, () -> foodEffectAmplifierText, value -> foodEffectAmplifierText = value,
+                foodEffectAmplifierText);
+        addWidget(foodEffectAmplifierField);
+
+        foodEffectChanceField = numberField(0, 0, () -> foodEffectChanceText, value -> foodEffectChanceText = value,
+                foodEffectChanceText);
+        addWidget(foodEffectChanceField);
+
+        toolTierDropdown = new OptionDropdownWidget(0, 0, CONTROL_W, FIELD_H);
+        toolTierDropdown.setOptions(TOOL_TIERS);
+        toolTierDropdown.setSelected("");
+        addWidget(toolTierDropdown);
+        addPopupDropdown(toolTierDropdown);
+        attackDamageField = numberField(0, 0, () -> attackDamageText, value -> attackDamageText = value, attackDamageText);
+        addWidget(attackDamageField);
+
+        attackSpeedField = numberField(0, 0, () -> attackSpeedText, value -> attackSpeedText = value, attackSpeedText);
+        addWidget(attackSpeedField);
+
+        digSpeedField = numberField(0, 0, () -> digSpeedText, value -> digSpeedText = value, digSpeedText);
+        addWidget(digSpeedField);
+
+        armorTierField = new OptionDropdownWidget(0, 0, CONTROL_W, FIELD_H);
+        armorTierField.setOptions(ARMOR_TIERS);
+        armorTierField.setOnSelect(value -> {});
+        addWidget(armorTierField);
+        addPopupDropdown(armorTierField);
+
+        armorProtectionField = numberField(0, 0, () -> armorProtectionText, value -> armorProtectionText = value,
+                armorProtectionText);
+        addWidget(armorProtectionField);
+
+        armorToughnessField = numberField(0, 0, () -> armorToughnessText, value -> armorToughnessText = value,
+                armorToughnessText);
+        addWidget(armorToughnessField);
+
+        armorKnockbackField = numberField(0, 0, () -> armorKnockbackText, value -> armorKnockbackText = value,
+                armorKnockbackText);
+        addWidget(armorKnockbackField);
+
+        tierUsesField = numberField(0, 0, () -> tierUsesText, value -> tierUsesText = value, tierUsesText);
+        addWidget(tierUsesField);
+
+        tierSpeedField = numberField(0, 0, () -> tierSpeedText, value -> tierSpeedText = value, tierSpeedText);
+        addWidget(tierSpeedField);
+
+        tierAttackDamageBonusField = numberField(0, 0, () -> tierAttackDamageBonusText,
+                value -> tierAttackDamageBonusText = value, tierAttackDamageBonusText);
+        addWidget(tierAttackDamageBonusField);
+
+        tierLevelField = numberField(0, 0, () -> tierLevelText, value -> tierLevelText = value, tierLevelText);
+        addWidget(tierLevelField);
+
+        tierEnchantValueField = numberField(0, 0, () -> tierEnchantValueText, value -> tierEnchantValueText = value,
+                tierEnchantValueText);
+        addWidget(tierEnchantValueField);
+
+        tierRepairIngredientField = commitField(this::commitTierRepairIngredient);
+        addWidget(tierRepairIngredientField);
+
+        tierDurabilityMultiplierField = numberField(0, 0, () -> tierDurabilityMultiplierText,
+                value -> tierDurabilityMultiplierText = value, tierDurabilityMultiplierText);
+        addWidget(tierDurabilityMultiplierField);
+
+        tierProtectionsField = commitField(this::commitTierProtections);
+        addWidget(tierProtectionsField);
+
+        tierEquipSoundField = commitField(this::commitTierEquipSound);
+        addWidget(tierEquipSoundField);
+
+        tierToughnessField = numberField(0, 0, () -> tierToughnessText, value -> tierToughnessText = value,
+                tierToughnessText);
+        addWidget(tierToughnessField);
+
+        tierKnockbackResistanceField = numberField(0, 0, () -> tierKnockbackResistanceText,
+                value -> tierKnockbackResistanceText = value, tierKnockbackResistanceText);
+        addWidget(tierKnockbackResistanceField);
+
+        attributeIdField = commitField(this::commitAttributeId);
+        addWidget(attributeIdField);
+
+        attributeNameField = commitField(this::commitAttributeName);
+        addWidget(attributeNameField);
+
+        attributeAmountField = numberField(0, 0, () -> attributeAmountText, value -> attributeAmountText = value,
+                attributeAmountText);
+        addWidget(attributeAmountField);
+
+        attributeOperationDropdown = new OptionDropdownWidget(0, 0, CONTROL_W, FIELD_H);
+        attributeOperationDropdown.setOptions(OPERATIONS);
+        attributeOperationDropdown.setOnSelect(value -> {});
+        addWidget(attributeOperationDropdown);
+        addPopupDropdown(attributeOperationDropdown);
+
+        behaviorDropdown = new OptionDropdownWidget(0, 0, CONTROL_W, FIELD_H);
+        behaviorDropdown.setOptions(BEHAVIORS);
+        behaviorDropdown.setOnSelect(value -> {
+            behavior = value;
+            rebuildRows();
+        });
+        addWidget(behaviorDropdown);
+        addPopupDropdown(behaviorDropdown);
+
+        behaviorItemField = commitField(this::commitBehaviorItem);
+        addWidget(behaviorItemField);
+
+        behaviorDamageField = numberField(0, 0, () -> behaviorDamageText, value -> behaviorDamageText = value,
+                behaviorDamageText);
+        addWidget(behaviorDamageField);
+
+        hideCreativeToggle = new ToggleSwitchWidget(0, 0, () -> hideCreative, value -> hideCreative = value, null);
+        addWidget(hideCreativeToggle);
+
+        removeRecipesToggle = new ToggleSwitchWidget(0, 0, () -> removeRecipes, value -> removeRecipes = value, null);
+        addWidget(removeRecipesToggle);
+
+        hideViewerToggle = new ToggleSwitchWidget(0, 0, () -> hideViewer, value -> hideViewer = value, null);
+        addWidget(hideViewerToggle);
+
+        typeByDefault();
+    }
+
+    private void typeByDefault() {
+        typeDropdown.setSelected(TYPES.get(0));
+    }
+
+    private void commitName(String value) {
+        if (value != null) name = value;
+    }
+
+    private void commitContainerItem(String value) {
+        if (value != null) containerItem = value;
+    }
+
+    private void commitTooltip(String value) {
+        if (value != null) tooltip = value;
+    }
+
+    private void commitTags(String value) {
+        if (value != null) tags = value;
+    }
+
+    private void commitTierRepairIngredient(String value) {
+        if (value != null) tierRepairIngredient = value;
+    }
+
+    private void commitTierProtections(String value) {
+        if (value != null) tierProtections = value;
+    }
+
+    private void commitTierEquipSound(String value) {
+        if (value != null) tierEquipSound = value;
+    }
+
+    private void commitAttributeId(String value) {
+        if (value != null) attributeId = value;
+    }
+
+    private void commitAttributeName(String value) {
+        if (value != null) attributeName = value;
+    }
+
+    private void commitBehaviorItem(String value) {
+        if (value != null) behaviorItem = value;
+    }
+
+    private void refreshToolTierOptions() {
+        List<String> merged = new ArrayList<>(TOOL_TIERS);
+        for (String id : ItemStates.customTierIds(false)) {
+            if (!merged.contains(id)) merged.add(id);
+        }
+        if (toolTier != null && !toolTier.isBlank() && !merged.contains(toolTier)) merged.add(toolTier);
+        toolTierDropdown.setOptions(merged);
+        toolTierDropdown.setSelected(toolTier);
+    }
+
+    private void refreshArmorTierOptions() {
+        List<String> merged = new ArrayList<>(ARMOR_TIERS);
+        for (String id : ItemStates.customTierIds(true)) {
+            if (!merged.contains(id)) merged.add(id);
+        }
+        if (armorTier != null && !armorTier.isBlank() && !merged.contains(armorTier)) merged.add(armorTier);
+        armorTierField.setOptions(merged);
+        armorTierField.setSelected(armorTier);
+    }
+
+    private static TextFieldWidget commitField(Consumer<String> onCommit) {
+        CommitField field = new CommitField(0, 0, CONTROL_W, FIELD_H, null, onCommit);
+        configureCommit(field);
+        return field;
+    }
+
+    public void setOnTexturePick(Runnable onTexturePick) {
+        this.onTexturePick = onTexturePick;
+    }
+
+    public void setType(String type) {
+        typeDropdown.setSelected(type);
+        rebuildRows();
+    }
+
+    public String getType() {
+        return typeDropdown.getSelected() == null ? "basic" : typeDropdown.getSelected();
+    }
+
+    public void setFields(List<ItemField> fields) {
+        this.fields = fields;
+        rebuildRows();
+    }
+
+    private boolean isDisabled(ItemField field) {
+        return switch (field) {
+            case TOOL_TIER, ATTACK_DAMAGE_BASELINE, SPEED_BASELINE, DIG_SPEED, TIER_USES, TIER_SPEED,
+                    TIER_ATTACK_DAMAGE_BONUS, TIER_LEVEL, TIER_ENCHANT_VALUE, TIER_REPAIR_INGREDIENT ->
+                    !isToolType(getType());
+            case ARMOR_TIER, ARMOR_PROTECTION, ARMOR_TOUGHNESS, ARMOR_KNOCKBACK, TIER_DURABILITY_MULTIPLIER,
+                    TIER_PROTECTIONS, TIER_EQUIP_SOUND, TIER_TOUGHNESS, TIER_KNOCKBACK_RESISTANCE ->
+                    !isArmorType(getType());
+            case BEHAVIOR_ITEM, BEHAVIOR_DAMAGE -> behavior.equals("none");
+            default -> false;
+        };
+    }
+
+    private static boolean isToolType(String type) {
+        return List.of("sword", "pickaxe", "axe", "shovel", "hoe", "shears").contains(type);
+    }
+
+    private static boolean isArmorType(String type) {
+        return List.of("helmet", "chestplate", "leggings", "boots").contains(type);
+    }
+
+    private void syncCommitFields() {
+        if (nameField != null && nameField.getRawCurrentString() != null) name = nameField.getRawCurrentString().trim();
+        if (containerItemField != null && containerItemField.getRawCurrentString() != null) containerItem = containerItemField.getRawCurrentString().trim();
+        if (tooltipField != null && tooltipField.getRawCurrentString() != null) tooltip = tooltipField.getRawCurrentString().trim();
+        if (tagsField != null && tagsField.getRawCurrentString() != null) tags = tagsField.getRawCurrentString().trim();
+        if (tierRepairIngredientField != null && tierRepairIngredientField.getRawCurrentString() != null) tierRepairIngredient = tierRepairIngredientField.getRawCurrentString().trim();
+        if (tierProtectionsField != null && tierProtectionsField.getRawCurrentString() != null) tierProtections = tierProtectionsField.getRawCurrentString().trim();
+        if (tierEquipSoundField != null && tierEquipSoundField.getRawCurrentString() != null) tierEquipSound = tierEquipSoundField.getRawCurrentString().trim();
+        if (attributeIdField != null && attributeIdField.getRawCurrentString() != null) attributeId = attributeIdField.getRawCurrentString().trim();
+        if (attributeNameField != null && attributeNameField.getRawCurrentString() != null) attributeName = attributeNameField.getRawCurrentString().trim();
+        if (behaviorItemField != null && behaviorItemField.getRawCurrentString() != null) behaviorItem = behaviorItemField.getRawCurrentString().trim();
+        if (maxStackField != null && maxStackField.getRawCurrentString() != null && !maxStackField.getRawCurrentString().trim().isBlank()) maxStackText = maxStackField.getRawCurrentString().trim();
+        if (maxDamageField != null && maxDamageField.getRawCurrentString() != null && !maxDamageField.getRawCurrentString().trim().isBlank()) maxDamageText = maxDamageField.getRawCurrentString().trim();
+        if (burnTimeField != null && burnTimeField.getRawCurrentString() != null && !burnTimeField.getRawCurrentString().trim().isBlank()) burnTimeText = burnTimeField.getRawCurrentString().trim();
+        if (foodHungerField != null && foodHungerField.getRawCurrentString() != null && !foodHungerField.getRawCurrentString().trim().isBlank()) foodHungerText = foodHungerField.getRawCurrentString().trim();
+        if (foodSaturationField != null && foodSaturationField.getRawCurrentString() != null && !foodSaturationField.getRawCurrentString().trim().isBlank()) foodSaturationText = foodSaturationField.getRawCurrentString().trim();
+        if (foodEffectDurationField != null && foodEffectDurationField.getRawCurrentString() != null && !foodEffectDurationField.getRawCurrentString().trim().isBlank()) foodEffectDurationText = foodEffectDurationField.getRawCurrentString().trim();
+        if (foodEffectAmplifierField != null && foodEffectAmplifierField.getRawCurrentString() != null && !foodEffectAmplifierField.getRawCurrentString().trim().isBlank()) foodEffectAmplifierText = foodEffectAmplifierField.getRawCurrentString().trim();
+        if (foodEffectChanceField != null && foodEffectChanceField.getRawCurrentString() != null && !foodEffectChanceField.getRawCurrentString().trim().isBlank()) foodEffectChanceText = foodEffectChanceField.getRawCurrentString().trim();
+        if (attackDamageField != null && attackDamageField.getRawCurrentString() != null && !attackDamageField.getRawCurrentString().trim().isBlank()) attackDamageText = attackDamageField.getRawCurrentString().trim();
+        if (attackSpeedField != null && attackSpeedField.getRawCurrentString() != null && !attackSpeedField.getRawCurrentString().trim().isBlank()) attackSpeedText = attackSpeedField.getRawCurrentString().trim();
+        if (digSpeedField != null && digSpeedField.getRawCurrentString() != null && !digSpeedField.getRawCurrentString().trim().isBlank()) digSpeedText = digSpeedField.getRawCurrentString().trim();
+        if (armorProtectionField != null && armorProtectionField.getRawCurrentString() != null && !armorProtectionField.getRawCurrentString().trim().isBlank()) armorProtectionText = armorProtectionField.getRawCurrentString().trim();
+        if (armorToughnessField != null && armorToughnessField.getRawCurrentString() != null && !armorToughnessField.getRawCurrentString().trim().isBlank()) armorToughnessText = armorToughnessField.getRawCurrentString().trim();
+        if (armorKnockbackField != null && armorKnockbackField.getRawCurrentString() != null && !armorKnockbackField.getRawCurrentString().trim().isBlank()) armorKnockbackText = armorKnockbackField.getRawCurrentString().trim();
+        if (tierUsesField != null && tierUsesField.getRawCurrentString() != null && !tierUsesField.getRawCurrentString().trim().isBlank()) tierUsesText = tierUsesField.getRawCurrentString().trim();
+        if (tierSpeedField != null && tierSpeedField.getRawCurrentString() != null && !tierSpeedField.getRawCurrentString().trim().isBlank()) tierSpeedText = tierSpeedField.getRawCurrentString().trim();
+        if (tierAttackDamageBonusField != null && tierAttackDamageBonusField.getRawCurrentString() != null && !tierAttackDamageBonusField.getRawCurrentString().trim().isBlank()) tierAttackDamageBonusText = tierAttackDamageBonusField.getRawCurrentString().trim();
+        if (tierLevelField != null && tierLevelField.getRawCurrentString() != null && !tierLevelField.getRawCurrentString().trim().isBlank()) tierLevelText = tierLevelField.getRawCurrentString().trim();
+        if (tierEnchantValueField != null && tierEnchantValueField.getRawCurrentString() != null && !tierEnchantValueField.getRawCurrentString().trim().isBlank()) tierEnchantValueText = tierEnchantValueField.getRawCurrentString().trim();
+        if (tierDurabilityMultiplierField != null && tierDurabilityMultiplierField.getRawCurrentString() != null && !tierDurabilityMultiplierField.getRawCurrentString().trim().isBlank()) tierDurabilityMultiplierText = tierDurabilityMultiplierField.getRawCurrentString().trim();
+        if (tierToughnessField != null && tierToughnessField.getRawCurrentString() != null && !tierToughnessField.getRawCurrentString().trim().isBlank()) tierToughnessText = tierToughnessField.getRawCurrentString().trim();
+        if (tierKnockbackResistanceField != null && tierKnockbackResistanceField.getRawCurrentString() != null && !tierKnockbackResistanceField.getRawCurrentString().trim().isBlank()) tierKnockbackResistanceText = tierKnockbackResistanceField.getRawCurrentString().trim();
+        if (attributeAmountField != null && attributeAmountField.getRawCurrentString() != null && !attributeAmountField.getRawCurrentString().trim().isBlank()) attributeAmountText = attributeAmountField.getRawCurrentString().trim();
+        if (behaviorDamageField != null && behaviorDamageField.getRawCurrentString() != null && !behaviorDamageField.getRawCurrentString().trim().isBlank()) behaviorDamageText = behaviorDamageField.getRawCurrentString().trim();
+    }
+
+    private void rebuildRows() {
+        syncCommitFields();
+        List<FieldRow> rows = new ArrayList<>();
+        for (ItemField field : fields) {
+            FieldRow row = new FieldRow(rowLabelFor(field), fieldControl(field), null, isDisabled(field));
+            if (row.control() != null) {
+                row.control().setHoverTooltips(List.of(Component.translatable(ItemTooltips.key(field))));
+            }
+            rows.add(row);
+        }
+        setRows(rows);
+    }
+
+    private TextTexture rowLabelFor(ItemField field) {
+        return switch (field) {
+            case TYPE -> typeLabel;
+            case DISPLAY_NAME -> nameLabel;
+            case TEXTURE -> textureLabel;
+            case RARITY -> rarityLabel;
+            case MAX_STACK -> maxStackLabel;
+            case MAX_DAMAGE -> maxDamageLabel;
+            case BURN_TIME -> burnTimeLabel;
+            case GLOW -> glowLabel;
+            case FIRE_RESISTANT -> fireResistantLabel;
+            case CONTAINER_ITEM -> containerItemLabel;
+            case TOOLTIP -> tooltipLabel;
+            case TAGS -> tagsLabel;
+            case FOOD_HUNGER -> foodHungerLabel;
+            case FOOD_SATURATION -> foodSaturationLabel;
+            case FOOD_MEAT -> foodMeatLabel;
+            case FOOD_FAST_TO_EAT -> foodFastToEatLabel;
+            case FOOD_ALWAYS_EDIBLE -> foodAlwaysEdibleLabel;
+            case FOOD_EFFECT -> foodEffectLabel;
+            case FOOD_EFFECT_DURATION -> foodEffectDurationLabel;
+            case FOOD_EFFECT_AMPLIFIER -> foodEffectAmplifierLabel;
+            case FOOD_EFFECT_CHANCE -> foodEffectChanceLabel;
+            case TOOL_TIER -> toolTierLabel;
+            case ATTACK_DAMAGE_BASELINE -> attackDamageLabel;
+            case SPEED_BASELINE -> attackSpeedLabel;
+            case DIG_SPEED -> digSpeedLabel;
+            case ARMOR_TIER -> armorTierLabel;
+            case ARMOR_PROTECTION -> armorProtectionLabel;
+            case ARMOR_TOUGHNESS -> armorToughnessLabel;
+            case ARMOR_KNOCKBACK -> armorKnockbackLabel;
+            case TIER_USES -> tierUsesLabel;
+            case TIER_SPEED -> tierSpeedLabel;
+            case TIER_ATTACK_DAMAGE_BONUS -> tierAttackDamageBonusLabel;
+            case TIER_LEVEL -> tierLevelLabel;
+            case TIER_ENCHANT_VALUE -> tierEnchantValueLabel;
+            case TIER_REPAIR_INGREDIENT -> tierRepairIngredientLabel;
+            case TIER_DURABILITY_MULTIPLIER -> tierDurabilityMultiplierLabel;
+            case TIER_PROTECTIONS -> tierProtectionsLabel;
+            case TIER_EQUIP_SOUND -> tierEquipSoundLabel;
+            case TIER_TOUGHNESS -> tierToughnessLabel;
+            case TIER_KNOCKBACK_RESISTANCE -> tierKnockbackResistanceLabel;
+            case ATTRIBUTE_ID -> attributeIdLabel;
+            case ATTRIBUTE_NAME -> attributeNameLabel;
+            case ATTRIBUTE_AMOUNT -> attributeAmountLabel;
+            case ATTRIBUTE_OPERATION -> attributeOperationLabel;
+            case BEHAVIOR -> behaviorLabel;
+            case BEHAVIOR_ITEM -> behaviorItemLabel;
+            case BEHAVIOR_DAMAGE -> behaviorDamageLabel;
+            case DISABLE_CREATIVE_HIDE -> hideCreativeLabel;
+            case DISABLE_RECIPE_REMOVAL -> removeRecipesLabel;
+            case DISABLE_VIEWER_HIDE -> hideViewerLabel;
+        };
+    }
+
+    private com.lowdragmc.lowdraglib.gui.widget.Widget fieldControl(ItemField field) {
+        return switch (field) {
+            case TYPE -> typeDropdown;
+            case DISPLAY_NAME -> nameField;
+            case TEXTURE -> texturePickButton;
+            case RARITY -> rarityDropdown;
+            case MAX_STACK -> maxStackField;
+            case MAX_DAMAGE -> maxDamageField;
+            case BURN_TIME -> burnTimeField;
+            case GLOW -> glowToggle;
+            case FIRE_RESISTANT -> fireResistantToggle;
+            case CONTAINER_ITEM -> containerItemField;
+            case TOOLTIP -> tooltipField;
+            case TAGS -> tagsField;
+            case FOOD_HUNGER -> foodHungerField;
+            case FOOD_SATURATION -> foodSaturationField;
+            case FOOD_MEAT -> foodMeatToggle;
+            case FOOD_FAST_TO_EAT -> foodFastToEatToggle;
+            case FOOD_ALWAYS_EDIBLE -> foodAlwaysEdibleToggle;
+            case FOOD_EFFECT -> foodEffectDropdown;
+            case FOOD_EFFECT_DURATION -> foodEffectDurationField;
+            case FOOD_EFFECT_AMPLIFIER -> foodEffectAmplifierField;
+            case FOOD_EFFECT_CHANCE -> foodEffectChanceField;
+            case TOOL_TIER -> toolTierDropdown;
+            case ATTACK_DAMAGE_BASELINE -> attackDamageField;
+            case SPEED_BASELINE -> attackSpeedField;
+            case DIG_SPEED -> digSpeedField;
+            case ARMOR_TIER -> armorTierField;
+            case ARMOR_PROTECTION -> armorProtectionField;
+            case ARMOR_TOUGHNESS -> armorToughnessField;
+            case ARMOR_KNOCKBACK -> armorKnockbackField;
+            case TIER_USES -> tierUsesField;
+            case TIER_SPEED -> tierSpeedField;
+            case TIER_ATTACK_DAMAGE_BONUS -> tierAttackDamageBonusField;
+            case TIER_LEVEL -> tierLevelField;
+            case TIER_ENCHANT_VALUE -> tierEnchantValueField;
+            case TIER_REPAIR_INGREDIENT -> tierRepairIngredientField;
+            case TIER_DURABILITY_MULTIPLIER -> tierDurabilityMultiplierField;
+            case TIER_PROTECTIONS -> tierProtectionsField;
+            case TIER_EQUIP_SOUND -> tierEquipSoundField;
+            case TIER_TOUGHNESS -> tierToughnessField;
+            case TIER_KNOCKBACK_RESISTANCE -> tierKnockbackResistanceField;
+            case ATTRIBUTE_ID -> attributeIdField;
+            case ATTRIBUTE_NAME -> attributeNameField;
+            case ATTRIBUTE_AMOUNT -> attributeAmountField;
+            case ATTRIBUTE_OPERATION -> attributeOperationDropdown;
+            case BEHAVIOR -> behaviorDropdown;
+            case BEHAVIOR_ITEM -> behaviorItemField;
+            case BEHAVIOR_DAMAGE -> behaviorDamageField;
+            case DISABLE_CREATIVE_HIDE -> hideCreativeToggle;
+            case DISABLE_RECIPE_REMOVAL -> removeRecipesToggle;
+            case DISABLE_VIEWER_HIDE -> hideViewerToggle;
+        };
+    }
+
+    public ItemFieldValues getValues() {
+        syncCommitFields();
+        return new ItemFieldValues(
+                name,
+                texture,
+                rarityDropdown.getSelected() == null ? "" : rarityDropdown.getSelected(),
+                parseInt(maxStackText, 64),
+                parseInt(maxDamageText, 0),
+                parseInt(burnTimeText, 0),
+                glow,
+                fireResistant,
+                containerItem,
+                tooltip,
+                tags,
+                parseInt(foodHungerText, 0),
+                parseFloat(foodSaturationText, 0f),
+                foodMeat,
+                foodFastToEat,
+                foodAlwaysEdible,
+                foodEffectDropdown.getSelected(),
+                parseInt(foodEffectDurationText, 0),
+                parseInt(foodEffectAmplifierText, 0),
+                clampChance(parseFloat(foodEffectChanceText, 0f) / 100f),
+                toolTierDropdown.getSelected() == null ? "" : toolTierDropdown.getSelected(),
+                parseFloat(attackDamageText, 0f),
+                parseFloat(attackSpeedText, 0f),
+                parseFloat(digSpeedText, 0f),
+                armorTierField.getSelected() == null ? "" : armorTierField.getSelected(),
+                parseInt(armorProtectionText, 0),
+                parseFloat(armorToughnessText, 0f),
+                parseFloat(armorKnockbackText, 0f),
+                parseInt(tierUsesText, 0),
+                parseFloat(tierSpeedText, 0f),
+                parseFloat(tierAttackDamageBonusText, 0f),
+                parseInt(tierLevelText, 0),
+                parseInt(tierEnchantValueText, 0),
+                tierRepairIngredient,
+                parseFloat(tierDurabilityMultiplierText, 0f),
+                tierProtections,
+                tierEquipSound,
+                parseFloat(tierToughnessText, 0f),
+                parseFloat(tierKnockbackResistanceText, 0f),
+                attributeId,
+                attributeName,
+                parseFloat(attributeAmountText, 0f),
+                attributeOperationDropdown.getSelected() == null ? "" : attributeOperationDropdown.getSelected(),
+                behaviorItem,
+                parseInt(behaviorDamageText, 0));
+    }
+
+    public void applyValues(ItemFieldValues values) {
+        if (values == null) return;
+        name = values.displayName();
+        texture = values.texture();
+        rarityDropdown.setSelected(values.rarity() == null ? "" : values.rarity());
+        maxStackText = Integer.toString(values.maxStack());
+        maxDamageText = Integer.toString(values.maxDamage());
+        burnTimeText = Integer.toString(values.burnTime());
+        glow = values.glow();
+        fireResistant = values.fireResistant();
+        containerItem = values.containerItem();
+        tooltip = values.tooltip();
+        tags = values.tags();
+        foodHungerText = Integer.toString(values.foodHunger());
+        foodSaturationText = ScriptEscaping.fmt(values.foodSaturation());
+        foodMeat = values.foodMeat();
+        foodFastToEat = values.foodFastToEat();
+        foodAlwaysEdible = values.foodAlwaysEdible();
+        foodEffect = values.foodEffect();
+        foodEffectDropdown.setSelected(values.foodEffect());
+        foodEffectDurationText = Integer.toString(values.foodEffectDuration());
+        foodEffectAmplifierText = Integer.toString(values.foodEffectAmplifier());
+        foodEffectChanceText = ScriptEscaping.fmt(values.foodEffectChance() * 100f);
+        toolTier = values.toolTier();
+        attackDamageText = ScriptEscaping.fmt(values.attackDamageBaseline());
+        attackSpeedText = ScriptEscaping.fmt(values.speedBaseline());
+        digSpeedText = ScriptEscaping.fmt(values.digSpeed());
+        armorTier = values.armorTier();
+        armorProtectionText = Integer.toString(values.armorProtection());
+        armorToughnessText = ScriptEscaping.fmt(values.armorToughness());
+        armorKnockbackText = ScriptEscaping.fmt(values.armorKnockback());
+        tierUsesText = Integer.toString(values.tierUses());
+        tierSpeedText = ScriptEscaping.fmt(values.tierSpeed());
+        tierAttackDamageBonusText = ScriptEscaping.fmt(values.tierAttackDamageBonus());
+        tierLevelText = Integer.toString(values.tierLevel());
+        tierEnchantValueText = Integer.toString(values.tierEnchantValue());
+        tierRepairIngredient = values.tierRepairIngredient();
+        tierDurabilityMultiplierText = ScriptEscaping.fmt(values.tierDurabilityMultiplier());
+        tierProtections = values.tierProtections();
+        tierEquipSound = values.tierEquipSound();
+        tierToughnessText = ScriptEscaping.fmt(values.tierToughness());
+        tierKnockbackResistanceText = ScriptEscaping.fmt(values.tierKnockbackResistance());
+        attributeId = values.attributeId();
+        attributeName = values.attributeName();
+        attributeAmountText = ScriptEscaping.fmt(values.attributeAmount());
+        attributeOperationDropdown.setSelected(values.attributeOperation() == null ? "" : values.attributeOperation());
+        behaviorItem = values.behaviorItem();
+        behaviorDamageText = Integer.toString(values.behaviorDamage());
+
+        nameField.setCurrentString(name);
+        containerItemField.setCurrentString(containerItem);
+        tooltipField.setCurrentString(tooltip);
+        tagsField.setCurrentString(tags);
+        foodEffectDurationField.setCurrentString(foodEffectDurationText);
+        tierRepairIngredientField.setCurrentString(tierRepairIngredient);
+        tierProtectionsField.setCurrentString(tierProtections);
+        tierEquipSoundField.setCurrentString(tierEquipSound);
+        attributeIdField.setCurrentString(attributeId);
+        attributeNameField.setCurrentString(attributeName);
+        behaviorItemField.setCurrentString(behaviorItem);
+        texturePickButton.setLabel(fileName(texture));
+        refreshToolTierOptions();
+        refreshArmorTierOptions();
+        rebuildRows();
+    }
+
+    public List<String> getTags() {
+        List<String> result = new ArrayList<>();
+        for (String tag : tags.split(",")) {
+            String trimmed = tag.trim();
+            if (!trimmed.isBlank()) result.add(trimmed);
+        }
+        return result;
+    }
+
+    public List<ItemAction> getActions() {
+        List<ItemAction> result = new ArrayList<>();
+        switch (behavior) {
+            case "cancel" -> result.add(ItemAction.CANCEL_USE);
+            case "give" -> {
+                if (!behaviorItem.isBlank()) result.add(ItemAction.GIVE_ITEM);
+            }
+            case "damage" -> {
+                if (parseInt(behaviorDamageText, 0) > 0) result.add(ItemAction.DAMAGE_ITEM);
+            }
+            default -> {}
+        }
+        if (hideCreative) result.add(ItemAction.HIDE_CREATIVE_TAB);
+        if (removeRecipes) result.add(ItemAction.REMOVE_RECIPES);
+        if (hideViewer) result.add(ItemAction.HIDE_VIEWER);
+        return result;
+    }
+
+    public void applyTags(List<String> tags) {
+        StringBuilder joined = new StringBuilder();
+        for (String tag : tags) {
+            if (joined.length() > 0) joined.append(',');
+            joined.append(tag);
+        }
+        this.tags = joined.toString();
+        tagsField.setCurrentString(this.tags);
+    }
+
+    public static List<String> types() {
+        return TYPES;
+    }
+
+    public void setTextureValue(String relativePath) {
+        if (relativePath == null || relativePath.isBlank()) {
+            return;
+        }
+        texture = relativePath;
+        texturePickButton.setLabel(fileName(relativePath));
+    }
+
+    public String getTexture() {
+        return texture;
+    }
+
+    private static String fileName(String relativePath) {
+        if (relativePath == null || relativePath.isBlank()) {
+            return Component.translatable(ItemKeys.ITEM_TEXTURE_PICK).getString();
+        }
+        int slash = relativePath.lastIndexOf('/');
+        return slash < 0 ? relativePath : relativePath.substring(slash + 1);
+    }
+
+    public void applyActions(List<ItemAction> actions) {
+        behavior = "none";
+        hideCreative = false;
+        removeRecipes = false;
+        hideViewer = false;
+        for (ItemAction action : actions) {
+            switch (action) {
+                case CANCEL_USE -> behavior = "cancel";
+                case GIVE_ITEM -> behavior = "give";
+                case DAMAGE_ITEM -> behavior = "damage";
+                case HIDE_CREATIVE_TAB -> hideCreative = true;
+                case REMOVE_RECIPES -> removeRecipes = true;
+                case HIDE_VIEWER -> hideViewer = true;
+            }
+        }
+        behaviorDropdown.setSelected(behavior);
+        rebuildRows();
+    }
+
+    public List<ItemField> fullFields() {
+        return List.of(ItemField.values());
+    }
+}

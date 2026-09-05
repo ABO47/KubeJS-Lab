@@ -8,33 +8,33 @@ import java.util.Map;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 
-import com.abo47.kubejslab.block.model.LabBlockAction;
-import com.abo47.kubejslab.block.model.LabBlockFieldValues;
-import com.abo47.kubejslab.block.model.LabBlockState;
-import com.abo47.kubejslab.block.model.LabBlockStatus;
-import com.abo47.kubejslab.client.ui.blocks.LabBlockStates;
-import com.abo47.kubejslab.client.ui.LabScreen;
 import com.abo47.kubejslab.KubeJSLab;
+import com.abo47.kubejslab.block.model.BlockAction;
+import com.abo47.kubejslab.block.model.BlockFieldValues;
+import com.abo47.kubejslab.block.model.BlockState;
+import com.abo47.kubejslab.block.model.BlockStatus;
+import com.abo47.kubejslab.client.ui.blocks.BlockStates;
+import com.abo47.kubejslab.client.ui.shell.ScreenFactory;
 
 
-public record S2CBlockStatePacket(Map<ResourceLocation, LabBlockState> states, List<ResourceLocation> pendingOnly) {
+public record S2CBlockStatePacket(Map<ResourceLocation, BlockState> states, List<ResourceLocation> pendingOnly) {
 
     public void write(FriendlyByteBuf buf) {
         buf.writeVarInt(states.size());
-        for (LabBlockState entry : states.values()) {
+        for (BlockState entry : states.values()) {
             buf.writeUtf(entry.id().toString());
             buf.writeUtf(entry.type(), 32767);
             buf.writeVarInt(entry.status().ordinal());
             buf.writeBoolean(entry.pendingRestart());
             buf.writeUtf(entry.name());
             buf.writeBoolean(entry.wasModified());
-            LabBlockFieldValues.write(buf, entry.values());
+            BlockFieldValues.write(buf, entry.values());
             buf.writeVarInt(entry.tags().size());
             for (String tag : entry.tags()) {
                 buf.writeUtf(tag, 32767);
             }
             buf.writeVarInt(entry.actions().size());
-            for (LabBlockAction action : entry.actions()) {
+            for (BlockAction action : entry.actions()) {
                 buf.writeVarInt(action.ordinal());
             }
         }
@@ -50,29 +50,29 @@ public record S2CBlockStatePacket(Map<ResourceLocation, LabBlockState> states, L
 
     public static S2CBlockStatePacket read(FriendlyByteBuf buf) {
         int size = Math.min(buf.readVarInt(), 65536);
-        Map<ResourceLocation, LabBlockState> states = new HashMap<>();
+        Map<ResourceLocation, BlockState> states = new HashMap<>();
         for (int i = 0; i < size; i++) {
             ResourceLocation id = new ResourceLocation(buf.readUtf());
             String type = buf.readUtf();
-            int statusOrdinal = Math.min(buf.readVarInt(), LabBlockStatus.values().length - 1);
+            int statusOrdinal = Math.min(buf.readVarInt(), BlockStatus.values().length - 1);
             boolean pendingRestart = buf.readBoolean();
             String name = buf.readUtf();
             boolean wasModified = buf.readBoolean();
-            LabBlockFieldValues values = LabBlockFieldValues.read(buf);
+            BlockFieldValues values = BlockFieldValues.read(buf);
             int tagCount = Math.min(buf.readVarInt(), 32);
             List<String> tagList = new ArrayList<>(tagCount);
             for (int t = 0; t < tagCount; t++) {
                 tagList.add(buf.readUtf());
             }
             int actionCount = Math.min(buf.readVarInt(), 16);
-            List<LabBlockAction> actions = new ArrayList<>(actionCount);
+            List<BlockAction> actions = new ArrayList<>(actionCount);
             for (int a = 0; a < actionCount; a++) {
                 int ordinal = buf.readVarInt();
-                if (ordinal < LabBlockAction.values().length) {
-                    actions.add(LabBlockAction.values()[ordinal]);
+                if (ordinal < BlockAction.values().length) {
+                    actions.add(BlockAction.values()[ordinal]);
                 }
             }
-            states.put(id, new LabBlockState(id, type, LabBlockStatus.values()[statusOrdinal], pendingRestart, name,
+            states.put(id, new BlockState(id, type, BlockStatus.values()[statusOrdinal], pendingRestart, name,
                     wasModified, values, tagList, actions));
         }
         int pendingCount = Math.min(buf.readVarInt(), 65536);
@@ -84,7 +84,7 @@ public record S2CBlockStatePacket(Map<ResourceLocation, LabBlockState> states, L
     }
 
     public void handleClient() {
-        LabBlockStates.apply(states, pendingOnly);
-        LabScreen.refreshOpen();
+        BlockStates.apply(states, pendingOnly);
+        ScreenFactory.refreshOpen();
     }
 }

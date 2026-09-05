@@ -9,15 +9,15 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 
 import com.abo47.kubejslab.KubeJSLab;
-import com.abo47.kubejslab.loot.model.LabLootAction;
-import com.abo47.kubejslab.loot.model.LabLootEditAction;
-import com.abo47.kubejslab.loot.model.LabLootFieldValues;
-import com.abo47.kubejslab.loot.model.LabLootPayload;
-import com.abo47.kubejslab.loot.runtime.LabLootService;
+import com.abo47.kubejslab.loot.model.LootAction;
+import com.abo47.kubejslab.loot.model.LootEditAction;
+import com.abo47.kubejslab.loot.model.LootFieldValues;
+import com.abo47.kubejslab.loot.model.LootPayload;
+import com.abo47.kubejslab.loot.runtime.LootService;
 
 
-public record C2SLootEditPacket(LabLootEditAction action, @Nullable ResourceLocation targetId,
-        LabLootPayload payload) {
+public record C2SLootEditPacket(LootEditAction action, @Nullable ResourceLocation targetId,
+        LootPayload payload) {
 
     public void write(FriendlyByteBuf buf) {
         int start = buf.writerIndex();
@@ -28,14 +28,14 @@ public record C2SLootEditPacket(LabLootEditAction action, @Nullable ResourceLoca
         }
         buf.writeUtf(payload.lootType(), 32767);
         int afterIds = buf.writerIndex() - start;
-        LabLootFieldValues.write(buf, payload.values());
+        LootFieldValues.write(buf, payload.values());
         int afterValues = buf.writerIndex() - start;
         buf.writeVarInt(payload.tags().size());
         for (String tag : payload.tags()) {
             buf.writeUtf(tag, 32767);
         }
         buf.writeVarInt(payload.actions().size());
-        for (LabLootAction lootAction : payload.actions()) {
+        for (LootAction lootAction : payload.actions()) {
             buf.writeVarInt(lootAction.ordinal());
         }
         int total = buf.writerIndex() - start;
@@ -46,25 +46,25 @@ public record C2SLootEditPacket(LabLootEditAction action, @Nullable ResourceLoca
     }
 
     public static C2SLootEditPacket read(FriendlyByteBuf buf) {
-        LabLootEditAction action = LabLootEditAction.values()[buf.readVarInt()];
+        LootEditAction action = LootEditAction.values()[buf.readVarInt()];
         ResourceLocation targetId = buf.readBoolean() ? new ResourceLocation(buf.readUtf()) : null;
         String lootType = buf.readUtf();
-        LabLootFieldValues values = LabLootFieldValues.read(buf);
+        LootFieldValues values = LootFieldValues.read(buf);
         int tagCount = Math.min(buf.readVarInt(), 32);
         List<String> tagList = new ArrayList<>(tagCount);
         for (int i = 0; i < tagCount; i++) {
             tagList.add(buf.readUtf());
         }
         int actionCount = Math.min(buf.readVarInt(), 16);
-        List<LabLootAction> actions = new ArrayList<>(actionCount);
+        List<LootAction> actions = new ArrayList<>(actionCount);
         for (int i = 0; i < actionCount; i++) {
             int ordinal = buf.readVarInt();
-            if (ordinal < LabLootAction.values().length) {
-                actions.add(LabLootAction.values()[ordinal]);
+            if (ordinal < LootAction.values().length) {
+                actions.add(LootAction.values()[ordinal]);
             }
         }
         return new C2SLootEditPacket(action, targetId,
-                new LabLootPayload(targetId, lootType, values, tagList, actions));
+                new LootPayload(targetId, lootType, values, tagList, actions));
     }
 
     public void handle(ServerPlayer player) {
@@ -77,6 +77,6 @@ public record C2SLootEditPacket(LabLootEditAction action, @Nullable ResourceLoca
                     player.getName().getString());
             return;
         }
-        LabLootService.handle(player, action, targetId, payload);
+        LootService.handle(player, action, targetId, payload);
     }
 }

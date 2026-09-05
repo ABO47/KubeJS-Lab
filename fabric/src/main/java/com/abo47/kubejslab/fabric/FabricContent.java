@@ -10,10 +10,10 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 
-import com.abo47.kubejslab.block.LabTable;
-import com.abo47.kubejslab.content.LabContent;
-import com.abo47.kubejslab.item.LabTabletItem;
 import com.abo47.kubejslab.KubeJSLab;
+import com.abo47.kubejslab.block.WorktableBlock;
+import com.abo47.kubejslab.content.ContentRegistry;
+import com.abo47.kubejslab.item.TabletItem;
 
 
 public final class FabricContent {
@@ -29,7 +29,7 @@ public final class FabricContent {
         LAB_TABLE = Registry.register(
                 BuiltInRegistries.BLOCK,
                 id("lab_table"),
-                new LabTable(BlockBehaviour.Properties.of().strength(3.0F, 3.0F)));
+                new WorktableBlock(BlockBehaviour.Properties.of().strength(3.0F, 3.0F)));
 
         LAB_TABLE_ITEM = Registry.register(
                 BuiltInRegistries.ITEM,
@@ -39,9 +39,9 @@ public final class FabricContent {
         LAB_TABLET = Registry.register(
                 BuiltInRegistries.ITEM,
                 id("lab_tablet"),
-                new LabTabletItem(new Item.Properties().stacksTo(1)));
+                new TabletItem(new Item.Properties().stacksTo(1)));
 
-        LabContent.registerContent(() -> LAB_TABLE, () -> LAB_TABLE_ITEM, () -> LAB_TABLET);
+        ContentRegistry.registerContent(() -> LAB_TABLE, () -> LAB_TABLE_ITEM, () -> LAB_TABLET);
 
         MAIN_TAB = Registry.register(
                 BuiltInRegistries.CREATIVE_MODE_TAB,

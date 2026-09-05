@@ -4,13 +4,13 @@ import java.util.List;
 
 import net.minecraft.world.item.crafting.Recipe;
 
-import com.abo47.kubejslab.recipe.model.LabIngredient;
-import com.abo47.kubejslab.recipe.model.LabRecipeField;
-import com.abo47.kubejslab.recipe.model.LabRecipeFieldValues;
-import com.abo47.kubejslab.recipe.model.LabRecipeJson;
-import com.abo47.kubejslab.recipe.model.LabRecipeOutput;
-import com.abo47.kubejslab.recipe.model.LabSlotDescriptor;
-import com.abo47.kubejslab.recipe.model.LabSlotKind;
+import com.abo47.kubejslab.recipe.model.RecipeField;
+import com.abo47.kubejslab.recipe.model.RecipeFieldValues;
+import com.abo47.kubejslab.recipe.model.RecipeIngredient;
+import com.abo47.kubejslab.recipe.model.RecipeJson;
+import com.abo47.kubejslab.recipe.model.RecipeOutput;
+import com.abo47.kubejslab.recipe.model.SlotDescriptor;
+import com.abo47.kubejslab.recipe.model.SlotKind;
 
 import blusunrize.immersiveengineering.api.crafting.RefineryRecipe;
 import com.google.gson.JsonObject;
@@ -18,8 +18,8 @@ import com.google.gson.JsonObject;
 
 public class RefineryMachine extends ImmersiveEngineeringMachine {
     public RefineryMachine() {
-        super("refinery", LabRecipeField.ENERGY, LabRecipeField.FLUID_INPUT_AMOUNT,
-                LabRecipeField.FLUID_OUTPUT_AMOUNT);
+        super("refinery", RecipeField.ENERGY, RecipeField.FLUID_INPUT_AMOUNT,
+                RecipeField.FLUID_OUTPUT_AMOUNT);
     }
 
     @Override
@@ -33,35 +33,35 @@ public class RefineryMachine extends ImmersiveEngineeringMachine {
     }
 
     @Override
-    public List<LabSlotDescriptor> inputSlots() {
+    public List<SlotDescriptor> inputSlots() {
         return List.of(
-                new LabSlotDescriptor(true, LabSlotKind.FLUID, 0, 0, false),
-                new LabSlotDescriptor(true, LabSlotKind.FLUID, 1, 0, true),
-                new LabSlotDescriptor(true, LabSlotKind.ITEM, 0, 1, true));
+                new SlotDescriptor(true, SlotKind.FLUID, 0, 0, false),
+                new SlotDescriptor(true, SlotKind.FLUID, 1, 0, true),
+                new SlotDescriptor(true, SlotKind.ITEM, 0, 1, true));
     }
 
     @Override
-    public List<LabSlotDescriptor> outputSlots() {
-        return List.of(new LabSlotDescriptor(false, LabSlotKind.FLUID, 2, 1, false));
+    public List<SlotDescriptor> outputSlots() {
+        return List.of(new SlotDescriptor(false, SlotKind.FLUID, 2, 1, false));
     }
 
     @Override
-    public JsonObject buildJson(String type, List<LabIngredient> inputs, List<LabRecipeOutput> outputs,
-            LabRecipeFieldValues values) {
+    public JsonObject buildJson(String type, List<RecipeIngredient> inputs, List<RecipeOutput> outputs,
+            RecipeFieldValues values) {
         JsonObject json = new JsonObject();
         json.addProperty("type", type);
         int fluidIndex = 0;
-        for (LabIngredient input : inputs) {
-            if (input instanceof LabIngredient.Fluid) {
+        for (RecipeIngredient input : inputs) {
+            if (input instanceof RecipeIngredient.Fluid) {
                 json.add(fluidIndex == 0 ? "input0" : "input1",
                         fluidTagInput(input, values.fluidInputAmount()));
                 fluidIndex++;
             } else {
-                json.add("catalyst", LabRecipeJson.ingredientJson(input));
+                json.add("catalyst", RecipeJson.ingredientJson(input));
             }
         }
-        for (LabRecipeOutput output : outputs) {
-            if (output instanceof LabRecipeOutput.Fluid) {
+        for (RecipeOutput output : outputs) {
+            if (output instanceof RecipeOutput.Fluid) {
                 json.add("result", outputWithAmount(output, values.fluidOutputAmount()));
             }
         }
@@ -70,13 +70,13 @@ public class RefineryMachine extends ImmersiveEngineeringMachine {
     }
 
     @Override
-    public LabRecipeFieldValues prefill(LabRecipeFieldValues current, Recipe<?> original) {
+    public RecipeFieldValues prefill(RecipeFieldValues current, Recipe<?> original) {
         if (original instanceof RefineryRecipe refinery) {
             int fluidIn = 0;
             if (refinery.input0 != null) {
                 fluidIn = refinery.input0.getAmount();
             }
-            return new LabRecipeFieldValues(current.shapeless(), current.experience(), current.cookingTime(),
+            return new RecipeFieldValues(current.shapeless(), current.experience(), current.cookingTime(),
                     current.count(), current.processingTime(), current.heatRequirement(), current.keepHeldItem(),
                     current.acceptMirrored(), current.gridWidth(), current.gridHeight(),
                     refinery.getTotalProcessEnergy(), current.creosoteAmount(), current.mold(),

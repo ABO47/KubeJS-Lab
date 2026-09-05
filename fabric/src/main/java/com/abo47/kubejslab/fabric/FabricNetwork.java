@@ -4,8 +4,8 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 
-import com.abo47.kubejslab.client.ui.LabUIFactory;
 import com.abo47.kubejslab.KubeJSLab;
+import com.abo47.kubejslab.client.ui.shell.ServerScreenOpener;
 import com.abo47.kubejslab.network.block.C2SBlockEditPacket;
 import com.abo47.kubejslab.network.item.C2SItemEditPacket;
 import com.abo47.kubejslab.network.loot.C2SLootEditPacket;
@@ -42,7 +42,7 @@ public final class FabricNetwork {
         if (registered) return;
         registered = true;
         ServerPlayNetworking.registerGlobalReceiver(OPEN_REQUEST, (server, player, handler, buf, responseSender) -> {
-            server.execute(() -> LabUIFactory.open(player.blockPosition(), player));
+            server.execute(() -> ServerScreenOpener.open(player.blockPosition(), player));
         });
         ServerPlayNetworking.registerGlobalReceiver(RECIPE_EDIT, (server, player, handler, buf, responseSender) -> {
             C2SRecipeEditPacket packet = C2SRecipeEditPacket.read(buf);

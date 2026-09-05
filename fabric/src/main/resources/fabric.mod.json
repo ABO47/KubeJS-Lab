@@ -21,7 +21,7 @@
       "com.abo47.kubejslab.fabric.FabricModClient"
     ],
     "jei_mod_plugin": [
-      "com.abo47.kubejslab.client.jei.LabJeiPlugin"
+      "com.abo47.kubejslab.client.jei.JeiBridgePlugin"
     ]
   },
   "depends": {
