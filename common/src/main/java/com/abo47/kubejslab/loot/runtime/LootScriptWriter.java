@@ -60,16 +60,20 @@ public final class LootScriptWriter {
     }
 
     static void writeLootEntry(StringBuilder sb, String type, ResourceLocation id, LootSaveEntry data) {
-        if (data.status() == LootStatus.DISABLED) {
-            return;
-        }
         LootFieldValues v = data.values();
         String targetId = v.targetId();
         if (targetId == null || targetId.isBlank()) {
-            return;
+            if (data.status() != LootStatus.DISABLED || id == null) {
+                return;
+            }
+            targetId = id.toString();
         }
         String customId = v.customId();
         String entryId = customId == null || customId.isBlank() ? targetId : customId;
+        if (data.status() == LootStatus.DISABLED) {
+            writeDisabledEntry(sb, type, entryId);
+            return;
+        }
         if (v.pools().isEmpty()) {
             return;
         }
@@ -110,6 +114,19 @@ public final class LootScriptWriter {
             writePoolConditions(sb, pool);
             sb.append("        });\n");
         }
+        sb.append("    });\n");
+    }
+
+    static void writeDisabledEntry(StringBuilder sb, String type, String entryId) {
+        if (LootService.LOOT_TYPE_ENTITY.equals(type)) {
+            sb.append("    event.modifyEntity(Utils.getRegistry('minecraft:entity_type').getValue('")
+                    .append(js(entryId)).append("'), loot => {\n");
+        } else if (LootService.LOOT_TYPE_BLOCK.equals(type)) {
+            sb.append("    event.modifyBlock('").append(js(entryId)).append("', loot => {\n");
+        } else {
+            sb.append("    event.modify('").append(js(entryId)).append("', loot => {\n");
+        }
+        sb.append("        loot.clearPools();\n");
         sb.append("    });\n");
     }
 
