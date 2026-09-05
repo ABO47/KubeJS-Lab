@@ -8,13 +8,21 @@ import net.minecraft.world.level.material.Fluid;
 
 import com.lowdragmc.lowdraglib.side.fluid.FluidStack;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import dev.architectury.platform.Platform;
 
 
 public final class RecipeJson {
+    private static final Gson PRETTY = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
+
     private RecipeJson() {
+    }
+
+    public static String toPrettyString(JsonObject json) {
+        return PRETTY.toJson(json);
     }
 
     public static JsonObject itemJson(ItemStack stack) {

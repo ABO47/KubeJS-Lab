@@ -2,7 +2,10 @@ package com.abo47.kubejslab.client.ui.shell;
 
 import java.util.List;
 
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.ItemStack;
 
@@ -10,6 +13,7 @@ import com.abo47.kubejslab.KubeJSLab;
 import com.abo47.kubejslab.client.ui.machines.MachineCatalog;
 import com.abo47.kubejslab.client.ui.machines.MachineView;
 import com.abo47.kubejslab.client.ui.recipes.RecipeIndex;
+import com.abo47.kubejslab.client.ui.recipes.RecipeKeys;
 import com.abo47.kubejslab.client.ui.recipes.RecipeStates;
 import com.abo47.kubejslab.network.NetworkRegistry;
 import com.abo47.kubejslab.network.recipe.C2SRecipeEditPacket;
@@ -49,12 +53,14 @@ final class RecipeSaver {
         List<RecipeIngredient> inputs = panel.machineLayout.getInputs();
         if (!hasInput(inputs)) {
             KubeJSLab.LOGGER.info("[RecipeSaver] saveRecipe: no inputs, aborting");
+            tell(RecipeKeys.RECIPE_NEEDS_INPUT);
             return;
         }
         List<RecipeOutput> outputs = panel.machineLayout.getOutputs();
         Recipe<?> original = RecipeIndex.recipeById(panel.recipes.modifyTarget.id());
         if (outputs.isEmpty() && (original == null || !support.allowsEmptyResult(original))) {
             KubeJSLab.LOGGER.info("[RecipeSaver] saveRecipe: no outputs, aborting");
+            tell(RecipeKeys.RECIPE_NEEDS_OUTPUT);
             return;
         }
         KubeJSLab.LOGGER.info("[RecipeSaver] OVERRIDE {}: inputs={}, outputs={}, values={}", uid, inputs.size(),
@@ -76,11 +82,13 @@ final class RecipeSaver {
         List<RecipeIngredient> inputs = panel.machineLayout.getInputs();
         if (!hasInput(inputs)) {
             KubeJSLab.LOGGER.info("[RecipeSaver] saveNewRecipe: no inputs, aborting");
+            tell(RecipeKeys.RECIPE_NEEDS_INPUT);
             return;
         }
         List<RecipeOutput> outputs = panel.machineLayout.getOutputs();
         if (outputs.isEmpty()) {
             KubeJSLab.LOGGER.info("[RecipeSaver] saveNewRecipe: no outputs, aborting");
+            tell(RecipeKeys.RECIPE_NEEDS_OUTPUT);
             return;
         }
         KubeJSLab.LOGGER.info("[RecipeSaver] SAVE_NEW {}: inputs={}, outputs={}, values={}",
@@ -93,10 +101,12 @@ final class RecipeSaver {
     private void saveGenericOverride() {
         List<RecipeIngredient> inputs = panel.machineLayout.getInputs();
         if (!hasInput(inputs)) {
+            tell(RecipeKeys.RECIPE_NEEDS_INPUT);
             return;
         }
         List<RecipeOutput> outputs = panel.machineLayout.getOutputs();
         if (outputs.isEmpty()) {
+            tell(RecipeKeys.RECIPE_NEEDS_OUTPUT);
             return;
         }
         KubeJSLab.LOGGER.info("[RecipeSaver] saveGenericOverride: inputs={}, outputs={}", inputs.size(), outputs.size());
@@ -125,6 +135,13 @@ final class RecipeSaver {
             }
         }
         return "";
+    }
+
+    private static void tell(String key) {
+        Player player = Minecraft.getInstance().player;
+        if (player != null) {
+            player.displayClientMessage(Component.translatable(key), false);
+        }
     }
 
     ResourceLocation resolveModifyUid(RecipeIndex.RecipeEntry entry) {

@@ -19,6 +19,7 @@ import com.abo47.kubejslab.loot.model.LootAction;
 import com.abo47.kubejslab.loot.model.LootEditAction;
 import com.abo47.kubejslab.loot.model.LootFieldValues;
 import com.abo47.kubejslab.loot.model.LootPayload;
+import com.abo47.kubejslab.loot.model.LootPoolValues;
 import com.abo47.kubejslab.loot.model.LootState;
 import com.abo47.kubejslab.loot.model.LootStatus;
 import com.abo47.kubejslab.network.NetworkRegistry;
@@ -102,6 +103,7 @@ public final class LootService {
         if (targetIdStr == null || targetIdStr.isBlank()) {
             throw new IllegalArgumentException("Target ID is required");
         }
+        requireDroppableEntry(payload);
         String baseName = UniqueIds.slugify(targetIdStr);
         if (baseName.isBlank()) {
             throw new IllegalArgumentException("Target ID is required");
@@ -116,14 +118,27 @@ public final class LootService {
 
     private static void modify(ResourceLocation targetId, LootPayload payload) {
         if (targetId == null) {
-            return;
+            throw new IllegalArgumentException("Target loot table is required");
         }
+        String target = payload.values().targetId();
+        if (target == null || target.isBlank()) {
+            throw new IllegalArgumentException("Target ID is required");
+        }
+        requireDroppableEntry(payload);
         LootSaveEntry existing = STATE.get(targetId);
-        String name = payload.values().targetId().isBlank() && existing != null ? existing.name()
-                : payload.values().targetId();
+        String name = existing != null && !existing.name().isBlank() ? existing.name() : target;
         STATE.put(targetId, new LootSaveEntry(payload.lootType(), LootStatus.MODIFIED, name, true, payload.values(),
                 payload.tags(), payload.actions()));
         KubeJSLab.LOGGER.info("[LootService] MODIFY wrote {}", targetId);
+    }
+
+    private static void requireDroppableEntry(LootPayload payload) {
+        for (LootPoolValues pool : payload.values().pools()) {
+            if (pool != null && LootScriptWriter.writesPool(pool)) {
+                return;
+            }
+        }
+        throw new IllegalArgumentException("At least one loot drop is required");
     }
 
     private static void duplicate(ResourceLocation targetId) {

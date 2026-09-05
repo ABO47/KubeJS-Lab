@@ -10,6 +10,8 @@ public final class LootKeys {
     public static final String LOOT_DUPLICATE = "kubejslab.gui.lab_loot_duplicate";
     public static final String LOOT_CLEAR = "kubejslab.gui.lab_loot_clear";
     public static final String LOOT_SAVE = "kubejslab.gui.lab_loot_save";
+    public static final String LOOT_NEEDS_TARGET = "kubejslab.chat.loot_needs_target";
+    public static final String LOOT_NEEDS_DROP = "kubejslab.chat.loot_needs_drop";
     public static final String LOOT_DONE = "kubejslab.gui.lab_loot_done";
     public static final String LOOT_EDIT = "kubejslab.gui.lab_loot_edit";
     public static final String LOOT_POOL = "kubejslab.gui.lab_loot_pool";

@@ -51,6 +51,8 @@ public final class RecipeKeys {
     public static final String RECIPE_TOOLTIP_RENDER_TYPE = "kubejslab.gui.lab_recipe_tooltip_render_type";
     public static final String RECIPE_TOOLTIP_RENDER_BLOCK = "kubejslab.gui.lab_recipe_tooltip_render_block";
     public static final String RECIPE_TOOLTIP_FLUID_AMOUNT = "kubejslab.gui.lab_recipe_tooltip_fluid_amount";
+    public static final String RECIPE_NEEDS_INPUT = "kubejslab.chat.recipe_needs_input";
+    public static final String RECIPE_NEEDS_OUTPUT = "kubejslab.chat.recipe_needs_output";
 
     private RecipeKeys() {
     }

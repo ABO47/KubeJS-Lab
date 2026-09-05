@@ -82,25 +82,73 @@ public final class LootScriptWriter {
             sb.append("    event.").append(methodName).append("('").append(js(entryId)).append("', loot => {\n");
         }
         for (LootPoolValues pool : v.pools()) {
-            sb.append("        loot.addPool(pool => {\n");
-            writeRolls(sb, pool);
+            StringBuilder poolBody = new StringBuilder();
+            writeRolls(poolBody, pool);
             Set<Integer> emittedGroups = new HashSet<>();
+            boolean wroteEntry = false;
             for (LootEntryValues entry : pool.entries()) {
                 int group = Math.max(0, entry.alternativeGroup());
                 if (group > 0) {
                     if (!emittedGroups.add(group)) {
                         continue;
                     }
-                    writeAlternatives(sb, pool, group);
+                    int before = poolBody.length();
+                    writeAlternatives(poolBody, pool, group);
+                    wroteEntry |= poolBody.length() != before;
                 } else {
-                    writeEntry(sb, entry);
+                    int before = poolBody.length();
+                    writeEntry(poolBody, entry);
+                    wroteEntry |= poolBody.length() != before;
                 }
             }
+            if (!wroteEntry) {
+                continue;
+            }
+            sb.append("        loot.addPool(pool => {\n");
+            sb.append(poolBody);
             writePoolFunctions(sb, pool);
             writePoolConditions(sb, pool);
             sb.append("        });\n");
         }
         sb.append("    });\n");
+    }
+
+    public static boolean writesEntry(LootEntryValues e) {
+        String type = e.type() == null ? "item" : e.type();
+        return switch (type) {
+            case "dynamic" -> e.item() != null && !e.item().isBlank();
+            case "empty" -> true;
+            case "tag" -> e.tag() != null && !e.tag().isBlank();
+            case "loot_table" -> e.lootTable() != null && !e.lootTable().isBlank();
+            default -> e.item() != null && !e.item().isBlank();
+        };
+    }
+
+    public static boolean writesPool(LootPoolValues pool) {
+        Set<Integer> seenGroups = new HashSet<>();
+        for (LootEntryValues entry : pool.entries()) {
+            int group = Math.max(0, entry.alternativeGroup());
+            if (group > 0) {
+                if (!seenGroups.add(group)) {
+                    continue;
+                }
+                if (groupWrites(pool, group)) {
+                    return true;
+                }
+            } else if (writesEntry(entry)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean groupWrites(LootPoolValues pool, int group) {
+        for (LootEntryValues entry : pool.entries()) {
+            if (Math.max(0, entry.alternativeGroup()) == group && childJson(entry) != null) {
+                return true;
+            }
+        }
+        return false;
     }
 
     static void writeRolls(StringBuilder sb, LootPoolValues p) {
@@ -148,21 +196,13 @@ public final class LootScriptWriter {
                 sb.append("            pool.addLootTable('").append(js(lootTable)).append("')");
             }
             default -> {
-                String item = e.item();
-                if (item == null || item.isBlank()) {
+                if (!writesEntry(e)) {
                     return;
                 }
+                sb.append("            pool.addItem(").append(itemStackExpr(e)).append(", ").append(e.weight());
                 String countType = e.countType() == null ? "constant" : e.countType();
-                boolean hasUniform = "uniform".equals(countType) && e.countMin() != e.countMax();
-                    sb.append("            pool.addItem(Item.of('").append(js(item));
-                    if ("constant".equals(countType) && e.countValue() > 1f) {
-                        sb.append("', ").append(fmt(e.countValue())).append(")");
-                    } else {
-                        sb.append("')");
-                    }
-                    sb.append(", ").append(e.weight());
                 if ("uniform".equals(countType)) {
-                    if (hasUniform) {
+                    if (e.countMin() != e.countMax()) {
                         sb.append(", [").append(fmt(e.countMin())).append(", ").append(fmt(e.countMax()))
                                 .append("]");
                     } else {
@@ -177,6 +217,15 @@ public final class LootScriptWriter {
         }
         writeEntryChains(sb, e);
         sb.append(";\n");
+    }
+
+    static String itemStackExpr(LootEntryValues e) {
+        StringBuilder expr = new StringBuilder("Item.of('").append(js(e.item())).append("'");
+        String countType = e.countType() == null ? "constant" : e.countType();
+        if ("constant".equals(countType) && e.countValue() > 1f) {
+            expr.append(", ").append(fmt(e.countValue()));
+        }
+        return expr.append(")").toString();
     }
 
     static void writeEntryChains(StringBuilder sb, LootEntryValues e) {
@@ -475,6 +524,6 @@ public final class LootScriptWriter {
         if (s == null) {
             return "";
         }
-        return s.replace("\\", "\\\\").replace("'", "\\'");
+        return s.replace("\\", "\\\\").replace("'", "\\'").replace("\n", "\\n").replace("\r", "\\r");
     }
 }

@@ -25,6 +25,8 @@ import com.abo47.kubejslab.network.recipe.S2CRecipeStatePacket;
 import com.abo47.kubejslab.recipe.MachineRegistry;
 import com.abo47.kubejslab.recipe.RecipeHandler;
 import com.abo47.kubejslab.recipe.model.RecipeEditAction;
+import com.abo47.kubejslab.recipe.model.RecipeIngredient;
+import com.abo47.kubejslab.recipe.model.RecipeJson;
 import com.abo47.kubejslab.recipe.model.RecipeOutput;
 import com.abo47.kubejslab.recipe.model.RecipePayload;
 import com.abo47.kubejslab.recipe.model.RecipeStateEntry;
@@ -83,10 +85,9 @@ public final class RecipeService {
     }
 
     private static void saveNew(RecipePayload payload) throws IOException {
+        requireUsableInputs(payload);
+        requireUsableOutputs(payload);
         ItemStack output = RecipeOutput.displayStack(payload.outputs());
-        if (output.isEmpty()) {
-            return;
-        }
         ResourceLocation id = generateId(output);
         Path file = fileFor(id);
         int suffix = 2;
@@ -97,10 +98,10 @@ public final class RecipeService {
         }
         JsonObject json = buildJson(payload, null);
         if (json == null) {
-            return;
+            throw new IllegalArgumentException("Unsupported recipe type: " + payload.machineUid());
         }
         Files.createDirectories(file.getParent());
-        Files.writeString(file, json.toString());
+        Files.writeString(file, RecipeJson.toPrettyString(json));
         KubeJSLab.LOGGER.info("[RecipeService] SAVE_NEW wrote {} with json={}", file, json);
         SESSION_CREATED_IDS.add(id);
     }
@@ -109,8 +110,9 @@ public final class RecipeService {
             MinecraftServer server)
             throws IOException {
         if (targetId == null) {
-            return;
+            throw new IllegalArgumentException("Target recipe is required");
         }
+        requireUsableInputs(payload);
         Path file = fileFor(targetId);
         Files.createDirectories(file.getParent());
         RecipeStateEntry entry = STATE.get(targetId);
@@ -121,15 +123,26 @@ public final class RecipeService {
         }
         JsonObject json;
         if (payload.machineUid() == null || !MachineRegistry.supports(payload.machineUid())) {
+            requireUsableOutputs(payload);
             JsonObject originalJson = GenericRecipeModifier.originalFor(server, targetId);
-            json = originalJson == null ? null : GenericRecipeModifier.modify(originalJson, payload);
+            if (originalJson == null) {
+                throw new IllegalArgumentException("Original recipe not found: " + targetId);
+            }
+            json = GenericRecipeModifier.modify(originalJson, payload);
+            if (json == null) {
+                throw new IllegalArgumentException("Unsupported recipe shape: " + targetId);
+            }
         } else {
+            RecipeHandler machine = MachineRegistry.get(payload.machineUid());
+            if (!hasUsableOutput(payload) && (original == null || !machine.allowsEmptyResult(original))) {
+                throw new IllegalArgumentException("At least one output is required");
+            }
             json = buildJson(payload, original);
+            if (json == null) {
+                throw new IllegalArgumentException("Unsupported recipe type: " + payload.machineUid());
+            }
         }
-        if (json == null) {
-            return;
-        }
-        Files.writeString(file, json.toString());
+        Files.writeString(file, RecipeJson.toPrettyString(json));
         KubeJSLab.LOGGER.info("[RecipeService] OVERRIDE wrote {} with json={}", file, json);
         ItemStack display = RecipeOutput.displayStack(payload.outputs());
         STATE.put(targetId,
@@ -198,6 +211,36 @@ public final class RecipeService {
                 .forEach(id -> sb.append("    event.remove({ id: '").append(id).append("' });\n"));
         sb.append("});\n");
         ScriptWriter.write("server_scripts", "disabled.js", sb.toString());
+    }
+
+    private static void requireUsableInputs(RecipePayload payload) {
+        if (payload == null || !hasUsableInput(payload)) {
+            throw new IllegalArgumentException("At least one input ingredient is required");
+        }
+    }
+
+    private static void requireUsableOutputs(RecipePayload payload) {
+        if (payload == null || !hasUsableOutput(payload)) {
+            throw new IllegalArgumentException("At least one output is required");
+        }
+    }
+
+    private static boolean hasUsableInput(RecipePayload payload) {
+        for (RecipeIngredient input : payload.inputs()) {
+            if (input != null && !input.isEmpty()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean hasUsableOutput(RecipePayload payload) {
+        for (RecipeOutput output : payload.outputs()) {
+            if (output != null && !output.isEmpty()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static JsonObject buildJson(RecipePayload payload, Recipe<?> original) {
