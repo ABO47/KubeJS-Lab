@@ -44,8 +44,10 @@ public final class ItemBrowserWidget extends CardBrowserWidget<ItemCardWidget, I
     @Override
     protected List<ItemIndex.ItemEntry> entries() {
         List<ItemIndex.ItemEntry> entries = new ArrayList<>(ItemIndex.search(query(), kubejsOnly()));
+        String normalizedQuery = SearchNormalizer.normalizeUserSearch(query());
         entries.addAll(ItemStates.stateEntries().stream()
-                .filter(e -> query().isBlank() || e.matches(SearchNormalizer.normalizeUserSearch(query())))
+                .filter(e -> e.kubejs() == kubejsOnly())
+                .filter(e -> normalizedQuery.isBlank() || e.matches(normalizedQuery))
                 .toList());
         if (typeFilter != null && !typeFilter.isBlank()) {
             entries.removeIf(e -> {

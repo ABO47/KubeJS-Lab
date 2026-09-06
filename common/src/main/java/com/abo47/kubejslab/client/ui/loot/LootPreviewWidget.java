@@ -242,11 +242,17 @@ public final class LootPreviewWidget extends WidgetGroup {
     private void drawTarget(GuiGraphics g, int mx, int my) {
         int x = getPositionX() + PAD;
         int y = getPositionY() + PAD;
-        if (LootService.LOOT_TYPE_ENTITY.equals(lootType) && targetEgg().isEmpty()) {
-            if (entryId != null && renderEntity(g, x + TARGET_BOX / 2, y + TARGET_BOX / 2,
+        if (LootService.LOOT_TYPE_ENTITY.equals(lootType) && entryId != null) {
+            SlotWidget.ITEM_SLOT_TEXTURE.draw(g, mx, my, x, y, TARGET_BOX, TARGET_BOX);
+            if (renderEntity(g, x + TARGET_BOX / 2, y + TARGET_BOX / 2,
                     TARGET_BOX, TARGET_BOX, entryId)) {
                 return;
             }
+            ItemStack fallback = targetEgg().isEmpty() ? stackFor() : targetEgg();
+            if (!fallback.isEmpty()) {
+                new ItemStackTexture(fallback).draw(g, mx, my, x + 2, y + 2, TARGET_BOX - 4, TARGET_BOX - 4);
+            }
+            return;
         }
         SlotWidget.ITEM_SLOT_TEXTURE.draw(g, mx, my, x, y, TARGET_BOX, TARGET_BOX);
         ItemStack target = targetEgg().isEmpty() ? stackFor() : targetEgg();
@@ -330,9 +336,8 @@ public final class LootPreviewWidget extends WidgetGroup {
         tips.add(statLine(LootKeys.LOOT_PREVIEW_WEIGHT, Component.literal(Integer.toString(entry.weight()))));
         tips.add(statLine(LootKeys.LOOT_PREVIEW_QUALITY, Component.literal(Integer.toString(entry.quality()))));
         tips.add(statLine(LootKeys.LOOT_PREVIEW_COUNT, Component.literal(countLine(entry))));
-        if (!entry.toolRequirement().isBlank()) {
-            tips.add(statLine(LootKeys.LOOT_PREVIEW_REQUIRES,
-                    Component.translatable("enchantment.minecraft." + entry.toolRequirement())));
+        if (!entry.toolRequirement().isBlank() && !"none".equals(entry.toolRequirement())) {
+            tips.add(statLine(LootKeys.LOOT_PREVIEW_REQUIRES, toolPreviewLabel(entry.toolRequirement())));
         }
         if (entry.entryKilledByPlayer()) {
             tips.add(statLine(LootKeys.LOOT_PREVIEW_REQUIRES,
@@ -392,6 +397,17 @@ public final class LootPreviewWidget extends WidgetGroup {
     private static Component statLine(String labelKey, Component value) {
         return Component.translatable(labelKey).withStyle(ChatFormatting.GRAY)
                 .append(value.copy().withStyle(ChatFormatting.WHITE));
+    }
+
+    private static Component toolPreviewLabel(String toolRequirement) {
+        return switch (toolRequirement) {
+            case "silk_touch" -> Component.translatable(LootKeys.LOOT_TOOL_SILK_TOUCH);
+            case "fortune" -> Component.translatable(LootKeys.LOOT_TOOL_FORTUNE);
+            case "shears" -> Component.translatable(LootKeys.LOOT_TOOL_SHEARS);
+            case "silk_touch_or_shears" -> Component.translatable(LootKeys.LOOT_TOOL_SILK_TOUCH_OR_SHEARS);
+            case "no_silk_touch" -> Component.translatable(LootKeys.LOOT_TOOL_NO_SILK_TOUCH);
+            default -> Component.literal(toolRequirement);
+        };
     }
 
     private static String entryName(LootEntryValues entry) {

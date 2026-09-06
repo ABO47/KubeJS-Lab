@@ -257,10 +257,7 @@ public final class LootScriptWriter {
                 sb.append(".randomChance(").append(fmt(e.entryChance())).append(")");
             }
         }
-        if ("silk_touch".equals(e.toolRequirement()) || "fortune".equals(e.toolRequirement())) {
-            sb.append(".addCondition({condition: 'minecraft:match_tool', predicate: {enchantments: ")
-                    .append("[{enchantment: 'minecraft:").append(e.toolRequirement()).append("', levels: 1}]}})");
-        }
+        appendToolCondition(sb, e.toolRequirement());
         if (e.fortuneBonus()) {
             sb.append(".addFunction({function: 'minecraft:apply_bonus', enchantment: 'minecraft:fortune', ")
                     .append("formula: 'minecraft:ore_drops'})");
@@ -473,25 +470,120 @@ public final class LootScriptWriter {
                 conditions.add(chance);
             }
         }
-        if ("silk_touch".equals(e.toolRequirement()) || "fortune".equals(e.toolRequirement())) {
-            JsonObject predicate = new JsonObject();
-            JsonArray enchantments = new JsonArray();
-            JsonObject enchant = new JsonObject();
-            enchant.addProperty("enchantment", "minecraft:" + e.toolRequirement());
-            enchant.addProperty("levels", 1);
-            enchantments.add(enchant);
-            predicate.add("enchantments", enchantments);
-            JsonObject tool = new JsonObject();
-            tool.addProperty("condition", "minecraft:match_tool");
-            tool.add("predicate", predicate);
-            conditions.add(tool);
+        JsonObject toolCondition = toolConditionJson(e.toolRequirement());
+        if (toolCondition != null) {
+            conditions.add(toolCondition);
         }
         return conditions;
+    }
+
+    static void appendToolCondition(StringBuilder sb, String toolRequirement) {
+        if (toolRequirement == null || toolRequirement.isBlank() || "none".equals(toolRequirement)) {
+            return;
+        }
+        switch (toolRequirement) {
+            case "silk_touch", "fortune" -> sb.append(
+                    ".addCondition({condition: 'minecraft:match_tool', predicate: {enchantments: ")
+                    .append("[{enchantment: 'minecraft:").append(toolRequirement)
+                    .append("', levels: 1}]}})");
+            case "shears" -> sb.append(
+                    ".addCondition({condition: 'minecraft:match_tool', predicate: {items: ['minecraft:shears']}})");
+            case "silk_touch_or_shears" -> sb.append(
+                    ".addCondition({condition: 'minecraft:any_of', terms: [")
+                    .append("{condition: 'minecraft:match_tool', predicate: {enchantments: ")
+                    .append("[{enchantment: 'minecraft:silk_touch', levels: 1}]}}, ")
+                    .append("{condition: 'minecraft:match_tool', predicate: {items: ['minecraft:shears']}}]})");
+            case "no_silk_touch" -> sb.append(
+                    ".addCondition({condition: 'minecraft:inverted', term: ")
+                    .append("{condition: 'minecraft:match_tool', predicate: {enchantments: ")
+                    .append("[{enchantment: 'minecraft:silk_touch', levels: 1}]}}})");
+            default -> {
+            }
+        }
+    }
+
+    static JsonObject toolConditionJson(String toolRequirement) {
+        if (toolRequirement == null || toolRequirement.isBlank() || "none".equals(toolRequirement)) {
+            return null;
+        }
+        switch (toolRequirement) {
+            case "silk_touch", "fortune" -> {
+                JsonObject predicate = new JsonObject();
+                JsonArray enchantments = new JsonArray();
+                JsonObject enchant = new JsonObject();
+                enchant.addProperty("enchantment", "minecraft:" + toolRequirement);
+                enchant.addProperty("levels", 1);
+                enchantments.add(enchant);
+                predicate.add("enchantments", enchantments);
+                JsonObject tool = new JsonObject();
+                tool.addProperty("condition", "minecraft:match_tool");
+                tool.add("predicate", predicate);
+                return tool;
+            }
+            case "shears" -> {
+                JsonObject predicate = new JsonObject();
+                JsonArray items = new JsonArray();
+                items.add("minecraft:shears");
+                predicate.add("items", items);
+                JsonObject tool = new JsonObject();
+                tool.addProperty("condition", "minecraft:match_tool");
+                tool.add("predicate", predicate);
+                return tool;
+            }
+            case "silk_touch_or_shears" -> {
+                JsonObject silkPredicate = new JsonObject();
+                JsonArray silkEnchants = new JsonArray();
+                JsonObject silkEnchant = new JsonObject();
+                silkEnchant.addProperty("enchantment", "minecraft:silk_touch");
+                silkEnchant.addProperty("levels", 1);
+                silkEnchants.add(silkEnchant);
+                silkPredicate.add("enchantments", silkEnchants);
+                JsonObject silkTool = new JsonObject();
+                silkTool.addProperty("condition", "minecraft:match_tool");
+                silkTool.add("predicate", silkPredicate);
+                JsonObject shearsPredicate = new JsonObject();
+                JsonArray shearsItems = new JsonArray();
+                shearsItems.add("minecraft:shears");
+                shearsPredicate.add("items", shearsItems);
+                JsonObject shearsTool = new JsonObject();
+                shearsTool.addProperty("condition", "minecraft:match_tool");
+                shearsTool.add("predicate", shearsPredicate);
+                JsonObject anyOf = new JsonObject();
+                anyOf.addProperty("condition", "minecraft:any_of");
+                JsonArray terms = new JsonArray();
+                terms.add(silkTool);
+                terms.add(shearsTool);
+                anyOf.add("terms", terms);
+                return anyOf;
+            }
+            case "no_silk_touch" -> {
+                JsonObject predicate = new JsonObject();
+                JsonArray enchantments = new JsonArray();
+                JsonObject enchant = new JsonObject();
+                enchant.addProperty("enchantment", "minecraft:silk_touch");
+                enchant.addProperty("levels", 1);
+                enchantments.add(enchant);
+                predicate.add("enchantments", enchantments);
+                JsonObject tool = new JsonObject();
+                tool.addProperty("condition", "minecraft:match_tool");
+                tool.add("predicate", predicate);
+                JsonObject inverted = new JsonObject();
+                inverted.addProperty("condition", "minecraft:inverted");
+                inverted.add("term", tool);
+                return inverted;
+            }
+            default -> {
+                return null;
+            }
+        }
     }
 
     static void writePoolFunctions(StringBuilder sb, LootPoolValues p) {
         if (p.survivesExplosion()) {
             sb.append("            pool.survivesExplosion();\n");
+        }
+        if (p.bonusRolls() > 0f) {
+            sb.append("            pool.bonusRolls = ").append(fmt(p.bonusRolls())).append(";\n");
         }
         if (p.furnaceSmelt()) {
             sb.append("            pool.furnaceSmelt();\n");

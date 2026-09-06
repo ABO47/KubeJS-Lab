@@ -62,7 +62,7 @@ public final class ItemIndex {
     }
 
     public static List<ItemEntry> search(String query, boolean kubejsOnly) {
-        String normalizedQuery = SearchNormalizer.normalizeQuery(query);
+        String normalizedQuery = SearchNormalizer.normalizeUserSearch(query);
         List<ItemEntry> matches = new ArrayList<>();
         for (ItemEntry entry : ENTRIES.values()) {
             if (entry.kubejs() != kubejsOnly) {

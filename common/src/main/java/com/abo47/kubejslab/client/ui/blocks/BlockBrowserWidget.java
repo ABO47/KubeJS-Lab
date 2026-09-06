@@ -44,8 +44,10 @@ public final class BlockBrowserWidget extends CardBrowserWidget<BlockCardWidget,
     @Override
     protected List<BlockIndex.BlockEntry> entries() {
         List<BlockIndex.BlockEntry> entries = new ArrayList<>(BlockIndex.search(query(), kubejsOnly()));
+        String normalizedQuery = SearchNormalizer.normalizeUserSearch(query());
         entries.addAll(BlockStates.stateEntries().stream()
-                .filter(e -> query().isBlank() || e.matches(SearchNormalizer.normalizeUserSearch(query())))
+                .filter(e -> e.kubejs() == kubejsOnly())
+                .filter(e -> normalizedQuery.isBlank() || e.matches(normalizedQuery))
                 .toList());
         if (typeFilter != null && !typeFilter.isBlank()) {
             entries.removeIf(e -> {

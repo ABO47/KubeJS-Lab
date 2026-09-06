@@ -87,6 +87,7 @@ public final class WorkspacePanel extends WidgetGroup {
     final ItemSaver itemSaver;
     final BlockSaver blockSaver;
     final LootSaver lootSaver;
+    final BulkSaver bulkSaver;
     private PlayerInventoryWidget inventory;
     TextTexture modeLabel;
     TextTexture itemModeLabel;
@@ -190,6 +191,7 @@ public final class WorkspacePanel extends WidgetGroup {
         this.itemSaver = new ItemSaver(this);
         this.blockSaver = new BlockSaver(this);
         this.lootSaver = new LootSaver(this);
+        this.bulkSaver = new BulkSaver(this);
     }
 
     private void buildLeftContent() {
@@ -290,7 +292,7 @@ public final class WorkspacePanel extends WidgetGroup {
             }
             settingsWidget.resetScroll();
         });
-        settingsWidget.setOnSave(() -> saver.saveRecipe());
+        settingsWidget.setOnSave(() -> bulkSaver.saveAll());
         settingsWidget.setGridSizeListener(() -> machineLayout
                 .setGridSize(settingsWidget.gridWidthValue(), settingsWidget.gridHeightValue()));
         addWidget(settingsWidget);
@@ -351,7 +353,7 @@ public final class WorkspacePanel extends WidgetGroup {
             itemSettings.setFields(itemSettings.fullFields());
             itemSettings.resetScroll();
         });
-        itemSettings.setOnSave(() -> itemSaver.saveItem());
+        itemSettings.setOnSave(() -> bulkSaver.saveAll());
         itemSettings.setVisible(false);
         addWidget(itemSettings);
 
@@ -408,7 +410,7 @@ public final class WorkspacePanel extends WidgetGroup {
             blockSettings.setFields(blockSettings.fullFields());
             blockSettings.resetScroll();
         });
-        blockSettings.setOnSave(() -> blockSaver.saveBlock());
+        blockSettings.setOnSave(() -> bulkSaver.saveAll());
         blockSettings.setVisible(false);
         addWidget(blockSettings);
 
@@ -458,7 +460,7 @@ public final class WorkspacePanel extends WidgetGroup {
             lootSettings.setFields(List.of());
             lootSettings.resetScroll();
         });
-        lootSettings.setSaveHandler(() -> lootSaver.saveLoot());
+        lootSettings.setSaveHandler(() -> bulkSaver.saveAll());
         lootSettings.setPreviewListener(this.loot::refreshLootPreview);
         lootSettings.setVisible(false);
         addWidget(lootSettings);

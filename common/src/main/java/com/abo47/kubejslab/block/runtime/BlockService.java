@@ -23,6 +23,7 @@ import com.abo47.kubejslab.block.model.BlockStatus;
 import com.abo47.kubejslab.client.ui.shell.UiKeys;
 import com.abo47.kubejslab.network.NetworkRegistry;
 import com.abo47.kubejslab.network.block.S2CBlockStatePacket;
+import com.abo47.kubejslab.reload.ReloadKind;
 import com.abo47.kubejslab.workspace.ServerCommands;
 import com.abo47.kubejslab.workspace.UniqueIds;
 import com.abo47.kubejslab.workspace.WorkspacePaths;
@@ -85,7 +86,8 @@ public final class BlockService {
             BlockScriptWriter.writeClientScript(STATE);
             MinecraftServer server = player.getServer();
             ServerCommands.kubejsStartupReload(server);
-            ServerCommands.reload(server);
+            ServerCommands.reloadKind(server, ReloadKind.RECIPES);
+            ServerCommands.reloadKind(server, ReloadKind.LOOT);
             if (BlockTextures.copyTextures(STATE)) {
                 ServerCommands.kubejsTextureReload(server);
             }

@@ -9,6 +9,7 @@ import java.util.Set;
 
 import net.minecraft.resources.ResourceLocation;
 
+import com.abo47.kubejslab.client.ui.picker.SearchNormalizer;
 import com.abo47.kubejslab.client.ui.widgets.CardBrowserWidget;
 
 
@@ -56,9 +57,10 @@ public final class RecipeBrowserWidget extends CardBrowserWidget<RecipeCardWidge
             }
         }
         List<RecipeIndex.RecipeEntry> entries = new ArrayList<>(base);
+        String normalizedQuery = SearchNormalizer.normalizeUserSearch(query());
         entries.addAll(RecipeStates.disabledEntries(machineUid).stream()
                 .filter(e -> kubejsOnly() == e.kubejs())
-                .filter(e -> query().isBlank() || e.matches(query()))
+                .filter(e -> normalizedQuery.isBlank() || e.matches(normalizedQuery))
                 .toList());
         Set<ResourceLocation> seen = new HashSet<>();
         entries.removeIf(e -> !seen.add(e.id()));

@@ -91,6 +91,12 @@ public final class LootKeys {
     public static final String LOOT_LOOTING_ENCHANT = "kubejslab.gui.lab_loot_looting_enchant";
     public static final String LOOT_LOOTING_COUNT = "kubejslab.gui.lab_loot_looting_count";
     public static final String LOOT_LOOTING_LIMIT = "kubejslab.gui.lab_loot_looting_limit";
+    public static final String LOOT_POOL_BONUS_ROLLS = "kubejslab.gui.lab_loot_pool_bonus_rolls";
+    public static final String LOOT_TOOL_SILK_TOUCH = "kubejslab.gui.lab_loot_tool_silk_touch";
+    public static final String LOOT_TOOL_FORTUNE = "kubejslab.gui.lab_loot_tool_fortune";
+    public static final String LOOT_TOOL_SHEARS = "kubejslab.gui.lab_loot_tool_shears";
+    public static final String LOOT_TOOL_SILK_TOUCH_OR_SHEARS = "kubejslab.gui.lab_loot_tool_silk_touch_or_shears";
+    public static final String LOOT_TOOL_NO_SILK_TOUCH = "kubejslab.gui.lab_loot_tool_no_silk_touch";
 
     private LootKeys() {
     }

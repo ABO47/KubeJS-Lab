@@ -27,6 +27,7 @@ import com.abo47.kubejslab.item.model.ItemState;
 import com.abo47.kubejslab.item.model.ItemStatus;
 import com.abo47.kubejslab.network.NetworkRegistry;
 import com.abo47.kubejslab.network.item.S2CItemStatePacket;
+import com.abo47.kubejslab.reload.ReloadKind;
 import com.abo47.kubejslab.workspace.ServerCommands;
 import com.abo47.kubejslab.workspace.UniqueIds;
 import com.abo47.kubejslab.workspace.WorkspacePaths;
@@ -80,11 +81,12 @@ public final class ItemService {
             ItemScriptWriter.writeClientScript(STATE);
             MinecraftServer server = player.getServer();
             ServerCommands.kubejsStartupReload(server);
-            ServerCommands.reload(server);
+            ServerCommands.reloadKind(server, ReloadKind.RECIPES);
+            ServerCommands.reloadKind(server, ReloadKind.LOOT);
             if (ItemTextures.copyTextures(STATE)) {
                 ServerCommands.kubejsTextureReload(server);
             }
-            KubeJSLab.LOGGER.info("[ItemService] sent /kubejs reload startup_scripts and /reload after {}", action);
+            KubeJSLab.LOGGER.info("[ItemService] sent /kubejs reload startup_scripts and selective reload after {}", action);
             NetworkRegistry.sendItemState(player, statePacket());
             if (!PENDING.isEmpty()) {
                 player.sendSystemMessage(Component.translatable(UiKeys.CHAT_RESTART_REQUIRED));
