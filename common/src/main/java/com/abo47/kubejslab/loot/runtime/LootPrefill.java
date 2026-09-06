@@ -3,7 +3,9 @@ package com.abo47.kubejslab.loot.runtime;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
@@ -261,7 +263,7 @@ public final class LootPrefill {
         }
     }
 
-    private static LootEntryValues parseEntry(JsonObject entry) {
+    static LootEntryValues parseEntry(JsonObject entry) {
         String rawType = entry.has("type") ? entry.get("type").getAsString() : "";
         String type = "item";
         String item = "";
@@ -364,6 +366,7 @@ public final class LootPrefill {
         boolean entryKilledByPlayer = false;
         float entryChance = 1f;
         float entryChanceLooting = 0f;
+        JsonArray preservedConditions = new JsonArray();
         if (entry.has("conditions") && entry.get("conditions").isJsonArray()) {
             for (JsonElement condEl : entry.getAsJsonArray("conditions")) {
                 if (!condEl.isJsonObject()) {
@@ -379,21 +382,95 @@ public final class LootPrefill {
                         entryChance = Math.max(0f, Math.min(1f, asFloat(c.get("chance"), 0f)));
                         entryChanceLooting = Math.max(0f, asFloat(c.get("looting_multiplier"), 0f));
                     }
-                    case "minecraft:match_tool" -> {
-                        String tool = matchToolEnchant(c);
-                        if (tool != null && !toolRequirement.equals("silk_touch")) {
+                    case "minecraft:match_tool", "minecraft:inverted", "minecraft:any_of",
+                            "minecraft:alternative", "minecraft:all_of" -> {
+                        String tool = nestedToolRequirement(c);
+                        if (tool != null && toolRequirement.isBlank()) {
                             toolRequirement = tool;
-                        } else if (tool == null) {
-                            addNote(conditionNotes, describeCondition(c));
+                        } else {
+                            if (tool == null) {
+                                addNote(conditionNotes, describeCondition(c));
+                            }
+                            preserveCondition(preservedConditions, c);
                         }
                     }
-                    default -> addNote(conditionNotes, describeCondition(c));
+                    default -> {
+                        addNote(conditionNotes, describeCondition(c));
+                        preserveCondition(preservedConditions, c);
+                    }
                 }
             }
         }
         return new LootEntryValues(type, item, tag, lootTable, countType, countValue, countMin, countMax, weight,
                 quality, lootBonusMin, lootBonusMax, conditionNotes, toolRequirement, entryKilledByPlayer,
-                entryChance, entryChanceLooting, 0, fortuneBonus, lootBonusLimit, explosionDecay, "", "");
+                entryChance, entryChanceLooting, 0, fortuneBonus, lootBonusLimit, explosionDecay,
+                preservedConditions.isEmpty() ? "" : preservedConditions.toString(), "");
+    }
+
+    static String nestedToolRequirement(JsonObject condition) {
+        String name = condition.has("condition") ? condition.get("condition").getAsString() : "";
+        if ("minecraft:match_tool".equals(name)) {
+            return matchToolEnchant(condition);
+        }
+        if ("minecraft:inverted".equals(name)) {
+            if (condition.has("term") && condition.get("term").isJsonObject()) {
+                JsonObject term = condition.getAsJsonObject("term");
+                String termName = term.has("condition") ? term.get("condition").getAsString() : "";
+                if ("minecraft:match_tool".equals(termName)
+                        && "silk_touch".equals(matchToolEnchant(term))) {
+                    return "no_silk_touch";
+                }
+            }
+            return null;
+        }
+        if ("minecraft:any_of".equals(name) || "minecraft:alternative".equals(name)) {
+            if (!condition.has("terms") || !condition.get("terms").isJsonArray()) {
+                return null;
+            }
+            Set<String> tools = new HashSet<>();
+            for (JsonElement termEl : condition.getAsJsonArray("terms")) {
+                if (!termEl.isJsonObject()) {
+                    return null;
+                }
+                JsonObject term = termEl.getAsJsonObject();
+                String termName = term.has("condition") ? term.get("condition").getAsString() : "";
+                if (!"minecraft:match_tool".equals(termName)) {
+                    return null;
+                }
+                String tool = matchToolEnchant(term);
+                if (tool == null) {
+                    return null;
+                }
+                tools.add(tool);
+            }
+            if (tools.size() == 1) {
+                return tools.iterator().next();
+            }
+            if (tools.size() == 2 && tools.contains("silk_touch") && tools.contains("shears")) {
+                return "silk_touch_or_shears";
+            }
+            return null;
+        }
+        if ("minecraft:all_of".equals(name)) {
+            if (!condition.has("terms") || !condition.get("terms").isJsonArray()
+                    || condition.getAsJsonArray("terms").size() != 1
+                    || !condition.getAsJsonArray("terms").get(0).isJsonObject()) {
+                return null;
+            }
+            JsonObject term = condition.getAsJsonArray("terms").get(0).getAsJsonObject();
+            String termName = term.has("condition") ? term.get("condition").getAsString() : "";
+            if (!"minecraft:match_tool".equals(termName)) {
+                return null;
+            }
+            return matchToolEnchant(term);
+        }
+        return null;
+    }
+
+    private static void preserveCondition(JsonArray preserved, JsonObject condition) {
+        if (preserved.size() < 8) {
+            preserved.add(condition);
+        }
     }
 
     private static String matchToolEnchant(JsonObject condition) {
@@ -401,12 +478,29 @@ public final class LootPrefill {
             return null;
         }
         JsonObject predicate = condition.getAsJsonObject("predicate");
-        if (predicate.has("items") && predicate.get("items").isJsonArray()) {
-            for (JsonElement el : predicate.getAsJsonArray("items")) {
-                if (el.isJsonPrimitive() && "minecraft:shears".equals(el.getAsString())) {
-                    return "shears";
+        if (predicate.has("items")) {
+            JsonElement itemsEl = predicate.get("items");
+            List<String> ids = new ArrayList<>();
+            if (itemsEl.isJsonPrimitive()) {
+                ids.add(itemsEl.getAsString());
+            } else if (itemsEl.isJsonArray()) {
+                for (JsonElement el : itemsEl.getAsJsonArray()) {
+                    if (el.isJsonPrimitive()) {
+                        ids.add(el.getAsString());
+                    }
                 }
             }
+            if (!ids.isEmpty()) {
+                for (String id : ids) {
+                    if (!"minecraft:shears".equals(id)) {
+                        return null;
+                    }
+                }
+                return predicate.has("enchantments") ? null : "shears";
+            }
+        }
+        if (predicate.has("items")) {
+            return null;
         }
         if (!predicate.has("enchantments") || !predicate.get("enchantments").isJsonArray()) {
             return null;
