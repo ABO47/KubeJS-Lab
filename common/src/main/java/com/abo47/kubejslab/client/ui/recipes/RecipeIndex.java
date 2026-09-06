@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -42,7 +41,7 @@ public final class RecipeIndex {
 
     public static List<RecipeEntry> search(String query, boolean kubejsOnly, Set<ResourceLocation> machineRecipeIds) {
         List<RecipeEntry> source = entries();
-        String normalizedQuery = normalize(query);
+        String normalizedQuery = SearchNormalizer.normalizeUserSearch(query);
         List<RecipeEntry> matches = new ArrayList<>();
         for (RecipeEntry entry : source) {
             if (entry.kubejs() != kubejsOnly) {
@@ -204,7 +203,7 @@ public final class RecipeIndex {
     }
 
     private static String normalize(String value) {
-        return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
+        return SearchNormalizer.normalizeUserSearch(value);
     }
 
     public record RecipeEntry(

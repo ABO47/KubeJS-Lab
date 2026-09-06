@@ -1,7 +1,12 @@
 package com.abo47.kubejslab.client.ui.loot;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -47,6 +52,9 @@ public final class LootPreviewWidget extends WidgetGroup {
     private static final int FRONT_ENTITY_YAW = 205;
     private static final double FILL = 0.82D;
     private static final double MAX_SCALE = 96.0D;
+    private static final Map<String, Entity> ENTITY_CACHE = new HashMap<>();
+    private static final Map<Class<?>, Method> IMMUNE_SETTER_CACHE = new HashMap<>();
+    private static final Set<Class<?>> IMMUNE_NO_SETTER = new HashSet<>();
     private static final int SLOT = 18;
     private static final int GAP = 2;
     private static final int PAD = 4;
@@ -242,11 +250,17 @@ public final class LootPreviewWidget extends WidgetGroup {
     private void drawTarget(GuiGraphics g, int mx, int my) {
         int x = getPositionX() + PAD;
         int y = getPositionY() + PAD;
-        if (LootService.LOOT_TYPE_ENTITY.equals(lootType) && targetEgg().isEmpty()) {
-            if (entryId != null && renderEntity(g, x + TARGET_BOX / 2, y + TARGET_BOX / 2,
+        if (LootService.LOOT_TYPE_ENTITY.equals(lootType) && entryId != null) {
+            SlotWidget.ITEM_SLOT_TEXTURE.draw(g, mx, my, x, y, TARGET_BOX, TARGET_BOX);
+            if (renderEntity(g, x + TARGET_BOX / 2, y + TARGET_BOX / 2,
                     TARGET_BOX, TARGET_BOX, entryId)) {
                 return;
             }
+            ItemStack fallback = targetEgg().isEmpty() ? stackFor() : targetEgg();
+            if (!fallback.isEmpty()) {
+                new ItemStackTexture(fallback).draw(g, mx, my, x + 2, y + 2, TARGET_BOX - 4, TARGET_BOX - 4);
+            }
+            return;
         }
         SlotWidget.ITEM_SLOT_TEXTURE.draw(g, mx, my, x, y, TARGET_BOX, TARGET_BOX);
         ItemStack target = targetEgg().isEmpty() ? stackFor() : targetEgg();
@@ -330,9 +344,8 @@ public final class LootPreviewWidget extends WidgetGroup {
         tips.add(statLine(LootKeys.LOOT_PREVIEW_WEIGHT, Component.literal(Integer.toString(entry.weight()))));
         tips.add(statLine(LootKeys.LOOT_PREVIEW_QUALITY, Component.literal(Integer.toString(entry.quality()))));
         tips.add(statLine(LootKeys.LOOT_PREVIEW_COUNT, Component.literal(countLine(entry))));
-        if (!entry.toolRequirement().isBlank()) {
-            tips.add(statLine(LootKeys.LOOT_PREVIEW_REQUIRES,
-                    Component.translatable("enchantment.minecraft." + entry.toolRequirement())));
+        if (!entry.toolRequirement().isBlank() && !"none".equals(entry.toolRequirement())) {
+            tips.add(statLine(LootKeys.LOOT_PREVIEW_REQUIRES, toolPreviewLabel(entry.toolRequirement())));
         }
         if (entry.entryKilledByPlayer()) {
             tips.add(statLine(LootKeys.LOOT_PREVIEW_REQUIRES,
@@ -392,6 +405,17 @@ public final class LootPreviewWidget extends WidgetGroup {
     private static Component statLine(String labelKey, Component value) {
         return Component.translatable(labelKey).withStyle(ChatFormatting.GRAY)
                 .append(value.copy().withStyle(ChatFormatting.WHITE));
+    }
+
+    private static Component toolPreviewLabel(String toolRequirement) {
+        return switch (toolRequirement) {
+            case "silk_touch" -> Component.translatable(LootKeys.LOOT_TOOL_SILK_TOUCH);
+            case "fortune" -> Component.translatable(LootKeys.LOOT_TOOL_FORTUNE);
+            case "shears" -> Component.translatable(LootKeys.LOOT_TOOL_SHEARS);
+            case "silk_touch_or_shears" -> Component.translatable(LootKeys.LOOT_TOOL_SILK_TOUCH_OR_SHEARS);
+            case "no_silk_touch" -> Component.translatable(LootKeys.LOOT_TOOL_NO_SILK_TOUCH);
+            default -> Component.literal(toolRequirement);
+        };
     }
 
     private static String entryName(LootEntryValues entry) {
@@ -518,14 +542,37 @@ public final class LootPreviewWidget extends WidgetGroup {
         if (entityId == null || Minecraft.getInstance().level == null) {
             return false;
         }
-        EntityType<?> type = BuiltInRegistries.ENTITY_TYPE.get(entityId);
-        if (type == null) {
-            return false;
-        }
-        Entity entity = type.create(Minecraft.getInstance().level);
+        Entity entity = cachedEntity(entityId);
         if (entity == null) {
             return false;
         }
+        prepareEntityForRender(entity);
+        double scale = Math.max(1.0D, Math.min(MAX_SCALE,
+                Math.min(boxW / Math.max(0.25D, entity.getBbWidth()), boxH / Math.max(0.25D, entity.getBbHeight()))
+                        * FILL));
+        renderEntityInInventory(g, centerX, centerY, scale, entity, FRONT_ENTITY_YAW, 0.0F);
+        return true;
+    }
+
+    private static Entity cachedEntity(ResourceLocation entityId) {
+        EntityType<?> type = BuiltInRegistries.ENTITY_TYPE.get(entityId);
+        if (type == null || Minecraft.getInstance().level == null) {
+            return null;
+        }
+        String key = entityId.toString();
+        Entity entity = ENTITY_CACHE.get(key);
+        if (entity == null || entity.getType() != type || entity.level() != Minecraft.getInstance().level) {
+            entity = type.create(Minecraft.getInstance().level);
+            if (entity == null) {
+                return null;
+            }
+            ENTITY_CACHE.put(key, entity);
+        }
+        return entity;
+    }
+
+    private static void prepareEntityForRender(Entity entity) {
+        entity.tickCount = 0;
         entity.setYRot(0.0F);
         entity.setXRot(0.0F);
         entity.yRotO = 0.0F;
@@ -536,11 +583,42 @@ public final class LootPreviewWidget extends WidgetGroup {
             living.yHeadRot = 0.0F;
             living.yHeadRotO = 0.0F;
         }
-        double scale = Math.max(1.0D, Math.min(MAX_SCALE,
-                Math.min(boxW / Math.max(0.25D, entity.getBbWidth()), boxH / Math.max(0.25D, entity.getBbHeight()))
-                        * FILL));
-        renderEntityInInventory(g, centerX, centerY, scale, entity, FRONT_ENTITY_YAW, 0.0F);
-        return true;
+        suppressConversionAnimation(entity);
+    }
+
+    private static void suppressConversionAnimation(Entity entity) {
+        Class<?> clazz = entity.getClass();
+        if (IMMUNE_NO_SETTER.contains(clazz)) {
+            return;
+        }
+        Method setter = IMMUNE_SETTER_CACHE.get(clazz);
+        if (setter == null) {
+            setter = findImmuneSetter(clazz);
+            if (setter == null) {
+                IMMUNE_NO_SETTER.add(clazz);
+                return;
+            }
+            setter.setAccessible(true);
+            IMMUNE_SETTER_CACHE.put(clazz, setter);
+        }
+        try {
+            setter.invoke(entity, true);
+        } catch (Exception ignored) {
+        }
+    }
+
+    private static Method findImmuneSetter(Class<?> clazz) {
+        try {
+            return clazz.getMethod("setImmuneToZombification", boolean.class);
+        } catch (NoSuchMethodException ignored) {
+        }
+        for (Class<?> current = clazz; current != null && current != Object.class; current = current.getSuperclass()) {
+            try {
+                return current.getDeclaredMethod("setImmuneToZombification", boolean.class);
+            } catch (NoSuchMethodException ignored) {
+            }
+        }
+        return null;
     }
 
     @SuppressWarnings("deprecation")
@@ -557,14 +635,16 @@ public final class LootPreviewWidget extends WidgetGroup {
         Lighting.setupForEntityInInventory();
         EntityRenderDispatcher dispatcher = Minecraft.getInstance().getEntityRenderDispatcher();
         dispatcher.setRenderShadow(false);
+        Quaternionf previousCameraOrientation = dispatcher.cameraOrientation();
         dispatcher.overrideCameraOrientation(new Quaternionf());
         RenderSystem.runAsFancy(() -> dispatcher.render(entity, 0.0D, 0.0D, 0.0D, 0.0F, partialTicks, g.pose(), g.bufferSource(), 15728880));
         g.flush();
         dispatcher.setRenderShadow(true);
+        dispatcher.overrideCameraOrientation(previousCameraOrientation);
         g.pose().popPose();
         Lighting.setupFor3DItems();
         RenderSystem.clear(GL11.GL_DEPTH_BUFFER_BIT, Minecraft.ON_OSX);
-        RenderSystem.disableDepthTest();
-        RenderSystem.depthMask(false);
+        RenderSystem.enableDepthTest();
+        RenderSystem.depthMask(true);
     }
 }

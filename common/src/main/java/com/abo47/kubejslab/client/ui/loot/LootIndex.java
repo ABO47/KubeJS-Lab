@@ -82,7 +82,7 @@ public final class LootIndex {
     }
 
     public static List<LootEntry> search(String query, boolean kubejsOnly, String lootTypeFilter) {
-        String normalizedQuery = SearchNormalizer.normalizeQuery(query);
+        String normalizedQuery = SearchNormalizer.normalizeUserSearch(query);
         List<LootEntry> matches = new ArrayList<>();
         for (LootEntry entry : ENTRIES.values()) {
             if (entry.kubejs() != kubejsOnly) {

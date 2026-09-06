@@ -9,6 +9,7 @@ import java.util.function.Consumer;
 
 import net.minecraft.resources.ResourceLocation;
 
+import com.abo47.kubejslab.client.ui.picker.SearchNormalizer;
 import com.abo47.kubejslab.client.ui.widgets.CardBrowserWidget;
 
 
@@ -43,8 +44,11 @@ public final class LootBrowserWidget extends CardBrowserWidget<LootCardWidget, L
     @Override
     protected List<LootIndex.LootEntry> entries() {
         List<LootIndex.LootEntry> entries = new ArrayList<>(LootIndex.search(query(), kubejsOnly(), lootTypeFilter));
+        String normalizedQuery = SearchNormalizer.normalizeUserSearch(query());
         entries.addAll(LootStates.stateEntries().stream()
+                .filter(e -> e.kubejs() == kubejsOnly())
                 .filter(e -> lootTypeFilter == null || lootTypeFilter.isBlank() || lootTypeFilter.equals(e.lootType()))
+                .filter(e -> normalizedQuery.isBlank() || e.matches(normalizedQuery))
                 .toList());
         Set<ResourceLocation> seen = new HashSet<>();
         entries.removeIf(e -> !seen.add(e.id()));

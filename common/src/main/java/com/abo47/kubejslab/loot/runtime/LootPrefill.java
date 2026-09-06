@@ -401,6 +401,13 @@ public final class LootPrefill {
             return null;
         }
         JsonObject predicate = condition.getAsJsonObject("predicate");
+        if (predicate.has("items") && predicate.get("items").isJsonArray()) {
+            for (JsonElement el : predicate.getAsJsonArray("items")) {
+                if (el.isJsonPrimitive() && "minecraft:shears".equals(el.getAsString())) {
+                    return "shears";
+                }
+            }
+        }
         if (!predicate.has("enchantments") || !predicate.get("enchantments").isJsonArray()) {
             return null;
         }

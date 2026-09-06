@@ -44,7 +44,8 @@ public final class LootPoolSettingsWidget extends RowCardSettings {
     private static final List<String> ROLLS_TYPES = List.of("constant", "uniform", "binomial");
     private static final List<String> ENTRY_TYPES = List.of("item", "tag", "empty", "loot_table", "dynamic");
     private static final List<String> COUNT_TYPES = List.of("constant", "uniform");
-    private static final List<String> TOOL_OPTIONS = List.of("none", "silk_touch", "fortune");
+    private static final List<String> TOOL_OPTIONS = List.of("none", "silk_touch", "fortune",
+            "shears", "silk_touch_or_shears", "no_silk_touch");
     private static final String GROUP_NONE = "none";
     private static final String GROUP_NEW = "new group";
 
@@ -238,6 +239,7 @@ public final class LootPoolSettingsWidget extends RowCardSettings {
         ToggleSwitchWidget lootingEnchantToggle;
         TextFieldWidget lootingCountField;
         TextFieldWidget lootingLimitField;
+        TextFieldWidget bonusRollsField;
         String rollsValueText = "1";
         String rollsMinText = "0";
         String rollsMaxText = "0";
@@ -250,7 +252,7 @@ public final class LootPoolSettingsWidget extends RowCardSettings {
         boolean lootingEnchant = false;
         String lootingCountText = "0";
         String lootingLimitText = "0";
-        float bonusRolls = 0f;
+        String bonusRollsText = "0";
         List<String> poolConditionNotes = List.of();
         final List<EntryState> entries = new ArrayList<>();
     }
@@ -282,7 +284,7 @@ public final class LootPoolSettingsWidget extends RowCardSettings {
         pool.lootingEnchant = values.lootingEnchant();
         pool.lootingCountText = ScriptEscaping.fmt(values.lootingCount());
         pool.lootingLimitText = Integer.toString(values.lootingLimit());
-        pool.bonusRolls = values.bonusRolls();
+        pool.bonusRollsText = ScriptEscaping.fmt(values.bonusRolls());
         pool.poolConditionNotes = values.poolConditionNotes();
         pool.entries.clear();
         List<LootEntryValues> entries = values.entries().isEmpty()
@@ -416,7 +418,7 @@ public final class LootPoolSettingsWidget extends RowCardSettings {
             String countType = entry.countTypeDropdown.getSelected() == null ? "constant"
                     : entry.countTypeDropdown.getSelected();
             String toolSelected = entry.toolDropdown.getSelected();
-            String toolRequirement = toolSelected == null || GROUP_NONE.equals(toolSelected) ? "" : toolSelected;
+            String toolRequirement = toolRequirementOf(toolSelected);
             entryValues.add(new LootEntryValues(
                     entryType,
                     entry.item,
@@ -462,7 +464,7 @@ public final class LootPoolSettingsWidget extends RowCardSettings {
                 parseFloat(pool.lootingCountText, 0f),
                 parseInt(pool.lootingLimitText, 0),
                 entryValues,
-                pool.bonusRolls,
+                Math.max(0f, parseFloat(pool.bonusRollsText, 0f)),
                 pool.poolConditionNotes);
     }
 
@@ -532,6 +534,8 @@ public final class LootPoolSettingsWidget extends RowCardSettings {
                 pool.lootingCountText, 4);
         pool.lootingLimitField = number(() -> pool.lootingLimitText, v -> pool.lootingLimitText = v,
                 pool.lootingLimitText);
+        pool.bonusRollsField = number(() -> pool.bonusRollsText, v -> pool.bonusRollsText = v,
+                pool.bonusRollsText, 4);
         for (EntryState entry : pool.entries) {
             createEntryWidgets(entry);
         }
@@ -553,9 +557,7 @@ public final class LootPoolSettingsWidget extends RowCardSettings {
         entry.qualityField = number(() -> entry.qualityText, v -> entry.qualityText = v,
                 entry.qualityText);
         entry.toolDropdown = dropdown(TOOL_OPTIONS);
-        entry.toolDropdown.setLabelMapper(value -> GROUP_NONE.equals(value)
-                ? I18n.get(LootKeys.LOOT_TOOL_NONE)
-                : I18n.get("enchantment.minecraft." + value));
+        entry.toolDropdown.setLabelMapper(LootPoolSettingsWidget::toolLabel);
         entry.killedToggle = toggle(() -> entry.entryKilledByPlayer, v -> entry.entryKilledByPlayer = v);
         entry.chanceField = number(() -> entry.chanceText, v -> entry.chanceText = v, entry.chanceText, 5);
         entry.chanceLootingField = number(() -> entry.chanceLootingText, v -> entry.chanceLootingText = v,
@@ -618,6 +620,35 @@ public final class LootPoolSettingsWidget extends RowCardSettings {
         return entry.alternativeGroup <= 0 ? GROUP_NONE : Integer.toString(entry.alternativeGroup);
     }
 
+    private static boolean entryChanceBelowFull(EntryState entry) {
+        try {
+            return Float.parseFloat(entry.chanceText.replace(',', '.')) < 100f;
+        } catch (NumberFormatException ignored) {
+            return false;
+        }
+    }
+
+    static String toolLabel(String value) {
+        if (value == null || value.isBlank() || GROUP_NONE.equals(value) || "none".equals(value)) {
+            return I18n.get(LootKeys.LOOT_TOOL_NONE);
+        }
+        return switch (value) {
+            case "silk_touch" -> I18n.get(LootKeys.LOOT_TOOL_SILK_TOUCH);
+            case "fortune" -> I18n.get(LootKeys.LOOT_TOOL_FORTUNE);
+            case "shears" -> I18n.get(LootKeys.LOOT_TOOL_SHEARS);
+            case "silk_touch_or_shears" -> I18n.get(LootKeys.LOOT_TOOL_SILK_TOUCH_OR_SHEARS);
+            case "no_silk_touch" -> I18n.get(LootKeys.LOOT_TOOL_NO_SILK_TOUCH);
+            default -> value;
+        };
+    }
+
+    static String toolRequirementOf(String selected) {
+        if (selected == null || selected.isBlank() || GROUP_NONE.equals(selected)) {
+            return "";
+        }
+        return TOOL_OPTIONS.contains(selected) && !"none".equals(selected) ? selected : "";
+    }
+
     private void rebuildStateWidgets() {
         for (Widget w : dynamicWidgets) {
             untrack(w);
@@ -639,6 +670,7 @@ public final class LootPoolSettingsWidget extends RowCardSettings {
         setText(pool.randomChanceField, pool.randomChanceText);
         setText(pool.lootingCountField, pool.lootingCountText);
         setText(pool.lootingLimitField, pool.lootingLimitText);
+        setText(pool.bonusRollsField, pool.bonusRollsText);
         for (EntryState entry : pool.entries) {
             if (entry.typeDropdown != null && entry.typeDropdown.getSelected() == null) {
                 entry.typeDropdown.setSelected("item");
@@ -791,6 +823,7 @@ public final class LootPoolSettingsWidget extends RowCardSettings {
             rows.add(row(LootField.POOL_ROLLS_VALUE, LootKeys.LOOT_POOL_ROLLS_VALUE,
                     pool.rollsValueField));
         }
+        rows.add(row(LootField.POOL_BONUS_ROLLS, LootKeys.LOOT_POOL_BONUS_ROLLS, pool.bonusRollsField));
         rows.add(row(LootField.ENTRY_TOOL, LootKeys.LOOT_ENTRY_TOOL, entry.toolDropdown));
         if ("fortune".equals(entry.toolDropdown.getSelected())) {
             rows.add(row(LootField.ENTRY_FORTUNE_BONUS, LootKeys.LOOT_ENTRY_FORTUNE_BONUS,
@@ -816,7 +849,7 @@ public final class LootPoolSettingsWidget extends RowCardSettings {
             rows.add(row(LootField.POOL_LOOTING_LIMIT, LootKeys.LOOT_LOOTING_LIMIT,
                     pool.lootingLimitField));
         }
-        if (pool.lootingEnchant) {
+        if (pool.lootingEnchant || entryChanceBelowFull(entry)) {
             rows.add(row(LootField.ENTRY_CHANCE_LOOTING, LootKeys.LOOT_ENTRY_CHANCE_LOOTING,
                     entry.chanceLootingField));
         }

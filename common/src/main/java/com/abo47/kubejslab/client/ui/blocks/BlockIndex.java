@@ -54,7 +54,7 @@ public final class BlockIndex {
     }
 
     public static List<BlockEntry> search(String query, boolean kubejsOnly) {
-        String normalizedQuery = SearchNormalizer.normalizeQuery(query);
+        String normalizedQuery = SearchNormalizer.normalizeUserSearch(query);
         List<BlockEntry> matches = new ArrayList<>();
         for (BlockEntry entry : ENTRIES.values()) {
             if (entry.kubejs() != kubejsOnly) {

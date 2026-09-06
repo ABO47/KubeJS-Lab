@@ -24,6 +24,7 @@ import com.abo47.kubejslab.client.ui.theme.UiGlow;
 
 public final class PickTile extends Widget {
     private static final int TILE = 18;
+    private static final long TAG_CYCLE_TICKS = 20L;
 
     private final Pick pick;
     private final List<ItemStackTexture> previews;
@@ -92,7 +93,7 @@ public final class PickTile extends Widget {
         int y = getPositionY();
         SlotWidget.ITEM_SLOT_TEXTURE.draw(graphics, mouseX, mouseY, x, y, TILE, TILE);
         if (!previews.isEmpty()) {
-            int index = (int) ((Minecraft.getInstance().level.getGameTime() / 8) % previews.size());
+            int index = tagPreviewIndex(previews.size());
             previews.get(index).draw(graphics, mouseX, mouseY, x + 1, y + 1, TILE - 2, TILE - 2);
         } else if (fluid != null && !fluid.isEmpty()) {
             DrawerHelper.drawFluidForGui(graphics, fluid, Math.max(fluid.getAmount(), 1000), x + 1, y + 1, TILE - 2,
@@ -101,5 +102,12 @@ public final class PickTile extends Widget {
         if (isMouseOverElement(mouseX, mouseY)) {
             UiGlow.drawGlow(graphics, mouseX, mouseY, x, y, TILE, TILE);
         }
+    }
+
+    private static int tagPreviewIndex(int size) {
+        if (Minecraft.getInstance().level == null) {
+            return 0;
+        }
+        return (int) ((Minecraft.getInstance().level.getGameTime() / TAG_CYCLE_TICKS) % size);
     }
 }
