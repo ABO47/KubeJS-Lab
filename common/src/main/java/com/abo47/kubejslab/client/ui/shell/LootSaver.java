@@ -29,6 +29,9 @@ final class LootSaver {
         boolean overriding = panel.loot.lootMode == WorkspacePanel.EditMode.MODIFY
                 && panel.loot.lootModifyTarget != null;
         LootSettingsWidget settings = panel.lootSettings;
+        if (!overriding && panel.loot.lootSelection != null) {
+            settings.ensureTarget(panel.loot.lootSelection.id().toString());
+        }
         LootFieldValues values = settings.getValues();
         String target = values.targetId();
         if (target == null || target.isBlank()) {

@@ -15,6 +15,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 
 import com.abo47.kubejslab.client.ui.picker.SearchNormalizer;
+import com.abo47.kubejslab.client.ui.picker.SearchQuery;
 import com.abo47.kubejslab.loot.runtime.LootService;
 
 
@@ -82,7 +83,7 @@ public final class LootIndex {
     }
 
     public static List<LootEntry> search(String query, boolean kubejsOnly, String lootTypeFilter) {
-        String normalizedQuery = SearchNormalizer.normalizeUserSearch(query);
+        SearchQuery parsed = SearchQuery.parse(query);
         List<LootEntry> matches = new ArrayList<>();
         for (LootEntry entry : ENTRIES.values()) {
             if (entry.kubejs() != kubejsOnly) {
@@ -91,9 +92,19 @@ public final class LootIndex {
             if (lootTypeFilter != null && !lootTypeFilter.isBlank() && !lootTypeFilter.equals(entry.lootType())) {
                 continue;
             }
-            if (normalizedQuery.isBlank() || entry.matches(normalizedQuery)) {
-                matches.add(entry);
+            if (!parsed.matchesMod(entry.id())) {
+                continue;
             }
+            if (!parsed.matchesText(entry.normalizedId(), entry.normalizedName())) {
+                continue;
+            }
+            if (parsed.tag() != null && !parsed.tag().isBlank()) {
+                String needle = SearchNormalizer.normalizeUserSearch(parsed.tag());
+                if (!needle.isBlank() && !entry.matches(needle)) {
+                    continue;
+                }
+            }
+            matches.add(entry);
         }
         matches.sort(Comparator.comparing(LootEntry::name, String.CASE_INSENSITIVE_ORDER)
                 .thenComparing(LootEntry::id));

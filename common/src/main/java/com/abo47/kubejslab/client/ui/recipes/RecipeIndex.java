@@ -19,6 +19,7 @@ import com.lowdragmc.lowdraglib.side.fluid.FluidStack;
 
 import com.abo47.kubejslab.KubeJSLab;
 import com.abo47.kubejslab.client.ui.picker.SearchNormalizer;
+import com.abo47.kubejslab.client.ui.picker.SearchQuery;
 import com.abo47.kubejslab.platform.Services;
 import com.abo47.kubejslab.recipe.model.RecipeStateEntry;
 import com.abo47.kubejslab.recipe.model.RecipeStatus;
@@ -41,7 +42,7 @@ public final class RecipeIndex {
 
     public static List<RecipeEntry> search(String query, boolean kubejsOnly, Set<ResourceLocation> machineRecipeIds) {
         List<RecipeEntry> source = entries();
-        String normalizedQuery = SearchNormalizer.normalizeUserSearch(query);
+        SearchQuery parsed = SearchQuery.parse(query);
         List<RecipeEntry> matches = new ArrayList<>();
         for (RecipeEntry entry : source) {
             if (entry.kubejs() != kubejsOnly) {
@@ -50,9 +51,19 @@ public final class RecipeIndex {
             if (machineRecipeIds != null && !machineRecipeIds.contains(entry.id())) {
                 continue;
             }
-            if (normalizedQuery.isBlank() || entry.matches(normalizedQuery)) {
-                matches.add(entry);
+            if (!parsed.matchesMod(entry.id())) {
+                continue;
             }
+            if (!parsed.matchesText(entry.normalizedId(), entry.normalizedName())) {
+                continue;
+            }
+            if (parsed.tag() != null && !parsed.tag().isBlank()) {
+                String needle = SearchNormalizer.normalizeUserSearch(parsed.tag());
+                if (!needle.isBlank() && !entry.matches(needle)) {
+                    continue;
+                }
+            }
+            matches.add(entry);
         }
         return matches;
     }

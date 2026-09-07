@@ -254,49 +254,53 @@ public final class RecipeSettingsWidget extends RowCardSettings {
     }
 
     public void setFields(List<RecipeField> fields) {
-        this.fields = fields;
-        if (!fields.contains(RecipeField.SHAPELESS)) {
+        List<RecipeField> next = fields == null ? List.of() : List.copyOf(fields);
+        boolean changed = !next.equals(this.fields);
+        this.fields = next;
+        if (!next.contains(RecipeField.SHAPELESS)) {
             shapeless = false;
         }
-        if (!fields.contains(RecipeField.HEAT_REQUIREMENT)) {
+        if (!next.contains(RecipeField.HEAT_REQUIREMENT)) {
             heatRequirement = HeatRequirement.NONE;
             heatCycleButton.setLabel(heatLabelText(heatRequirement));
         }
-        if (!fields.contains(RecipeField.KEEP_HELD_ITEM)) {
+        if (!next.contains(RecipeField.KEEP_HELD_ITEM)) {
             keepHeldItem = false;
         }
-        if (!fields.contains(RecipeField.ACCEPT_MIRRORED)) {
+        if (!next.contains(RecipeField.ACCEPT_MIRRORED)) {
             acceptMirrored = true;
         }
-        if (!fields.contains(RecipeField.CLOCHE_RENDER_TYPE)) {
+        if (!next.contains(RecipeField.CLOCHE_RENDER_TYPE)) {
             clocheRenderType = "generic";
             clocheRenderTypeDropdown.setSelected("generic");
         }
-        shapelessToggle.setVisible(fields.contains(RecipeField.SHAPELESS));
-        experienceField.setVisible(fields.contains(RecipeField.EXPERIENCE));
-        cookingTimeField.setVisible(fields.contains(RecipeField.COOKING_TIME));
-        countField.setVisible(fields.contains(RecipeField.COUNT));
-        processingTimeField.setVisible(fields.contains(RecipeField.PROCESSING_TIME));
-        heatCycleButton.setVisible(fields.contains(RecipeField.HEAT_REQUIREMENT));
-        keepHeldItemToggle.setVisible(fields.contains(RecipeField.KEEP_HELD_ITEM));
-        acceptMirroredToggle.setVisible(fields.contains(RecipeField.ACCEPT_MIRRORED));
-        gridWidthField.setVisible(fields.contains(RecipeField.GRID_WIDTH));
-        gridHeightField.setVisible(fields.contains(RecipeField.GRID_HEIGHT));
-        energyField.setVisible(fields.contains(RecipeField.ENERGY));
-        creosoteAmountField.setVisible(fields.contains(RecipeField.CREOSOTE_AMOUNT));
-        moldDropdown.setVisible(fields.contains(RecipeField.MOLD));
-        moldCommitField.setVisible(fields.contains(RecipeField.MOLD));
-        blueprintCategoryDropdown.setVisible(fields.contains(RecipeField.BLUEPRINT_CATEGORY));
-        blueprintCategoryCommitField.setVisible(fields.contains(RecipeField.BLUEPRINT_CATEGORY));
-        clocheRenderTypeDropdown.setVisible(fields.contains(RecipeField.CLOCHE_RENDER_TYPE));
-        clocheRenderTypeCommitField.setVisible(fields.contains(RecipeField.CLOCHE_RENDER_TYPE));
-        clocheRenderBlockSlot.setVisible(fields.contains(RecipeField.CLOCHE_RENDER_BLOCK));
-        fluidInputAmountField.setVisible(fields.contains(RecipeField.FLUID_INPUT_AMOUNT));
-        fluidOutputAmountField.setVisible(fields.contains(RecipeField.FLUID_OUTPUT_AMOUNT));
-        for (RecipeField field : fields) {
+        shapelessToggle.setVisible(next.contains(RecipeField.SHAPELESS));
+        experienceField.setVisible(next.contains(RecipeField.EXPERIENCE));
+        cookingTimeField.setVisible(next.contains(RecipeField.COOKING_TIME));
+        countField.setVisible(next.contains(RecipeField.COUNT));
+        processingTimeField.setVisible(next.contains(RecipeField.PROCESSING_TIME));
+        heatCycleButton.setVisible(next.contains(RecipeField.HEAT_REQUIREMENT));
+        keepHeldItemToggle.setVisible(next.contains(RecipeField.KEEP_HELD_ITEM));
+        acceptMirroredToggle.setVisible(next.contains(RecipeField.ACCEPT_MIRRORED));
+        gridWidthField.setVisible(next.contains(RecipeField.GRID_WIDTH));
+        gridHeightField.setVisible(next.contains(RecipeField.GRID_HEIGHT));
+        energyField.setVisible(next.contains(RecipeField.ENERGY));
+        creosoteAmountField.setVisible(next.contains(RecipeField.CREOSOTE_AMOUNT));
+        moldDropdown.setVisible(next.contains(RecipeField.MOLD));
+        moldCommitField.setVisible(next.contains(RecipeField.MOLD));
+        blueprintCategoryDropdown.setVisible(next.contains(RecipeField.BLUEPRINT_CATEGORY));
+        blueprintCategoryCommitField.setVisible(next.contains(RecipeField.BLUEPRINT_CATEGORY));
+        clocheRenderTypeDropdown.setVisible(next.contains(RecipeField.CLOCHE_RENDER_TYPE));
+        clocheRenderTypeCommitField.setVisible(next.contains(RecipeField.CLOCHE_RENDER_TYPE));
+        clocheRenderBlockSlot.setVisible(next.contains(RecipeField.CLOCHE_RENDER_BLOCK));
+        fluidInputAmountField.setVisible(next.contains(RecipeField.FLUID_INPUT_AMOUNT));
+        fluidOutputAmountField.setVisible(next.contains(RecipeField.FLUID_OUTPUT_AMOUNT));
+        for (RecipeField field : next) {
             controlFor(field).setHoverTooltips(RecipeTooltips.forField(field));
         }
-        resetScroll();
+        if (changed) {
+            resetScroll();
+        }
         rebuildRows();
     }
 

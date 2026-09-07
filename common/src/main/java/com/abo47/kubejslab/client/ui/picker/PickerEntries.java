@@ -47,10 +47,14 @@ public final class PickerEntries {
 
     public static List<Pick> entries(boolean tags, boolean fluids, String query) {
         List<Pick> result = new ArrayList<>();
-        String raw = SearchFilter.normalize(query);
+        SearchQuery parsed = SearchQuery.parse(query);
+        String raw = SearchFilter.normalize(parsed.text());
         if (fluids) {
             for (Fluid fluid : FLUIDS) {
                 ResourceLocation id = BuiltInRegistries.FLUID.getKey(fluid);
+                if (!parsed.matchesMod(id)) {
+                    continue;
+                }
                 String display = FluidStack.create(fluid, 1000).getDisplayName().getString();
                 if (SearchFilter.matches(raw, id.toString(), display)) {
                     result.add(new Pick.Fluid(FluidStack.create(fluid, 1000)));
@@ -60,6 +64,16 @@ public final class PickerEntries {
         }
         if (tags) {
             for (ResourceLocation id : TAG_IDS) {
+                if (!parsed.matchesMod(id)) {
+                    continue;
+                }
+                if (parsed.tag() != null && !parsed.tag().isBlank()) {
+                    String needle = SearchNormalizer.normalizeUserSearch(parsed.tag());
+                    String hayId = SearchNormalizer.normalizeUserSearch(id.toString());
+                    if (!needle.isBlank() && !hayId.contains(needle)) {
+                        continue;
+                    }
+                }
                 String display = "#" + id;
                 if (SearchFilter.matches(raw, display, display)) {
                     result.add(new Pick.Tag(id));
@@ -70,6 +84,12 @@ public final class PickerEntries {
         for (ResourceLocation id : ITEM_IDS) {
             Item item = BuiltInRegistries.ITEM.get(id);
             if (item == null) {
+                continue;
+            }
+            if (!parsed.matchesMod(id)) {
+                continue;
+            }
+            if (!parsed.matchesItemTag(id)) {
                 continue;
             }
             String display = item.getDescription().getString();

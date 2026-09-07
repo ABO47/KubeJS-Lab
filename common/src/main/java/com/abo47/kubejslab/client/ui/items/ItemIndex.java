@@ -30,6 +30,7 @@ import net.minecraft.world.item.TieredItem;
 import net.minecraft.world.item.Tiers;
 
 import com.abo47.kubejslab.client.ui.picker.SearchNormalizer;
+import com.abo47.kubejslab.client.ui.picker.SearchQuery;
 import com.abo47.kubejslab.item.model.ItemFieldValues;
 
 import com.mojang.datafixers.util.Pair;
@@ -62,15 +63,22 @@ public final class ItemIndex {
     }
 
     public static List<ItemEntry> search(String query, boolean kubejsOnly) {
-        String normalizedQuery = SearchNormalizer.normalizeUserSearch(query);
+        SearchQuery parsed = SearchQuery.parse(query);
         List<ItemEntry> matches = new ArrayList<>();
         for (ItemEntry entry : ENTRIES.values()) {
             if (entry.kubejs() != kubejsOnly) {
                 continue;
             }
-            if (normalizedQuery.isBlank() || entry.matches(normalizedQuery)) {
-                matches.add(entry);
+            if (!parsed.matchesMod(entry.id())) {
+                continue;
             }
+            if (!parsed.matchesItemTag(entry.id())) {
+                continue;
+            }
+            if (!parsed.matchesText(entry.normalizedId(), entry.normalizedName())) {
+                continue;
+            }
+            matches.add(entry);
         }
         matches.sort(Comparator.comparing(ItemEntry::name, String.CASE_INSENSITIVE_ORDER)
                 .thenComparing(ItemEntry::id));

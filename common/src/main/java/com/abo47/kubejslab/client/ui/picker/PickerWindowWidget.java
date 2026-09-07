@@ -206,7 +206,10 @@ public final class PickerWindowWidget extends WidgetGroup {
 
     private void handlePick(Pick pick) {
         if (gui != null) {
-            gui.getModularUIContainer().setCarried(pick.carried());
+            var carried = pick.carried();
+            if (carried != null && !carried.isEmpty()) {
+                gui.getModularUIContainer().setCarried(carried);
+            }
         }
         if (pickListener != null) {
             pickListener.accept(pick);
@@ -230,7 +233,10 @@ public final class PickerWindowWidget extends WidgetGroup {
             lastPositionY = getSelfPositionY();
             return true;
         }
-        return super.mouseClicked(mouseX, mouseY, button);
+        if (super.mouseClicked(mouseX, mouseY, button)) {
+            return true;
+        }
+        return isMouseOverElement(mouseX, mouseY);
     }
 
     @Override

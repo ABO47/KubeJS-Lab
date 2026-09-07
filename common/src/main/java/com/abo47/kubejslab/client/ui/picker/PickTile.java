@@ -80,7 +80,7 @@ public final class PickTile extends Widget {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (button == 0 && isMouseOverElement(mouseX, mouseY)) {
+        if ((button == 0 || button == 1) && isMouseOverElement(mouseX, mouseY)) {
             onPick.accept(pick);
             return true;
         }

@@ -11,6 +11,7 @@ import net.minecraft.resources.ResourceLocation;
 import com.lowdragmc.lowdraglib.gui.widget.Widget;
 import com.lowdragmc.lowdraglib.gui.widget.WidgetGroup;
 
+import com.abo47.kubejslab.KubeJSLab;
 import com.abo47.kubejslab.client.ui.theme.UiLayout;
 import com.mojang.blaze3d.systems.RenderSystem;
 
@@ -62,12 +63,19 @@ public abstract class CardBrowserWidget<L extends EntryCardWidget, E> extends Wi
     }
 
     public void setQuery(String query) {
-        this.query = query == null ? "" : query;
+        String next = query == null ? "" : query;
+        if (next.equals(this.query)) {
+            return;
+        }
+        this.query = next;
         scroll = 0;
         rebuild();
     }
 
     public void setKubejsOnly(boolean kubejsOnly) {
+        if (this.kubejsOnly == kubejsOnly) {
+            return;
+        }
         this.kubejsOnly = kubejsOnly;
         scroll = 0;
     }
@@ -77,11 +85,11 @@ public abstract class CardBrowserWidget<L extends EntryCardWidget, E> extends Wi
         cards.clear();
         List<E> entries = entries();
         if (entries.isEmpty()) {
-            com.abo47.kubejslab.KubeJSLab.LOGGER.warn(
+            KubeJSLab.LOGGER.warn(
                     "[CardBrowserWidget] rebuild empty: query='{}' kubejsOnly={} pos=({},{}) size=({},{}) visible={}",
                     query, kubejsOnly, getSelfPositionX(), getSelfPositionY(), getSizeWidth(), getSizeHeight(), isVisible());
         } else {
-            com.abo47.kubejslab.KubeJSLab.LOGGER.info(
+            KubeJSLab.LOGGER.info(
                     "[CardBrowserWidget] rebuild {} entries: query='{}' kubejsOnly={} visible={}",
                     entries.size(), query, kubejsOnly, isVisible());
         }

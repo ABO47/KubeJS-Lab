@@ -400,6 +400,15 @@ public final class LootPoolSettingsWidget extends RowCardSettings {
         };
     }
 
+    public String entryToolRequirement(int index) {
+        if (index < 0 || index >= pool.entries.size()) {
+            return "";
+        }
+        EntryState entry = pool.entries.get(index);
+        String selected = entry.toolDropdown == null ? null : entry.toolDropdown.getSelected();
+        return toolRequirementOf(selected);
+    }
+
     private void notifyEntryList() {
         if (entryListListener != null) {
             entryListListener.run();

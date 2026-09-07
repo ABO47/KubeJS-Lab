@@ -4,13 +4,16 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 
 import net.minecraft.resources.ResourceLocation;
 
 import com.abo47.kubejslab.client.ui.picker.SearchNormalizer;
+import com.abo47.kubejslab.client.ui.picker.SearchQuery;
 import com.abo47.kubejslab.client.ui.widgets.CardBrowserWidget;
+import com.abo47.kubejslab.loot.model.LootStatus;
 
 
 public final class LootBrowserWidget extends CardBrowserWidget<LootCardWidget, LootIndex.LootEntry> {
@@ -21,11 +24,16 @@ public final class LootBrowserWidget extends CardBrowserWidget<LootCardWidget, L
     }
 
     public void setLootTypeFilter(String lootTypeFilter) {
+        String next;
         if (lootTypeFilter == null || lootTypeFilter.isBlank() || "all".equals(lootTypeFilter)) {
-            this.lootTypeFilter = null;
+            next = null;
         } else {
-            this.lootTypeFilter = lootTypeFilter;
+            next = lootTypeFilter;
         }
+        if (Objects.equals(this.lootTypeFilter, next)) {
+            return;
+        }
+        this.lootTypeFilter = next;
         resetScroll();
     }
 
@@ -43,13 +51,25 @@ public final class LootBrowserWidget extends CardBrowserWidget<LootCardWidget, L
 
     @Override
     protected List<LootIndex.LootEntry> entries() {
+        SearchQuery parsed = SearchQuery.parse(query());
+        String tagNeedle = parsed.tag() == null ? ""
+                : SearchNormalizer.normalizeUserSearch(parsed.tag());
         List<LootIndex.LootEntry> entries = new ArrayList<>(LootIndex.search(query(), kubejsOnly(), lootTypeFilter));
-        String normalizedQuery = SearchNormalizer.normalizeUserSearch(query());
         entries.addAll(LootStates.stateEntries().stream()
                 .filter(e -> e.kubejs() == kubejsOnly())
                 .filter(e -> lootTypeFilter == null || lootTypeFilter.isBlank() || lootTypeFilter.equals(e.lootType()))
-                .filter(e -> normalizedQuery.isBlank() || e.matches(normalizedQuery))
+                .filter(e -> parsed.matchesMod(e.id()))
+                .filter(e -> parsed.matchesText(e.normalizedId(), e.normalizedName()))
+                .filter(e -> tagNeedle.isBlank() || e.matches(tagNeedle))
                 .toList());
+        if (parsed.onlyDisabled() || parsed.onlyModified()) {
+            entries.removeIf(e -> {
+                LootStatus status = LootStates.statusOf(e.id());
+                boolean keepDisabled = parsed.onlyDisabled() && status == LootStatus.DISABLED;
+                boolean keepModified = parsed.onlyModified() && status == LootStatus.MODIFIED;
+                return !(keepDisabled || keepModified);
+            });
+        }
         Set<ResourceLocation> seen = new HashSet<>();
         entries.removeIf(e -> !seen.add(e.id()));
         entries.sort(Comparator.comparing(LootIndex.LootEntry::name, String.CASE_INSENSITIVE_ORDER)
