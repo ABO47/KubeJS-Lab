@@ -63,12 +63,17 @@ public final class GenericRecipeModifier {
         return replaceOutputs(json, outputs) ? json : null;
     }
 
-    private static JsonElement ingredientField(JsonObject json) {
+    static JsonElement ingredientField(JsonObject json) {
         JsonElement exact = json.get("ingredients");
         if (exact != null && exact.isJsonArray()) return exact;
         JsonElement single = json.get("ingredient");
         if (single != null && isIngredientContainer(single)) return single;
         for (Map.Entry<String, JsonElement> entry : json.entrySet()) {
+            String key = entry.getKey();
+            if ("result".equals(key) || "results".equals(key) || "output".equals(key)
+                    || "outputs".equals(key)) {
+                continue;
+            }
             if (isIngredientContainer(entry.getValue())) return entry.getValue();
         }
         return null;
@@ -89,19 +94,29 @@ public final class GenericRecipeModifier {
         return object.has("item") || object.has("tag");
     }
 
-    private static void replaceIngredients(JsonElement field, List<RecipeIngredient> inputs) {
+    static void replaceIngredients(JsonElement field, List<RecipeIngredient> inputs) {
         if (field.isJsonArray()) {
             JsonArray array = field.getAsJsonArray();
+            JsonArray rebuilt = new JsonArray();
             int inputIndex = 0;
-            for (int i = 0; i < array.size() && inputIndex < inputs.size(); i++) {
-                JsonElement element = array.get(i);
+            for (JsonElement element : array) {
                 if (element.isJsonObject() && isItemShaped(element.getAsJsonObject())) {
-                    array.set(i, RecipeJson.ingredientJson(inputs.get(inputIndex)));
-                    inputIndex++;
+                    if (inputIndex < inputs.size()) {
+                        rebuilt.add(RecipeJson.ingredientJson(inputs.get(inputIndex)));
+                        inputIndex++;
+                    }
+                } else {
+                    rebuilt.add(element);
                 }
             }
             for (int i = inputIndex; i < inputs.size(); i++) {
-                array.add(RecipeJson.ingredientJson(inputs.get(i)));
+                rebuilt.add(RecipeJson.ingredientJson(inputs.get(i)));
+            }
+            while (array.size() > 0) {
+                array.remove(0);
+            }
+            for (JsonElement element : rebuilt) {
+                array.add(element);
             }
             return;
         }
@@ -119,16 +134,35 @@ public final class GenericRecipeModifier {
             applyOutput(result.getAsJsonObject(), outputs.get(0));
             return true;
         }
+        if (result.isJsonPrimitive()) {
+            json.add("result", RecipeJson.outputJson(outputs.get(0)));
+            return true;
+        }
         if (result.isJsonArray()) {
             JsonArray array = result.getAsJsonArray();
-            for (int i = 0; i < array.size() && i < outputs.size(); i++) {
-                JsonElement element = array.get(i);
+            JsonArray rebuilt = new JsonArray();
+            int outputIndex = 0;
+            for (JsonElement element : array) {
+                if (outputIndex >= outputs.size()) {
+                    continue;
+                }
                 if (element.isJsonObject()) {
-                    applyOutput(element.getAsJsonObject(), outputs.get(i));
+                    applyOutput(element.getAsJsonObject(), outputs.get(outputIndex));
+                    rebuilt.add(element);
+                    outputIndex++;
+                } else {
+                    rebuilt.add(RecipeJson.outputJson(outputs.get(outputIndex)));
+                    outputIndex++;
                 }
             }
-            for (int i = array.size(); i < outputs.size(); i++) {
-                array.add(RecipeJson.outputJson(outputs.get(i)));
+            for (int i = outputIndex; i < outputs.size(); i++) {
+                rebuilt.add(RecipeJson.outputJson(outputs.get(i)));
+            }
+            while (array.size() > 0) {
+                array.remove(0);
+            }
+            for (JsonElement element : rebuilt) {
+                array.add(element);
             }
             return true;
         }
@@ -139,5 +173,16 @@ public final class GenericRecipeModifier {
         JsonObject replacement = RecipeJson.outputJson(output);
         for (String key : List.copyOf(object.keySet())) object.remove(key);
         for (Map.Entry<String, JsonElement> entry : replacement.entrySet()) object.add(entry.getKey(), entry.getValue());
+    }
+
+    private static final List<String> PASSTHROUGH_KEYS = List.of("group", "category", "conditions",
+            "show_notification");
+
+    public static void copyPassthroughKeys(JsonObject original, JsonObject json) {
+        for (String key : PASSTHROUGH_KEYS) {
+            if (original.has(key) && !json.has(key)) {
+                json.add(key, original.get(key));
+            }
+        }
     }
 }

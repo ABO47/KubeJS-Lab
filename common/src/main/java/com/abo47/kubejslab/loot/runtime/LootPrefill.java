@@ -3,7 +3,9 @@ package com.abo47.kubejslab.loot.runtime;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
@@ -112,7 +114,7 @@ public final class LootPrefill {
         return found;
     }
 
-    private static LootPoolValues parsePool(JsonObject pool, int[] droppedOut) {
+    static LootPoolValues parsePool(JsonObject pool, int[] droppedOut) {
         String rollsType = "constant";
         float rollsValue = 1f;
         float rollsMin = 0f;
@@ -122,20 +124,20 @@ public final class LootPrefill {
         List<String> poolNotes = new ArrayList<>();
         JsonElement rollsEl = pool.get("rolls");
         if (rollsEl != null && rollsEl.isJsonPrimitive()) {
-            rollsValue = rollsEl.getAsFloat();
+            rollsValue = asFloat(rollsEl, 1f);
         } else if (rollsEl != null && rollsEl.isJsonObject()) {
             JsonObject rollsObj = rollsEl.getAsJsonObject();
             String providerType = rollsObj.has("type") ? rollsObj.get("type").getAsString() : "";
             if (providerType.contains("binomial") || (rollsObj.has("n") && rollsObj.has("p"))) {
                 rollsType = "binomial";
-                rollsN = rollsObj.has("n") ? rollsObj.get("n").getAsInt() : 0;
-                rollsP = rollsObj.has("p") ? rollsObj.get("p").getAsFloat() : 0.5f;
+                rollsN = rollsObj.has("n") ? Math.max(0, (int) asFloat(rollsObj.get("n"), 0f)) : 0;
+                rollsP = rollsObj.has("p") ? asFloat(rollsObj.get("p"), 0.5f) : 0.5f;
             } else if (rollsObj.has("min") && rollsObj.has("max")) {
                 rollsType = "uniform";
-                rollsMin = rollsObj.get("min").getAsFloat();
-                rollsMax = rollsObj.get("max").getAsFloat();
+                rollsMin = asFloat(rollsObj.get("min"), 0f);
+                rollsMax = Math.max(rollsMin, asFloat(rollsObj.get("max"), 0f));
             } else if (rollsObj.has("value")) {
-                rollsValue = rollsObj.get("value").getAsFloat();
+                rollsValue = asFloat(rollsObj.get("value"), 1f);
             } else if (!providerType.isBlank()) {
                 addNote(poolNotes,
                         LootNotes.encode(LootNotes.ROLLS_PROVIDER, prettifyId(providerType)));
@@ -154,6 +156,8 @@ public final class LootPrefill {
         boolean lootingEnchant = false;
         float lootingCount = 0f;
         int lootingLimit = 0;
+        JsonArray preservedPoolConditions = new JsonArray();
+        JsonArray preservedPoolFunctions = new JsonArray();
         if (pool.has("conditions") && pool.get("conditions").isJsonArray()) {
             for (JsonElement condEl : pool.getAsJsonArray("conditions")) {
                 if (!condEl.isJsonObject()) {
@@ -164,11 +168,12 @@ public final class LootPrefill {
                 if ("minecraft:survives_explosion".equals(cname)) {
                     survivesExplosion = true;
                 } else if ("minecraft:random_chance".equals(cname) && c.has("chance")) {
-                    randomChance = c.get("chance").getAsFloat();
+                    randomChance = asFloat(c.get("chance"), 1f);
                 } else if ("minecraft:killed_by_player".equals(cname)) {
                     killedByPlayer = true;
                 } else {
                     addNote(poolNotes, describeCondition(c));
+                    preserveCondition(preservedPoolConditions, c);
                 }
             }
         }
@@ -181,8 +186,7 @@ public final class LootPrefill {
                 String fname = f.has("function") ? f.get("function").getAsString() : "";
                 if ("minecraft:furnace_smelt".equals(fname)) {
                     furnaceSmelt = true;
-                } else if ("minecraft:enchant_with_levels".equals(fname)
-                        || "minecraft:looting_enchant".equals(fname)) {
+                } else if ("minecraft:looting_enchant".equals(fname)) {
                     lootingEnchant = true;
                     if (f.has("count")) {
                         lootingCount = asFloat(f.get("count"), 0f);
@@ -190,6 +194,9 @@ public final class LootPrefill {
                     if (f.has("limit")) {
                         lootingLimit = (int) asFloat(f.get("limit"), 0f);
                     }
+                } else {
+                    addNote(poolNotes, describeFunction(f));
+                    preserveCondition(preservedPoolFunctions, f);
                 }
             }
         }
@@ -215,7 +222,9 @@ public final class LootPrefill {
         }
         return new LootPoolValues(rollsType, rollsValue, rollsMin, rollsMax, rollsN, rollsP, survivesExplosion,
                 randomChance, killedByPlayer, furnaceSmelt, lootingEnchant, lootingCount, lootingLimit, entryValues,
-                bonusRolls, poolNotes);
+                bonusRolls, poolNotes,
+                preservedPoolConditions.isEmpty() ? "" : preservedPoolConditions.toString(),
+                preservedPoolFunctions.isEmpty() ? "" : preservedPoolFunctions.toString());
     }
 
     private static void collectEntries(JsonObject entry, List<LootEntryValues> out, int[] groupId) {
@@ -228,8 +237,24 @@ public final class LootPrefill {
                 if (!childEl.isJsonObject()) {
                     continue;
                 }
-                LootEntryValues child = parseEntry(childEl.getAsJsonObject());
-                out.add(withGroup(child, group));
+                JsonObject child = childEl.getAsJsonObject();
+                String childType = child.has("type") ? child.get("type").getAsString() : "";
+                if (childType.endsWith("alternatives") && child.has("children")
+                        && child.get("children").isJsonArray()) {
+                    for (JsonElement nestedEl : child.getAsJsonArray("children")) {
+                        if (!nestedEl.isJsonObject()) {
+                            continue;
+                        }
+                        out.add(withGroup(parseEntry(nestedEl.getAsJsonObject()), group));
+                    }
+                    continue;
+                }
+                if ((childType.endsWith("sequence") || childType.endsWith("group"))
+                        && child.has("children") && child.get("children").isJsonArray()) {
+                    collectEntries(child, out, groupId);
+                    continue;
+                }
+                out.add(withGroup(parseEntry(child), group));
             }
             return;
         }
@@ -261,7 +286,7 @@ public final class LootPrefill {
         }
     }
 
-    private static LootEntryValues parseEntry(JsonObject entry) {
+    static LootEntryValues parseEntry(JsonObject entry) {
         String rawType = entry.has("type") ? entry.get("type").getAsString() : "";
         String type = "item";
         String item = "";
@@ -282,8 +307,8 @@ public final class LootPrefill {
             type = "item";
             item = entry.has("name") ? entry.get("name").getAsString() : "";
         }
-        int weight = entry.has("weight") ? entry.get("weight").getAsInt() : 1;
-        int quality = entry.has("quality") ? entry.get("quality").getAsInt() : 0;
+        int weight = entry.has("weight") ? Math.max(1, (int) asFloat(entry.get("weight"), 1f)) : 1;
+        int quality = entry.has("quality") ? (int) asFloat(entry.get("quality"), 0f) : 0;
 
         String countType = "constant";
         float countValue = 1f;
@@ -295,6 +320,7 @@ public final class LootPrefill {
         boolean explosionDecay = false;
         boolean fortuneBonus = false;
         List<String> conditionNotes = new ArrayList<>();
+        JsonArray preservedFunctions = new JsonArray();
         if (entry.has("functions") && entry.get("functions").isJsonArray()) {
             for (JsonElement fnEl : entry.getAsJsonArray("functions")) {
                 if (!fnEl.isJsonObject()) {
@@ -321,41 +347,48 @@ public final class LootPrefill {
                     } else if (!enchant.isBlank()) {
                         addNote(conditionNotes, LootNotes.encode(LootNotes.ENCHANT_BONUS,
                                 LootNotes.vanillaRef("enchantment." + enchant)));
+                        preserveCondition(preservedFunctions, f);
                     } else {
                         addNote(conditionNotes, describeFunction(f));
+                        preserveCondition(preservedFunctions, f);
                     }
                     continue;
                 }
                 if (!"minecraft:set_count".equals(fname)) {
                     addNote(conditionNotes, describeFunction(f));
+                    preserveCondition(preservedFunctions, f);
                     continue;
                 }
                 if (!f.has("count")) {
+                    addNote(conditionNotes, describeFunction(f));
+                    preserveCondition(preservedFunctions, f);
                     continue;
                 }
                 JsonElement countEl = f.get("count");
                 if (countEl.isJsonPrimitive()) {
-                    countValue = Math.max(1f, countEl.getAsFloat());
+                    countValue = Math.max(1f, asFloat(countEl, 1f));
                 } else if (countEl.isJsonObject()) {
                     JsonObject countObj = countEl.getAsJsonObject();
                     String countProvider = countObj.has("type") ? countObj.get("type").getAsString() : "";
                     if (countObj.has("min") && countObj.has("max")
                             && !countProvider.contains("binomial")) {
                         countType = "uniform";
-                        countMin = countObj.get("min").getAsFloat();
-                        countMax = countObj.get("max").getAsFloat();
+                        countMin = asFloat(countObj.get("min"), 0f);
+                        countMax = Math.max(countMin, asFloat(countObj.get("max"), 0f));
                     } else if (countObj.has("value")) {
-                        countValue = Math.max(1f, countObj.get("value").getAsFloat());
+                        countValue = Math.max(1f, asFloat(countObj.get("value"), 1f));
                     } else if (countProvider.contains("binomial") && countObj.has("n")
                             && countObj.has("p")) {
                         addNote(conditionNotes, LootNotes.encode(LootNotes.BINOMIAL,
-                                countObj.get("n").getAsString(), countObj.get("p").getAsString()));
+                                asString(countObj.get("n")), asString(countObj.get("p"))));
+                        preserveCondition(preservedFunctions, f);
                     } else if (countProvider.isBlank() && countObj.has("min")) {
-                        countMin = countObj.get("min").getAsFloat();
+                        countMin = asFloat(countObj.get("min"), 0f);
                         countMax = countMin;
                     } else if (!countProvider.isBlank()) {
                         addNote(conditionNotes, LootNotes.encode(LootNotes.COUNT_PROVIDER,
                                 prettifyId(countProvider)));
+                        preserveCondition(preservedFunctions, f);
                     }
                 }
             }
@@ -364,6 +397,7 @@ public final class LootPrefill {
         boolean entryKilledByPlayer = false;
         float entryChance = 1f;
         float entryChanceLooting = 0f;
+        JsonArray preservedConditions = new JsonArray();
         if (entry.has("conditions") && entry.get("conditions").isJsonArray()) {
             for (JsonElement condEl : entry.getAsJsonArray("conditions")) {
                 if (!condEl.isJsonObject()) {
@@ -379,21 +413,106 @@ public final class LootPrefill {
                         entryChance = Math.max(0f, Math.min(1f, asFloat(c.get("chance"), 0f)));
                         entryChanceLooting = Math.max(0f, asFloat(c.get("looting_multiplier"), 0f));
                     }
-                    case "minecraft:match_tool" -> {
-                        String tool = matchToolEnchant(c);
-                        if (tool != null && !toolRequirement.equals("silk_touch")) {
+                    case "minecraft:match_tool", "minecraft:inverted", "minecraft:any_of",
+                            "minecraft:alternative", "minecraft:all_of" -> {
+                        String tool = nestedToolRequirement(c);
+                        if (tool != null && toolRequirement.isBlank()) {
                             toolRequirement = tool;
-                        } else if (tool == null) {
-                            addNote(conditionNotes, describeCondition(c));
+                        } else {
+                            if (tool == null) {
+                                addNote(conditionNotes, describeCondition(c));
+                            }
+                            preserveCondition(preservedConditions, c);
                         }
                     }
-                    default -> addNote(conditionNotes, describeCondition(c));
+                    default -> {
+                        addNote(conditionNotes, describeCondition(c));
+                        preserveCondition(preservedConditions, c);
+                    }
                 }
             }
         }
         return new LootEntryValues(type, item, tag, lootTable, countType, countValue, countMin, countMax, weight,
                 quality, lootBonusMin, lootBonusMax, conditionNotes, toolRequirement, entryKilledByPlayer,
-                entryChance, entryChanceLooting, 0, fortuneBonus, lootBonusLimit, explosionDecay, "", "");
+                entryChance, entryChanceLooting, 0, fortuneBonus, lootBonusLimit, explosionDecay,
+                preservedConditions.isEmpty() ? "" : preservedConditions.toString(),
+                preservedFunctions.isEmpty() ? "" : preservedFunctions.toString());
+    }
+
+    private static String asString(JsonElement el) {
+        if (el == null || el.isJsonNull()) {
+            return "";
+        }
+        if (el.isJsonPrimitive()) {
+            return el.getAsString();
+        }
+        return el.toString();
+    }
+
+    static String nestedToolRequirement(JsonObject condition) {
+        String name = condition.has("condition") ? condition.get("condition").getAsString() : "";
+        if ("minecraft:match_tool".equals(name)) {
+            return matchToolEnchant(condition);
+        }
+        if ("minecraft:inverted".equals(name)) {
+            if (condition.has("term") && condition.get("term").isJsonObject()) {
+                JsonObject term = condition.getAsJsonObject("term");
+                String termName = term.has("condition") ? term.get("condition").getAsString() : "";
+                if ("minecraft:match_tool".equals(termName)
+                        && "silk_touch".equals(matchToolEnchant(term))) {
+                    return "no_silk_touch";
+                }
+            }
+            return null;
+        }
+        if ("minecraft:any_of".equals(name) || "minecraft:alternative".equals(name)) {
+            if (!condition.has("terms") || !condition.get("terms").isJsonArray()) {
+                return null;
+            }
+            Set<String> tools = new HashSet<>();
+            for (JsonElement termEl : condition.getAsJsonArray("terms")) {
+                if (!termEl.isJsonObject()) {
+                    return null;
+                }
+                JsonObject term = termEl.getAsJsonObject();
+                String termName = term.has("condition") ? term.get("condition").getAsString() : "";
+                if (!"minecraft:match_tool".equals(termName)) {
+                    return null;
+                }
+                String tool = matchToolEnchant(term);
+                if (tool == null) {
+                    return null;
+                }
+                tools.add(tool);
+            }
+            if (tools.size() == 1) {
+                return tools.iterator().next();
+            }
+            if (tools.size() == 2 && tools.contains("silk_touch") && tools.contains("shears")) {
+                return "silk_touch_or_shears";
+            }
+            return null;
+        }
+        if ("minecraft:all_of".equals(name)) {
+            if (!condition.has("terms") || !condition.get("terms").isJsonArray()
+                    || condition.getAsJsonArray("terms").size() != 1
+                    || !condition.getAsJsonArray("terms").get(0).isJsonObject()) {
+                return null;
+            }
+            JsonObject term = condition.getAsJsonArray("terms").get(0).getAsJsonObject();
+            String termName = term.has("condition") ? term.get("condition").getAsString() : "";
+            if (!"minecraft:match_tool".equals(termName)) {
+                return null;
+            }
+            return matchToolEnchant(term);
+        }
+        return null;
+    }
+
+    private static void preserveCondition(JsonArray preserved, JsonObject condition) {
+        if (preserved.size() < 8) {
+            preserved.add(condition);
+        }
     }
 
     private static String matchToolEnchant(JsonObject condition) {
@@ -401,12 +520,29 @@ public final class LootPrefill {
             return null;
         }
         JsonObject predicate = condition.getAsJsonObject("predicate");
-        if (predicate.has("items") && predicate.get("items").isJsonArray()) {
-            for (JsonElement el : predicate.getAsJsonArray("items")) {
-                if (el.isJsonPrimitive() && "minecraft:shears".equals(el.getAsString())) {
-                    return "shears";
+        if (predicate.has("items")) {
+            JsonElement itemsEl = predicate.get("items");
+            List<String> ids = new ArrayList<>();
+            if (itemsEl.isJsonPrimitive()) {
+                ids.add(itemsEl.getAsString());
+            } else if (itemsEl.isJsonArray()) {
+                for (JsonElement el : itemsEl.getAsJsonArray()) {
+                    if (el.isJsonPrimitive()) {
+                        ids.add(el.getAsString());
+                    }
                 }
             }
+            if (!ids.isEmpty()) {
+                for (String id : ids) {
+                    if (!"minecraft:shears".equals(id)) {
+                        return null;
+                    }
+                }
+                return predicate.has("enchantments") ? null : "shears";
+            }
+        }
+        if (predicate.has("items")) {
+            return null;
         }
         if (!predicate.has("enchantments") || !predicate.get("enchantments").isJsonArray()) {
             return null;

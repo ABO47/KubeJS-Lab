@@ -25,7 +25,7 @@ final class LootSaver {
         this.panel = panel;
     }
 
-    void saveLoot() {
+    boolean saveLoot() {
         boolean overriding = panel.loot.lootMode == WorkspacePanel.EditMode.MODIFY
                 && panel.loot.lootModifyTarget != null;
         LootSettingsWidget settings = panel.lootSettings;
@@ -33,7 +33,7 @@ final class LootSaver {
         String target = values.targetId();
         if (target == null || target.isBlank()) {
             tell(LootKeys.LOOT_NEEDS_TARGET);
-            return;
+            return false;
         }
         boolean drops = false;
         for (LootPoolValues pool : values.pools()) {
@@ -44,10 +44,11 @@ final class LootSaver {
         }
         if (!drops) {
             tell(LootKeys.LOOT_NEEDS_DROP);
-            return;
+            return false;
         }
         send(overriding ? LootEditAction.MODIFY : LootEditAction.SAVE_NEW,
                 overriding ? panel.loot.lootModifyTarget : null);
+        return true;
     }
 
     void send(LootEditAction action, @Nullable ResourceLocation targetId) {

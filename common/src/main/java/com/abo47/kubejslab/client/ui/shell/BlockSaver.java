@@ -18,11 +18,12 @@ final class BlockSaver {
         this.panel = panel;
     }
 
-    void saveBlock() {
+    boolean saveBlock() {
         boolean overriding = panel.blocks.blockMode == WorkspacePanel.EditMode.MODIFY
                 && panel.blocks.blockModifyTarget != null;
         send(overriding ? BlockEditAction.MODIFY : BlockEditAction.SAVE_NEW,
                 overriding ? panel.blocks.blockModifyTarget.id() : null);
+        return true;
     }
 
     void send(BlockEditAction action, @Nullable ResourceLocation targetId) {

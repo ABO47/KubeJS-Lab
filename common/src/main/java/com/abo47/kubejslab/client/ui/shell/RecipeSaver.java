@@ -33,86 +33,87 @@ final class RecipeSaver {
         this.panel = panel;
     }
 
-    void saveRecipe() {
+    boolean saveRecipe() {
         KubeJSLab.LOGGER.info("[RecipeSaver] saveRecipe: mode={}, modifyTarget={}", panel.recipes.mode,
                 panel.recipes.modifyTarget == null ? null : panel.recipes.modifyTarget.id());
         boolean overriding = panel.recipes.mode == WorkspacePanel.EditMode.MODIFY && panel.recipes.modifyTarget != null;
         if (!overriding) {
-            saveNewRecipe();
-            return;
+            return saveNewRecipe();
         }
         ResourceLocation uid = resolveModifyUid(panel.recipes.modifyTarget);
         if (uid == null) {
-            saveGenericOverride();
-            return;
+            return saveGenericOverride();
         }
         RecipeHandler support = MachineRegistry.get(uid);
         if (support == null) {
-            return;
+            return false;
         }
         List<RecipeIngredient> inputs = panel.machineLayout.getInputs();
         if (!hasInput(inputs)) {
             KubeJSLab.LOGGER.info("[RecipeSaver] saveRecipe: no inputs, aborting");
             tell(RecipeKeys.RECIPE_NEEDS_INPUT);
-            return;
+            return false;
         }
         List<RecipeOutput> outputs = panel.machineLayout.getOutputs();
         Recipe<?> original = RecipeIndex.recipeById(panel.recipes.modifyTarget.id());
         if (outputs.isEmpty() && (original == null || !support.allowsEmptyResult(original))) {
             KubeJSLab.LOGGER.info("[RecipeSaver] saveRecipe: no outputs, aborting");
             tell(RecipeKeys.RECIPE_NEEDS_OUTPUT);
-            return;
+            return false;
         }
         KubeJSLab.LOGGER.info("[RecipeSaver] OVERRIDE {}: inputs={}, outputs={}, values={}", uid, inputs.size(),
                 outputs.size(), panel.settingsWidget.getValues());
         sendRecipeEdit(RecipeEditAction.OVERRIDE, panel.recipes.modifyTarget.id(),
                 new RecipePayload(uid, inputs, outputs,
                         outputName(outputs), panel.settingsWidget.getValues()));
+        return true;
     }
 
-    private void saveNewRecipe() {
+    private boolean saveNewRecipe() {
         MachineView machine = panel.machineDropdown.getSelectedMachine();
         if (machine == null) {
-            return;
+            return false;
         }
         RecipeHandler support = MachineRegistry.get(machine.recipeTypeUid());
         if (support == null) {
-            return;
+            return false;
         }
         List<RecipeIngredient> inputs = panel.machineLayout.getInputs();
         if (!hasInput(inputs)) {
             KubeJSLab.LOGGER.info("[RecipeSaver] saveNewRecipe: no inputs, aborting");
             tell(RecipeKeys.RECIPE_NEEDS_INPUT);
-            return;
+            return false;
         }
         List<RecipeOutput> outputs = panel.machineLayout.getOutputs();
         if (outputs.isEmpty()) {
             KubeJSLab.LOGGER.info("[RecipeSaver] saveNewRecipe: no outputs, aborting");
             tell(RecipeKeys.RECIPE_NEEDS_OUTPUT);
-            return;
+            return false;
         }
         KubeJSLab.LOGGER.info("[RecipeSaver] SAVE_NEW {}: inputs={}, outputs={}, values={}",
                 machine.recipeTypeUid(), inputs.size(), outputs.size(), panel.settingsWidget.getValues());
         sendRecipeEdit(RecipeEditAction.SAVE_NEW, null,
                 new RecipePayload(machine.recipeTypeUid(), inputs, outputs,
                         outputName(outputs), panel.settingsWidget.getValues()));
+        return true;
     }
 
-    private void saveGenericOverride() {
+    private boolean saveGenericOverride() {
         List<RecipeIngredient> inputs = panel.machineLayout.getInputs();
         if (!hasInput(inputs)) {
             tell(RecipeKeys.RECIPE_NEEDS_INPUT);
-            return;
+            return false;
         }
         List<RecipeOutput> outputs = panel.machineLayout.getOutputs();
         if (outputs.isEmpty()) {
             tell(RecipeKeys.RECIPE_NEEDS_OUTPUT);
-            return;
+            return false;
         }
         KubeJSLab.LOGGER.info("[RecipeSaver] saveGenericOverride: inputs={}, outputs={}", inputs.size(), outputs.size());
         sendRecipeEdit(RecipeEditAction.OVERRIDE, panel.recipes.modifyTarget.id(),
                 new RecipePayload(null, inputs, outputs,
                         outputName(outputs), RecipeFieldValues.defaults()));
+        return true;
     }
 
     private static boolean hasInput(List<RecipeIngredient> inputs) {

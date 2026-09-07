@@ -142,6 +142,10 @@ public final class RecipeService {
             if (json == null) {
                 throw new IllegalArgumentException("Unsupported recipe type: " + payload.machineUid());
             }
+            JsonObject originalJson = GenericRecipeModifier.originalFor(server, targetId);
+            if (originalJson != null) {
+                GenericRecipeModifier.copyPassthroughKeys(originalJson, json);
+            }
         }
         Files.writeString(file, RecipeJson.toPrettyString(json));
         KubeJSLab.LOGGER.info("[RecipeService] OVERRIDE wrote {} with json={}", file, json);

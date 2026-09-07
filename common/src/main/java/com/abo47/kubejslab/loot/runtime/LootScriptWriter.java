@@ -595,11 +595,27 @@ public final class LootScriptWriter {
             sb.append("            pool.lootingEnchant(").append(fmt(p.lootingCount())).append(", ")
                     .append(p.lootingLimit()).append(");\n");
         }
+        JsonArray extraFunctions = parseRawArray(p.poolExtraFunctions());
+        if (extraFunctions != null) {
+            for (JsonElement el : extraFunctions) {
+                if (el.isJsonObject()) {
+                    sb.append("            pool.addFunction(").append(el).append(");\n");
+                }
+            }
+        }
     }
 
     static void writePoolConditions(StringBuilder sb, LootPoolValues p) {
         if (p.killedByPlayer()) {
             sb.append("            pool.killedByPlayer();\n");
+        }
+        JsonArray extraConditions = parseRawArray(p.poolExtraConditions());
+        if (extraConditions != null) {
+            for (JsonElement el : extraConditions) {
+                if (el.isJsonObject()) {
+                    sb.append("            pool.addCondition(").append(el).append(");\n");
+                }
+            }
         }
     }
 
