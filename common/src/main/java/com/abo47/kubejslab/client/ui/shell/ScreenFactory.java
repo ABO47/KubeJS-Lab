@@ -160,6 +160,9 @@ public final class ScreenFactory {
                         rightPanel.loot.refreshLootPreview();
                     },
                     values -> {
+                        if (rightPanel.loot.lootSelection != null) {
+                            rightPanel.lootSettings.ensureTarget(rightPanel.loot.lootSelection.id().toString());
+                        }
                         rightPanel.lootSettings.applyPoolEdit(index, values);
                         rightPanel.loot.refreshLootPreview();
                     });
@@ -181,6 +184,9 @@ public final class ScreenFactory {
                         rightPanel.loot.refreshLootPreview();
                     },
                     values -> {
+                        if (rightPanel.loot.lootSelection != null) {
+                            rightPanel.lootSettings.ensureTarget(rightPanel.loot.lootSelection.id().toString());
+                        }
                         rightPanel.lootSettings.applyPoolEdit(targetPool, values);
                         rightPanel.loot.refreshLootPreview();
                     });

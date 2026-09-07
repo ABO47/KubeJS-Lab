@@ -114,6 +114,24 @@ public final class LootSettingsWidget extends RowCardSettings {
         return sel == null || sel.isBlank() ? LootService.LOOT_TYPE_BLOCK : sel;
     }
 
+    public void setTargetId(String targetId) {
+        this.targetId = targetId == null ? "" : targetId.trim();
+        targetIdField.setCurrentString(this.targetId);
+        firePreview();
+    }
+
+    public boolean ensureTarget(String fallbackId) {
+        syncLiveText();
+        if (targetId != null && !targetId.isBlank()) {
+            return true;
+        }
+        if (fallbackId != null && !fallbackId.isBlank()) {
+            setTargetId(fallbackId);
+            return true;
+        }
+        return false;
+    }
+
     public void setFields(List<LootField> fields) {
         rebuildRows();
     }

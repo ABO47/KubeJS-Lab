@@ -66,7 +66,7 @@ public class NumberField extends TextField {
         } else {
             formatted = Integer.toString((int) Math.round(next));
         }
-        setCurrentString(sanitize(formatted));
+        onTextChanged(sanitize(formatted));
         setFocus(true);
         return true;
     }

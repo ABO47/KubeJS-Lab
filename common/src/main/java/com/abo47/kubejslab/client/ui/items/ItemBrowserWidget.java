@@ -5,12 +5,14 @@ import java.util.Comparator;
 import java.util.function.Consumer;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 import net.minecraft.resources.ResourceLocation;
 
-import com.abo47.kubejslab.client.ui.picker.SearchNormalizer;
+import com.abo47.kubejslab.client.ui.picker.SearchQuery;
 import com.abo47.kubejslab.client.ui.widgets.CardBrowserWidget;
+import com.abo47.kubejslab.item.model.ItemStatus;
 
 
 public final class ItemBrowserWidget extends CardBrowserWidget<ItemCardWidget, ItemIndex.ItemEntry> {
@@ -21,11 +23,11 @@ public final class ItemBrowserWidget extends CardBrowserWidget<ItemCardWidget, I
     }
 
     public void setTypeFilter(String typeFilter) {
-        if (typeFilter == null || typeFilter.isBlank() || "all".equals(typeFilter)) {
-            this.typeFilter = null;
-        } else {
-            this.typeFilter = typeFilter;
+        String next = typeFilter == null || typeFilter.isBlank() || "all".equals(typeFilter) ? null : typeFilter;
+        if (Objects.equals(this.typeFilter, next)) {
+            return;
         }
+        this.typeFilter = next;
         resetScroll();
     }
 
@@ -43,12 +45,22 @@ public final class ItemBrowserWidget extends CardBrowserWidget<ItemCardWidget, I
 
     @Override
     protected List<ItemIndex.ItemEntry> entries() {
+        SearchQuery parsed = SearchQuery.parse(query());
         List<ItemIndex.ItemEntry> entries = new ArrayList<>(ItemIndex.search(query(), kubejsOnly()));
-        String normalizedQuery = SearchNormalizer.normalizeUserSearch(query());
         entries.addAll(ItemStates.stateEntries().stream()
                 .filter(e -> e.kubejs() == kubejsOnly())
-                .filter(e -> normalizedQuery.isBlank() || e.matches(normalizedQuery))
+                .filter(e -> parsed.matchesMod(e.id()))
+                .filter(e -> parsed.matchesItemTag(e.id()))
+                .filter(e -> parsed.matchesText(e.normalizedId(), e.normalizedName()))
                 .toList());
+        if (parsed.onlyDisabled() || parsed.onlyModified()) {
+            entries.removeIf(e -> {
+                ItemStatus status = ItemStates.statusOf(e.id());
+                boolean keepDisabled = parsed.onlyDisabled() && status == ItemStatus.DISABLED;
+                boolean keepModified = parsed.onlyModified() && status == ItemStatus.MODIFIED;
+                return !(keepDisabled || keepModified);
+            });
+        }
         if (typeFilter != null && !typeFilter.isBlank()) {
             entries.removeIf(e -> {
                 var state = ItemStates.stateOf(e.id());

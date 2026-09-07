@@ -106,7 +106,7 @@ public final class RootPanel extends WidgetGroup {
                 clearPendingPicks();
             }
         }
-        if (!handled && gui != null) {
+        if (!handled && button == UiColors.MOUSE_BUTTON_LEFT && gui != null) {
             gui.getModularUIContainer().setCarried(ItemStack.EMPTY);
             return true;
         }

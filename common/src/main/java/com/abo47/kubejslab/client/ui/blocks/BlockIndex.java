@@ -32,6 +32,7 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 
 import com.abo47.kubejslab.block.model.BlockFieldValues;
 import com.abo47.kubejslab.client.ui.picker.SearchNormalizer;
+import com.abo47.kubejslab.client.ui.picker.SearchQuery;
 
 
 public final class BlockIndex {
@@ -54,15 +55,22 @@ public final class BlockIndex {
     }
 
     public static List<BlockEntry> search(String query, boolean kubejsOnly) {
-        String normalizedQuery = SearchNormalizer.normalizeUserSearch(query);
+        SearchQuery parsed = SearchQuery.parse(query);
         List<BlockEntry> matches = new ArrayList<>();
         for (BlockEntry entry : ENTRIES.values()) {
             if (entry.kubejs() != kubejsOnly) {
                 continue;
             }
-            if (normalizedQuery.isBlank() || entry.matches(normalizedQuery)) {
-                matches.add(entry);
+            if (!parsed.matchesMod(entry.id())) {
+                continue;
             }
+            if (!parsed.matchesBlockTag(entry.id())) {
+                continue;
+            }
+            if (!parsed.matchesText(entry.normalizedId(), entry.normalizedName())) {
+                continue;
+            }
+            matches.add(entry);
         }
         matches.sort(Comparator.comparing(BlockEntry::name, String.CASE_INSENSITIVE_ORDER)
                 .thenComparing(BlockEntry::id));

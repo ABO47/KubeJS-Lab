@@ -538,11 +538,15 @@ public final class LootPrefill {
                         return null;
                     }
                 }
-                return predicate.has("enchantments") ? null : "shears";
+                if (!predicate.has("enchantments") || !predicate.get("enchantments").isJsonArray()
+                        || predicate.getAsJsonArray("enchantments").isEmpty()) {
+                    return "shears";
+                }
+                return null;
             }
-        }
-        if (predicate.has("items")) {
-            return null;
+            if (itemsEl.isJsonPrimitive() || (itemsEl.isJsonArray() && !itemsEl.getAsJsonArray().isEmpty())) {
+                return null;
+            }
         }
         if (!predicate.has("enchantments") || !predicate.get("enchantments").isJsonArray()) {
             return null;
