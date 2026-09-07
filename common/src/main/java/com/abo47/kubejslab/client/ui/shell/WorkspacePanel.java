@@ -291,6 +291,7 @@ public final class WorkspacePanel extends WidgetGroup {
                 recipes.exitModifyMode();
             }
             settingsWidget.resetScroll();
+            bulkSaver.markRecipeClean();
         });
         settingsWidget.setOnSave(() -> bulkSaver.saveAll());
         settingsWidget.setGridSizeListener(() -> machineLayout
@@ -352,6 +353,7 @@ public final class WorkspacePanel extends WidgetGroup {
             items.refreshItemPreview();
             itemSettings.setFields(itemSettings.fullFields());
             itemSettings.resetScroll();
+            bulkSaver.markItemClean();
         });
         itemSettings.setOnSave(() -> bulkSaver.saveAll());
         itemSettings.setVisible(false);
@@ -409,6 +411,7 @@ public final class WorkspacePanel extends WidgetGroup {
             blocks.refreshBlockPreview();
             blockSettings.setFields(blockSettings.fullFields());
             blockSettings.resetScroll();
+            bulkSaver.markBlockClean();
         });
         blockSettings.setOnSave(() -> bulkSaver.saveAll());
         blockSettings.setVisible(false);
@@ -459,6 +462,7 @@ public final class WorkspacePanel extends WidgetGroup {
             loot.refreshLootPreview();
             lootSettings.setFields(List.of());
             lootSettings.resetScroll();
+            bulkSaver.markLootClean();
         });
         lootSettings.setSaveHandler(() -> bulkSaver.saveAll());
         lootSettings.setPreviewListener(this.loot::refreshLootPreview);

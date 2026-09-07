@@ -42,5 +42,6 @@ public final class ScreenSession {
         rightPanel.lootSettings.applyValues(values);
         rightPanel.lootSettings.setFields(List.of());
         rightPanel.loot.refreshLootPreview();
+        rightPanel.bulkSaver.markLootClean();
     }
 }

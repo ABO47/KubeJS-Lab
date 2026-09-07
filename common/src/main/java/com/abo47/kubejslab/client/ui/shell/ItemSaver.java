@@ -18,11 +18,12 @@ final class ItemSaver {
         this.panel = panel;
     }
 
-    void saveItem() {
+    boolean saveItem() {
         boolean overriding = panel.items.itemMode == WorkspacePanel.EditMode.MODIFY
                 && panel.items.itemModifyTarget != null;
         send(overriding ? ItemEditAction.MODIFY : ItemEditAction.SAVE_NEW,
                 overriding ? panel.items.itemModifyTarget.id() : null);
+        return true;
     }
 
     void send(ItemEditAction action, @Nullable ResourceLocation targetId) {

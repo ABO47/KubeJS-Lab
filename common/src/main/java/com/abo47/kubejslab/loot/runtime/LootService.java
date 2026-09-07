@@ -106,6 +106,7 @@ public final class LootService {
             throw new IllegalArgumentException("Target ID is required");
         }
         requireDroppableEntry(payload);
+        requireCompleteTable(payload);
         String baseName = UniqueIds.slugify(targetIdStr);
         if (baseName.isBlank()) {
             throw new IllegalArgumentException("Target ID is required");
@@ -127,6 +128,7 @@ public final class LootService {
             throw new IllegalArgumentException("Target ID is required");
         }
         requireDroppableEntry(payload);
+        requireCompleteTable(payload);
         LootSaveEntry existing = STATE.get(targetId);
         String name = existing != null && !existing.name().isBlank() ? existing.name() : target;
         STATE.put(targetId, new LootSaveEntry(payload.lootType(), LootStatus.MODIFIED, name, true, payload.values(),
@@ -141,6 +143,15 @@ public final class LootService {
             }
         }
         throw new IllegalArgumentException("At least one loot drop is required");
+    }
+
+    static void requireCompleteTable(LootPayload payload) {
+        int hiddenPools = Math.max(0, payload.values().droppedPools());
+        int hiddenEntries = Math.max(0, payload.values().droppedEntries());
+        if (hiddenPools > 0 || hiddenEntries > 0) {
+            throw new IllegalArgumentException("Loot table has hidden pools or drops the editor cannot show;"
+                    + " saving would delete them (" + hiddenPools + " pools, " + hiddenEntries + " drops hidden)");
+        }
     }
 
     private static void duplicate(ResourceLocation targetId) {

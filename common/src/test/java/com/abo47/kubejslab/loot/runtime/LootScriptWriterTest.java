@@ -142,7 +142,8 @@ class LootScriptWriterTest {
         return new LootPoolValues(base.rollsType(), base.rollsValue(), base.rollsMin(), base.rollsMax(),
                 base.rollsN(), base.rollsP(), base.survivesExplosion(), base.randomChance(),
                 base.killedByPlayer(), base.furnaceSmelt(), base.lootingEnchant(), base.lootingCount(),
-                base.lootingLimit(), List.of(entry), base.bonusRolls(), base.poolConditionNotes());
+                base.lootingLimit(), List.of(entry), base.bonusRolls(), base.poolConditionNotes(),
+                base.poolExtraConditions(), base.poolExtraFunctions());
     }
 
     private static LootEntryValues itemEntry(String item, float countValue) {

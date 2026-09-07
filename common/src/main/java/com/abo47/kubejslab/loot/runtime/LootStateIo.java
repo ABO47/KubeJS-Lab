@@ -165,7 +165,9 @@ public final class LootStateIo {
                 obj.has("lootingLimit") ? obj.get("lootingLimit").getAsInt() : 0,
                 entries,
                 obj.has("bonusRolls") ? obj.get("bonusRolls").getAsFloat() : 0f,
-                readPoolNotes(obj));
+                readPoolNotes(obj),
+                obj.has("poolExtraConditions") ? obj.get("poolExtraConditions").getAsString() : "",
+                obj.has("poolExtraFunctions") ? obj.get("poolExtraFunctions").getAsString() : "");
     }
 
     static LootPoolValues readLegacyPool(JsonObject obj) {
@@ -195,7 +197,7 @@ public final class LootStateIo {
                         obj.get("entryWeight").getAsInt(),
                         obj.get("entryQuality").getAsInt(),
                         0f, 0f, List.of(), "", false, 1f, 0f, 0, false, 0, false, "", "")),
-                0f, List.of());
+                0f, List.of(), "", "");
     }
 
     static void writeValues(JsonObject obj, LootFieldValues v) {
@@ -218,6 +220,8 @@ public final class LootStateIo {
             pool.addProperty("lootingCount", p.lootingCount());
             pool.addProperty("lootingLimit", p.lootingLimit());
             pool.addProperty("bonusRolls", p.bonusRolls());
+            pool.addProperty("poolExtraConditions", p.poolExtraConditions());
+            pool.addProperty("poolExtraFunctions", p.poolExtraFunctions());
             JsonArray poolNotes = new JsonArray();
             for (String note : p.poolConditionNotes()) {
                 poolNotes.add(note);

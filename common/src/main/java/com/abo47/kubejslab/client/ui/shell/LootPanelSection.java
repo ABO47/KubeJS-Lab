@@ -67,6 +67,7 @@ final class LootPanelSection {
         panel.lootSettings.setFields(List.of());
         refreshLootModeLabel();
         refreshLootPreview();
+        panel.bulkSaver.markLootClean();
     }
 
     private void refreshLootModeLabel() {

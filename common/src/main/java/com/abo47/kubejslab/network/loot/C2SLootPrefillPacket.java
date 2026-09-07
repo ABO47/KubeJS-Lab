@@ -27,7 +27,13 @@ public record C2SLootPrefillPacket(ResourceLocation id, String lootType) {
                     player.getName().getString());
             return;
         }
-        LootFieldValues values = LootPrefill.prefill(player.getServer(), id, lootType);
+        LootFieldValues values;
+        try {
+            values = LootPrefill.prefill(player.getServer(), id, lootType);
+        } catch (Exception e) {
+            KubeJSLab.LOGGER.warn("[Net] C2SLootPrefillPacket prefill failed for {}: {}", id, e.toString());
+            values = LootPrefill.blankFor(id);
+        }
         NetworkRegistry.sendLootPrefill(player, new S2CLootPrefillPacket(id, lootType, values));
     }
 }

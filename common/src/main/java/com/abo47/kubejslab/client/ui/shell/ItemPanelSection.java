@@ -72,6 +72,7 @@ final class ItemPanelSection {
         }
         refreshItemModeLabel();
         refreshItemPreview();
+        panel.bulkSaver.markItemClean();
     }
 
     private void refreshItemModeLabel() {

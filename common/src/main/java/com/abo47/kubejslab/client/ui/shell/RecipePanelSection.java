@@ -89,5 +89,6 @@ final class RecipePanelSection {
                 panel.settingsWidget.setFluidOutputAmount(amount);
             }
         }
+        panel.bulkSaver.markRecipeClean();
     }
 }

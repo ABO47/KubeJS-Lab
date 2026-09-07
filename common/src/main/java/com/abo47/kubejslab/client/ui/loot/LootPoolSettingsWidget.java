@@ -253,6 +253,8 @@ public final class LootPoolSettingsWidget extends RowCardSettings {
         String lootingCountText = "0";
         String lootingLimitText = "0";
         String bonusRollsText = "0";
+        String poolExtraConditions = "";
+        String poolExtraFunctions = "";
         List<String> poolConditionNotes = List.of();
         final List<EntryState> entries = new ArrayList<>();
     }
@@ -285,6 +287,8 @@ public final class LootPoolSettingsWidget extends RowCardSettings {
         pool.lootingCountText = ScriptEscaping.fmt(values.lootingCount());
         pool.lootingLimitText = Integer.toString(values.lootingLimit());
         pool.bonusRollsText = ScriptEscaping.fmt(values.bonusRolls());
+        pool.poolExtraConditions = values.poolExtraConditions();
+        pool.poolExtraFunctions = values.poolExtraFunctions();
         pool.poolConditionNotes = values.poolConditionNotes();
         pool.entries.clear();
         List<LootEntryValues> entries = values.entries().isEmpty()
@@ -465,7 +469,9 @@ public final class LootPoolSettingsWidget extends RowCardSettings {
                 parseInt(pool.lootingLimitText, 0),
                 entryValues,
                 Math.max(0f, parseFloat(pool.bonusRollsText, 0f)),
-                pool.poolConditionNotes);
+                pool.poolConditionNotes,
+                pool.poolExtraConditions,
+                pool.poolExtraFunctions);
     }
 
     private void track(Widget w) {

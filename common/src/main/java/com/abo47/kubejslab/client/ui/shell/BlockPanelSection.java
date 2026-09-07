@@ -67,6 +67,7 @@ final class BlockPanelSection {
         }
         refreshBlockModeLabel();
         refreshBlockPreview();
+        panel.bulkSaver.markBlockClean();
     }
 
     private void refreshBlockModeLabel() {

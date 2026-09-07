@@ -8,7 +8,8 @@ import net.minecraft.network.FriendlyByteBuf;
 public record LootPoolValues(String rollsType, float rollsValue, float rollsMin, float rollsMax, int rollsN,
         float rollsP, boolean survivesExplosion, float randomChance, boolean killedByPlayer, boolean furnaceSmelt,
         boolean lootingEnchant, float lootingCount, int lootingLimit, List<LootEntryValues> entries,
-        float bonusRolls, List<String> poolConditionNotes) {
+        float bonusRolls, List<String> poolConditionNotes, String poolExtraConditions,
+        String poolExtraFunctions) {
 
     public LootPoolValues {
         rollsType = rollsType == null ? "" : rollsType;
@@ -23,11 +24,13 @@ public record LootPoolValues(String rollsType, float rollsValue, float rollsMin,
         entries = entries == null ? List.of() : List.copyOf(entries);
         bonusRolls = Math.max(0f, bonusRolls);
         poolConditionNotes = poolConditionNotes == null ? List.of() : List.copyOf(poolConditionNotes);
+        poolExtraConditions = poolExtraConditions == null ? "" : poolExtraConditions;
+        poolExtraFunctions = poolExtraFunctions == null ? "" : poolExtraFunctions;
     }
 
     public static LootPoolValues defaults() {
         return new LootPoolValues("constant", 1f, 0f, 0f, 0, 0.5f, true, 1f, false, false, false, 0f, 0,
-                List.of(LootEntryValues.defaults()), 0f, List.of());
+                List.of(LootEntryValues.defaults()), 0f, List.of(), "", "");
     }
 
     public static void write(FriendlyByteBuf buf, LootPoolValues v) {
@@ -53,6 +56,8 @@ public record LootPoolValues(String rollsType, float rollsValue, float rollsMin,
         for (int i = 0; i < Math.min(v.poolConditionNotes().size(), 16); i++) {
             buf.writeUtf(v.poolConditionNotes().get(i), 256);
         }
+        buf.writeUtf(v.poolExtraConditions(), 2048);
+        buf.writeUtf(v.poolExtraFunctions(), 2048);
     }
 
     public static LootPoolValues read(FriendlyByteBuf buf) {
@@ -83,8 +88,10 @@ public record LootPoolValues(String rollsType, float rollsValue, float rollsMin,
         for (int i = 0; i < noteCount; i++) {
             poolNotes.add(buf.readUtf(256));
         }
+        String poolExtraConditions = buf.readUtf(2048);
+        String poolExtraFunctions = buf.readUtf(2048);
         return new LootPoolValues(rollsType, rollsValue, rollsMin, rollsMax, rollsN, rollsP, survivesExplosion,
                 randomChance, killedByPlayer, furnaceSmelt, lootingEnchant, lootingCount, lootingLimit, entries,
-                bonusRolls, poolNotes);
+                bonusRolls, poolNotes, poolExtraConditions, poolExtraFunctions);
     }
 }
