@@ -217,6 +217,8 @@ public final class ScreenFactory {
         if (gui.modularUI.mainGroup instanceof RootPanel root) {
             root.getLeftPanel().updateRecipeView();
             root.getRightPanel().updateRecipeView();
+            root.getRightPanel().loot.adoptSavedCreation();
+            root.getRightPanel().recipes.adoptSavedCreation();
         }
     }
 }

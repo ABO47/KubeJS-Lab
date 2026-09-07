@@ -97,6 +97,7 @@ public final class LootKeys {
     public static final String LOOT_TOOL_SHEARS = "kubejslab.gui.lab_loot_tool_shears";
     public static final String LOOT_TOOL_SILK_TOUCH_OR_SHEARS = "kubejslab.gui.lab_loot_tool_silk_touch_or_shears";
     public static final String LOOT_TOOL_NO_SILK_TOUCH = "kubejslab.gui.lab_loot_tool_no_silk_touch";
+    public static final String LOOT_TOOL_PRESERVED_SUFFIX = "kubejslab.gui.lab_loot_tool_preserved_suffix";
 
     private LootKeys() {
     }

@@ -12,28 +12,40 @@ public final class WorkspacePaths {
 		return Platform.getGameFolder().resolve("kubejs");
 	}
 
+	public static Path configDir() {
+		return Platform.getGameFolder().resolve("config").resolve("kubejslab");
+	}
+
 	public static Path itemStateFile() {
-		return kubejsDir().resolve("lab").resolve("items.json");
+		return configDir().resolve("items.json");
 	}
 
 	public static Path blockStateFile() {
-		return kubejsDir().resolve("lab").resolve("blocks.json");
+		return configDir().resolve("blocks.json");
 	}
 
 	public static Path colorPaletteFile() {
-		return kubejsDir().resolve("lab").resolve("palette.json");
+		return configDir().resolve("palette.json");
 	}
 
 	public static Path recipeStateFile() {
-		return kubejsDir().resolve("lab").resolve("recipes.json");
+		return configDir().resolve("recipes.json");
 	}
 
 	public static Path lootStateFile() {
-		return kubejsDir().resolve("lab").resolve("loot.json");
+		return configDir().resolve("loot.json");
 	}
 
 	public static Path legacyStateFile() {
-		return kubejsDir().resolve("lab").resolve("state.json");
+		return configDir().resolve("state.json");
+	}
+
+	public static Path legacyLabStateFile(String fileName) {
+		return kubejsDir().resolve("lab").resolve(fileName);
+	}
+
+	public static Path legacyLabBackupFile(ResourceLocation id) {
+		return kubejsDir().resolve("lab").resolve("backups").resolve(id.getPath() + ".json");
 	}
 
 	public static Path dataFile(ResourceLocation id, String kind) {
@@ -41,7 +53,7 @@ public final class WorkspacePaths {
 	}
 
 	public static Path backupFile(ResourceLocation id) {
-		return kubejsDir().resolve("lab").resolve("backups").resolve(id.getPath() + ".json");
+		return configDir().resolve("backups").resolve(id.getPath() + ".json");
 	}
 
 	public static boolean isLabOwned(ResourceLocation id) {

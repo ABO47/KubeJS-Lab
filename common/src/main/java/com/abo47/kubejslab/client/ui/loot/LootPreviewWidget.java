@@ -45,6 +45,7 @@ import com.abo47.kubejslab.client.ui.theme.UiGlow;
 import com.abo47.kubejslab.loot.model.LootEntryValues;
 import com.abo47.kubejslab.loot.model.LootFieldValues;
 import com.abo47.kubejslab.loot.model.LootPoolValues;
+import com.abo47.kubejslab.loot.runtime.LootPrefill;
 import com.abo47.kubejslab.loot.runtime.LootService;
 
 
@@ -344,8 +345,11 @@ public final class LootPreviewWidget extends WidgetGroup {
         tips.add(statLine(LootKeys.LOOT_PREVIEW_WEIGHT, Component.literal(Integer.toString(entry.weight()))));
         tips.add(statLine(LootKeys.LOOT_PREVIEW_QUALITY, Component.literal(Integer.toString(entry.quality()))));
         tips.add(statLine(LootKeys.LOOT_PREVIEW_COUNT, Component.literal(countLine(entry))));
-        if (!entry.toolRequirement().isBlank() && !"none".equals(entry.toolRequirement())) {
-            tips.add(statLine(LootKeys.LOOT_PREVIEW_REQUIRES, toolPreviewLabel(entry.toolRequirement())));
+        String toolDisplay = !entry.toolRequirement().isBlank() && !"none".equals(entry.toolRequirement())
+                ? entry.toolRequirement()
+                : LootPrefill.firstPreservedToolDisplay(entry.extraConditions());
+        if (toolDisplay != null && !toolDisplay.isBlank() && !"none".equals(toolDisplay)) {
+            tips.add(statLine(LootKeys.LOOT_PREVIEW_REQUIRES, toolPreviewLabel(toolDisplay)));
         }
         if (entry.entryKilledByPlayer()) {
             tips.add(statLine(LootKeys.LOOT_PREVIEW_REQUIRES,

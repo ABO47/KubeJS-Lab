@@ -26,7 +26,8 @@ public final class BlockStateIo {
     static Map<ResourceLocation, BlockSaveEntry> load() {
         Map<ResourceLocation, BlockSaveEntry> loaded = new LinkedHashMap<>();
 
-        JsonObject root = JsonStateFile.load(WorkspacePaths.blockStateFile());
+        JsonObject root = JsonStateFile.loadFirstPresent(WorkspacePaths.blockStateFile(),
+                WorkspacePaths.legacyLabStateFile("blocks.json"));
         if (root == null) {
             return loaded;
         }
@@ -86,7 +87,8 @@ public final class BlockStateIo {
             obj.add("actions", actions);
             root.add(item.getKey().toString(), obj);
         }
-        JsonStateFile.save(WorkspacePaths.blockStateFile(), root);
+        JsonStateFile.saveAndClearLegacy(WorkspacePaths.blockStateFile(),
+                WorkspacePaths.legacyLabStateFile("blocks.json"), root);
     }
 
     static BlockFieldValues readValues(JsonObject obj) {

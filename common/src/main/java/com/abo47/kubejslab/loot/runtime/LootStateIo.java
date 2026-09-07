@@ -28,7 +28,8 @@ public final class LootStateIo {
     static Map<ResourceLocation, LootSaveEntry> load() {
         Map<ResourceLocation, LootSaveEntry> loaded = new LinkedHashMap<>();
 
-        JsonObject root = JsonStateFile.load(WorkspacePaths.lootStateFile());
+        JsonObject root = JsonStateFile.loadFirstPresent(WorkspacePaths.lootStateFile(),
+                WorkspacePaths.legacyLabStateFile("loot.json"));
         if (root == null) {
             return loaded;
         }
@@ -89,12 +90,15 @@ public final class LootStateIo {
             obj.add("actions", actions);
             root.add(item.getKey().toString(), obj);
         }
-        JsonStateFile.save(WorkspacePaths.lootStateFile(), root);
+        JsonStateFile.saveAndClearLegacy(WorkspacePaths.lootStateFile(),
+                WorkspacePaths.legacyLabStateFile("loot.json"), root);
     }
 
     static LootFieldValues readValues(JsonObject obj) {
         String targetId = obj.has("targetId") ? obj.get("targetId").getAsString() : "";
         String customId = obj.has("customId") ? obj.get("customId").getAsString() : "";
+        int droppedPools = obj.has("droppedPools") ? Math.max(0, obj.get("droppedPools").getAsInt()) : 0;
+        int droppedEntries = obj.has("droppedEntries") ? Math.max(0, obj.get("droppedEntries").getAsInt()) : 0;
         List<LootPoolValues> pools = new ArrayList<>();
         if (obj.has("pools") && obj.get("pools").isJsonArray()) {
             for (JsonElement poolEl : obj.getAsJsonArray("pools")) {
@@ -109,7 +113,7 @@ public final class LootStateIo {
         if (pools.isEmpty()) {
             pools.add(LootPoolValues.defaults());
         }
-        return new LootFieldValues(targetId, customId, pools, 0, 0);
+        return new LootFieldValues(targetId, customId, pools, droppedPools, droppedEntries);
     }
 
     static LootPoolValues readPool(JsonObject obj) {
@@ -203,6 +207,8 @@ public final class LootStateIo {
     static void writeValues(JsonObject obj, LootFieldValues v) {
         obj.addProperty("targetId", v.targetId());
         obj.addProperty("customId", v.customId());
+        obj.addProperty("droppedPools", v.droppedPools());
+        obj.addProperty("droppedEntries", v.droppedEntries());
         JsonArray pools = new JsonArray();
         for (LootPoolValues p : v.pools()) {
             JsonObject pool = new JsonObject();

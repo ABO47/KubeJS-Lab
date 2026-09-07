@@ -31,7 +31,7 @@ public final class RecipeCardWidget extends EntryCardWidget {
         setCardTexture(switch (status) {
             case MODIFIED -> MODIFIED_TEXTURE;
             case DISABLED -> DISABLED_TEXTURE;
-            case NORMAL -> CARD_TEXTURE;
+            case CREATED, NORMAL -> CARD_TEXTURE;
         });
     }
 

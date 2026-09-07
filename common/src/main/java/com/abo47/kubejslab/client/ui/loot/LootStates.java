@@ -12,6 +12,7 @@ import net.minecraft.resources.ResourceLocation;
 
 import com.abo47.kubejslab.client.ui.picker.SearchNormalizer;
 import com.abo47.kubejslab.client.ui.shell.TabCounts;
+import com.abo47.kubejslab.loot.model.LootFieldValues;
 import com.abo47.kubejslab.loot.model.LootState;
 import com.abo47.kubejslab.loot.model.LootStatus;
 import com.abo47.kubejslab.loot.runtime.LootService;
@@ -55,6 +56,31 @@ public final class LootStates {
             else if (s.status() == LootStatus.MODIFIED) modified++;
         }
         return new TabCounts(total, disabled, modified);
+    }
+
+    public static LootIndex.LootEntry createdEntryFor(String targetId, LootFieldValues values) {
+        return createdEntryFor(targetId, values, null);
+    }
+
+    public static LootIndex.LootEntry createdEntryFor(String targetId, LootFieldValues values, String lootType) {
+        if (targetId == null || targetId.isBlank() || values == null) {
+            return null;
+        }
+        for (LootState entry : STATE.values()) {
+            if (entry.status() != LootStatus.CREATED) {
+                continue;
+            }
+            if (lootType != null && !lootType.isBlank() && entry.lootType() != null
+                    && !entry.lootType().isBlank() && !lootType.equals(entry.lootType())) {
+                continue;
+            }
+            if (!targetId.equals(entry.values().targetId()) || !values.equals(entry.values())) {
+                continue;
+            }
+            String name = entry.name().isBlank() ? entry.id().getPath() : entry.name();
+            return entryOf(entry.id(), name, entry.lootType());
+        }
+        return null;
     }
 
     public static List<LootIndex.LootEntry> stateEntries() {

@@ -70,19 +70,34 @@ public final class LootService {
                 case RESET -> reset(targetId);
                 case DELETE -> delete(targetId);
             }
-            LootStateIo.save(STATE);
-            LootScriptWriter.writeServerScript(STATE);
-            MinecraftServer server = player.getServer();
-            ServerCommands.kubejsStartupReload(server);
-            ServerCommands.reloadKind(server, ReloadKind.LOOT);
-            KubeJSLab.LOGGER.info("[LootService] sent /kubejs reload startup_scripts and selective loot reload after {}", action);
-            NetworkRegistry.sendLootState(player, statePacket());
         } catch (IOException e) {
             e.printStackTrace();
         } catch (RuntimeException e) {
             e.printStackTrace();
             player.sendSystemMessage(Component.literal("Failed to save loot: " + e.getMessage()));
+            return;
         }
+        try {
+            LootStateIo.save(STATE);
+        } catch (IOException e) {
+            KubeJSLab.LOGGER.warn("[{}] loot state save failed, continuing with in-memory state",
+                    KubeJSLab.MOD_ID, e);
+        }
+        try {
+            LootScriptWriter.writeServerScript(STATE);
+        } catch (IOException e) {
+            KubeJSLab.LOGGER.warn("[{}] loot script write failed, continuing with in-memory state",
+                    KubeJSLab.MOD_ID, e);
+        }
+        try {
+            MinecraftServer server = player.getServer();
+            ServerCommands.kubejsStartupReload(server);
+            ServerCommands.reloadKind(server, ReloadKind.LOOT);
+        } catch (Exception e) {
+            KubeJSLab.LOGGER.warn("[{}] loot reload after save failed", KubeJSLab.MOD_ID, e);
+        }
+        KubeJSLab.LOGGER.info("[LootService] sent /kubejs reload startup_scripts and selective loot reload after {}", action);
+        NetworkRegistry.sendLootState(player, statePacket());
     }
 
     public static S2CLootStatePacket statePacket() {
@@ -111,12 +126,51 @@ public final class LootService {
         if (baseName.isBlank()) {
             throw new IllegalArgumentException("Target ID is required");
         }
-        ResourceLocation id = UniqueIds.uniqueId(UniqueIds.labId(baseName),
-                existing -> STATE.containsKey(existing) || SESSION_CREATED_IDS.contains(existing));
-        STATE.put(id, new LootSaveEntry(lootType, LootStatus.CREATED, targetIdStr, false, payload.values(),
-                payload.tags(), payload.actions()));
+        ResourceLocation id = upsertId(payload);
+        if (id == null) {
+            id = UniqueIds.uniqueId(UniqueIds.labId(baseName),
+                    existing -> STATE.containsKey(existing) || SESSION_CREATED_IDS.contains(existing));
+            STATE.put(id, new LootSaveEntry(lootType, LootStatus.CREATED, targetIdStr, false, payload.values(),
+                    payload.tags(), payload.actions()));
+            SESSION_CREATED_IDS.add(id);
+            KubeJSLab.LOGGER.info("[LootService] SAVE_NEW created {} for {}", id, targetIdStr);
+            return;
+        }
+        LootSaveEntry existing = STATE.get(id);
+        LootStatus status = existing == null ? LootStatus.CREATED : existing.status();
+        if (status == LootStatus.DISABLED) {
+            status = LootStatus.MODIFIED;
+        }
+        boolean wasModified = existing != null && (existing.wasModified() || status == LootStatus.MODIFIED);
+        String name = existing != null && !existing.name().isBlank() ? existing.name() : targetIdStr;
+        STATE.put(id, new LootSaveEntry(existing != null ? existing.lootType() : lootType, status, name,
+                wasModified, payload.values(), payload.tags(), payload.actions()));
         SESSION_CREATED_IDS.add(id);
-        KubeJSLab.LOGGER.info("[LootService] SAVE_NEW created {} for {}", id, targetIdStr);
+        KubeJSLab.LOGGER.info("[LootService] SAVE_NEW upserted {} for {}", id, targetIdStr);
+    }
+
+    private static ResourceLocation upsertId(LootPayload payload) {
+        String targetIdStr = payload.values().targetId();
+        String customId = payload.values().customId() == null ? "" : payload.values().customId().trim();
+        String lootType = payload.lootType() == null ? "" : payload.lootType().trim();
+        ResourceLocation fallback = null;
+        for (Map.Entry<ResourceLocation, LootSaveEntry> candidate : STATE.entrySet()) {
+            LootSaveEntry entry = candidate.getValue();
+            String entryTarget = entry.values().targetId() == null ? "" : entry.values().targetId().trim();
+            String entryCustom = entry.values().customId() == null ? "" : entry.values().customId().trim();
+            String entryType = entry.lootType() == null ? "" : entry.lootType().trim();
+            if (!targetIdStr.equals(entryTarget) || !customId.equals(entryCustom)
+                    || !lootType.equals(entryType)) {
+                continue;
+            }
+            if (entry.status() == LootStatus.CREATED) {
+                return candidate.getKey();
+            }
+            if (fallback == null) {
+                fallback = candidate.getKey();
+            }
+        }
+        return fallback;
     }
 
     private static void modify(ResourceLocation targetId, LootPayload payload) {
@@ -265,5 +319,27 @@ public final class LootService {
         }
         stateLoaded = true;
         STATE.putAll(LootStateIo.load());
+        deduplicateTargets();
+    }
+
+    private static void deduplicateTargets() {
+        Map<String, ResourceLocation> seen = new HashMap<>();
+        List<ResourceLocation> duplicates = new ArrayList<>();
+        for (Map.Entry<ResourceLocation, LootSaveEntry> entry : STATE.entrySet()) {
+            LootSaveEntry data = entry.getValue();
+            String target = data.values().targetId() == null ? "" : data.values().targetId().trim();
+            String custom = data.values().customId() == null ? "" : data.values().customId().trim();
+            String type = data.lootType() == null ? "" : data.lootType().trim();
+            String key = type + "|" + target + "|" + custom;
+            ResourceLocation previous = seen.put(key, entry.getKey());
+            if (previous != null) {
+                duplicates.add(previous);
+            }
+        }
+        for (ResourceLocation dupe : duplicates) {
+            STATE.remove(dupe);
+            SESSION_CREATED_IDS.remove(dupe);
+            KubeJSLab.LOGGER.warn("[LootService] merged duplicate loot entry {}", dupe);
+        }
     }
 }

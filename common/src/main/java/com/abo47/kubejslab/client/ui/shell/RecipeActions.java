@@ -22,12 +22,11 @@ final class RecipeActions {
         RecipeStatus status = RecipeStates.statusOf(entry.id());
         boolean custom = entry.kubejs();
         List<ContextAction> actions = new ArrayList<>();
-        if (status == RecipeStatus.NORMAL) {
-            actions.add(modify(rightPanel, entry));
+        actions.add(modify(rightPanel, entry));
+        if (status == RecipeStatus.NORMAL || status == RecipeStatus.CREATED) {
             actions.add(disable(rightPanel, entry));
             if (custom) actions.add(delete(rightPanel, entry));
         } else if (status == RecipeStatus.MODIFIED) {
-            actions.add(modify(rightPanel, entry));
             actions.add(reset(rightPanel, entry));
             actions.add(disable(rightPanel, entry));
             if (custom) actions.add(delete(rightPanel, entry));

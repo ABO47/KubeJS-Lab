@@ -14,6 +14,7 @@ import com.abo47.kubejslab.client.ui.machines.*;
 import com.abo47.kubejslab.client.ui.picker.*;
 import com.abo47.kubejslab.client.ui.recipes.*;
 import com.abo47.kubejslab.loot.model.LootFieldValues;
+import com.abo47.kubejslab.loot.runtime.LootPrefill;
 
 public final class ScreenSession {
     private ScreenSession() {
@@ -36,6 +37,15 @@ public final class ScreenSession {
             return;
         }
         if (LootStates.stateOf(id) != null) {
+            return;
+        }
+        if (rightPanel.loot.lootMode != WorkspacePanel.EditMode.NEW || rightPanel.poolModal != null) {
+            return;
+        }
+        if (!rightPanel.lootSettings.getLootType().equals(lootType)) {
+            return;
+        }
+        if (!rightPanel.lootSettings.getValues().equals(LootPrefill.blankFor(id))) {
             return;
         }
         rightPanel.lootSettings.setLootType(lootType);

@@ -253,7 +253,10 @@ public final class PickerWindowWidget extends WidgetGroup {
             setSelfPosition(nx, ny);
             return true;
         }
-        return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+        if (super.mouseDragged(mouseX, mouseY, button, dragX, dragY)) {
+            return true;
+        }
+        return isMouseOverElement(mouseX, mouseY);
     }
 
     @Override
@@ -263,7 +266,10 @@ public final class PickerWindowWidget extends WidgetGroup {
             saveState();
             return true;
         }
-        return super.mouseReleased(mouseX, mouseY, button);
+        if (super.mouseReleased(mouseX, mouseY, button)) {
+            return true;
+        }
+        return isMouseOverElement(mouseX, mouseY);
     }
 
     @Override

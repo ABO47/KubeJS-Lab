@@ -76,6 +76,12 @@ public final class RecipeBrowserWidget extends CardBrowserWidget<RecipeCardWidge
                 .filter(e -> parsed.matchesText(e.normalizedId(), e.normalizedName()))
                 .filter(e -> tagNeedle.isBlank() || e.matches(tagNeedle))
                 .toList());
+        entries.addAll(RecipeStates.createdEntries(machineUid).stream()
+                .filter(e -> kubejsOnly() == e.kubejs())
+                .filter(e -> parsed.matchesMod(e.id()))
+                .filter(e -> parsed.matchesText(e.normalizedId(), e.normalizedName()))
+                .filter(e -> tagNeedle.isBlank() || e.matches(tagNeedle))
+                .toList());
         if (parsed.onlyDisabled() || parsed.onlyModified()) {
             entries.removeIf(e -> {
                 RecipeStatus status = RecipeStates.statusOf(e.id());

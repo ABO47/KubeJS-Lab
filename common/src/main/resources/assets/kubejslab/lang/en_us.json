@@ -333,6 +333,7 @@
   "kubejslab.gui.lab_loot_tool_shears": "shears",
   "kubejslab.gui.lab_loot_tool_silk_touch_or_shears": "silk touch or shears",
   "kubejslab.gui.lab_loot_tool_no_silk_touch": "without silk touch",
+  "kubejslab.gui.lab_loot_tool_preserved_suffix": " (modded)",
   "kubejslab.gui.lab_loot_tip_loot_type": "Which loot event this table belongs to (block, entity, chest, fishing, gift, generic)",
   "kubejslab.gui.lab_loot_tip_target_id": "Block, entity or loot table id this entry overrides (e.g. minecraft:grass)",
   "kubejslab.gui.lab_loot_tip_custom_id": "Optional override for the generated loot table id",

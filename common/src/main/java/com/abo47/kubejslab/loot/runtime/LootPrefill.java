@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -30,7 +31,7 @@ import com.google.gson.JsonParser;
 
 public final class LootPrefill {
     public static final int MAX_POOLS = 6;
-    public static final int MAX_ENTRIES = 6;
+    public static final int MAX_ENTRIES = 64;
 
     private LootPrefill() {
     }
@@ -426,7 +427,9 @@ public final class LootPrefill {
                         }
                     }
                     default -> {
-                        addNote(conditionNotes, describeCondition(c));
+                        if (toolActionDisplay(c) == null) {
+                            addNote(conditionNotes, describeCondition(c));
+                        }
                         preserveCondition(preservedConditions, c);
                     }
                 }
@@ -564,6 +567,83 @@ public final class LootPrefill {
             if ("minecraft:fortune".equals(id)) {
                 return "fortune";
             }
+        }
+        return null;
+    }
+
+    public static String firstPreservedToolDisplay(String extraConditions) {
+        JsonArray conditions = LootScriptWriter.parseRawArray(extraConditions);
+        if (conditions == null) {
+            return null;
+        }
+        for (JsonElement el : conditions) {
+            if (!el.isJsonObject()) {
+                continue;
+            }
+            String display = preservedToolDisplay(el.getAsJsonObject());
+            if (display != null && !display.isBlank()) {
+                return display;
+            }
+        }
+        return null;
+    }
+
+    public static String preservedToolDisplay(JsonObject condition) {
+        String actionDisplay = toolActionDisplay(condition);
+        if (actionDisplay != null) {
+            return actionDisplay;
+        }
+        String name = condition.has("condition") ? condition.get("condition").getAsString() : "";
+        if ("minecraft:match_tool".equals(name)) {
+            return matchToolDisplay(condition);
+        }
+        if ("minecraft:inverted".equals(name)) {
+            if (condition.has("term") && condition.get("term").isJsonObject()) {
+                return preservedToolDisplay(condition.getAsJsonObject("term"));
+            }
+            return null;
+        }
+        if ("minecraft:any_of".equals(name) || "minecraft:alternative".equals(name)
+                || "minecraft:all_of".equals(name)) {
+            if (!condition.has("terms") || !condition.get("terms").isJsonArray()) {
+                return null;
+            }
+            for (JsonElement termEl : condition.getAsJsonArray("terms")) {
+                if (!termEl.isJsonObject()) {
+                    continue;
+                }
+                String display = preservedToolDisplay(termEl.getAsJsonObject());
+                if (display != null && !display.isBlank()) {
+                    return display;
+                }
+            }
+        }
+        return null;
+    }
+
+    static String matchToolDisplay(JsonObject condition) {
+        if (!condition.has("predicate") || !condition.get("predicate").isJsonObject()) {
+            return null;
+        }
+        JsonObject predicate = condition.getAsJsonObject("predicate");
+        if (predicate.has("tag") && predicate.get("tag").isJsonPrimitive()) {
+            String tag = predicate.get("tag").getAsString();
+            return tag.isBlank() ? null : "#" + tag;
+        }
+        return matchToolEnchant(condition);
+    }
+
+    static String toolActionDisplay(JsonObject condition) {
+        String name = condition.has("condition") ? condition.get("condition").getAsString() : "";
+        String path = name.contains(":") ? name.substring(name.indexOf(':') + 1) : name;
+        if (!"can_tool_perform_action".equals(path)) {
+            return null;
+        }
+        String action = condition.has("action") && condition.get("action").isJsonPrimitive()
+                ? condition.get("action").getAsString()
+                : "";
+        if (action.toLowerCase(Locale.ROOT).contains("shears")) {
+            return "shears";
         }
         return null;
     }

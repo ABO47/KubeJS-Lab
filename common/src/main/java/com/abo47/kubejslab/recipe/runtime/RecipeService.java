@@ -4,9 +4,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -65,19 +67,34 @@ public final class RecipeService {
                 case RESET -> reset(targetId);
                 case DELETE -> delete(targetId);
             }
-            saveState();
-            if (action != RecipeEditAction.SAVE_NEW) {
-                writeDisabledScript();
-            }
-            ServerCommands.reloadKind(player.getServer(), ReloadKind.RECIPES);
-            KubeJSLab.LOGGER.info("[RecipeService] sent selective recipe reload after {}", action);
-            NetworkRegistry.sendRecipeState(player, statePacket());
         } catch (IOException e) {
             e.printStackTrace();
         } catch (RuntimeException e) {
             e.printStackTrace();
             player.sendSystemMessage(Component.literal("Failed to save recipe: " + e.getMessage()));
+            return;
         }
+        try {
+            saveState();
+        } catch (IOException e) {
+            KubeJSLab.LOGGER.warn("[{}] recipe state save failed, continuing with in-memory state",
+                    KubeJSLab.MOD_ID, e);
+        }
+        if (action != RecipeEditAction.SAVE_NEW) {
+            try {
+                writeDisabledScript();
+            } catch (IOException e) {
+                KubeJSLab.LOGGER.warn("[{}] recipe disabled script write failed, continuing", KubeJSLab.MOD_ID,
+                        e);
+            }
+        }
+        try {
+            ServerCommands.reloadKind(player.getServer(), ReloadKind.RECIPES);
+        } catch (Exception e) {
+            KubeJSLab.LOGGER.warn("[{}] recipe reload after save failed", KubeJSLab.MOD_ID, e);
+        }
+        KubeJSLab.LOGGER.info("[RecipeService] sent selective recipe reload after {}", action);
+        NetworkRegistry.sendRecipeState(player, statePacket());
     }
 
     public static S2CRecipeStatePacket statePacket() {
@@ -89,10 +106,11 @@ public final class RecipeService {
         requireUsableInputs(payload);
         requireUsableOutputs(payload);
         ItemStack output = RecipeOutput.displayStack(payload.outputs());
-        ResourceLocation id = generateId(output);
+        ResourceLocation reuse = recoverableId(payload, output);
+        ResourceLocation id = reuse == null ? generateId(output) : reuse;
         Path file = fileFor(id);
         int suffix = 2;
-        while (Files.exists(file) || SESSION_CREATED_IDS.contains(id)) {
+        while (reuse == null && (Files.exists(file) || SESSION_CREATED_IDS.contains(id))) {
             id = new ResourceLocation(id.getNamespace(), id.getPath() + "_" + suffix);
             file = fileFor(id);
             suffix++;
@@ -104,7 +122,27 @@ public final class RecipeService {
         Files.createDirectories(file.getParent());
         Files.writeString(file, RecipeJson.toPrettyString(json));
         KubeJSLab.LOGGER.info("[RecipeService] SAVE_NEW wrote {} with json={}", file, json);
+        STATE.put(id, new RecipeStateEntry(id, RecipeStatus.CREATED, output, payload.name(), false,
+                payload.machineUid()));
         SESSION_CREATED_IDS.add(id);
+    }
+
+    private static ResourceLocation recoverableId(RecipePayload payload, ItemStack output) {
+        String outputItem = output.isEmpty() ? ""
+                : BuiltInRegistries.ITEM.getKey(output.getItem()).toString();
+        for (Map.Entry<ResourceLocation, RecipeStateEntry> candidate : STATE.entrySet()) {
+            RecipeStateEntry entry = candidate.getValue();
+            if (entry.status() != RecipeStatus.CREATED || entry.machineUid() == null
+                    || !entry.machineUid().equals(payload.machineUid())) {
+                continue;
+            }
+            String candidateItem = entry.output().isEmpty() ? ""
+                    : BuiltInRegistries.ITEM.getKey(entry.output().getItem()).toString();
+            if (candidateItem.equals(outputItem) && entry.name().equals(payload.name())) {
+                return candidate.getKey();
+            }
+        }
+        return null;
     }
 
     private static void override(ResourceLocation targetId, RecipePayload payload, Recipe<?> original,
@@ -186,8 +224,11 @@ public final class RecipeService {
         Path file = fileFor(targetId);
         if (isLabOwned(targetId)) {
             Path backup = backupFor(targetId);
+            Path legacyBackup = WorkspacePaths.legacyLabBackupFile(targetId);
             if (Files.exists(backup)) {
                 Files.move(backup, file, StandardCopyOption.REPLACE_EXISTING);
+            } else if (Files.exists(legacyBackup)) {
+                Files.move(legacyBackup, file, StandardCopyOption.REPLACE_EXISTING);
             } else {
                 Files.deleteIfExists(file);
             }
@@ -203,19 +244,28 @@ public final class RecipeService {
         }
         Files.deleteIfExists(fileFor(targetId));
         Files.deleteIfExists(backupFor(targetId));
+        Files.deleteIfExists(WorkspacePaths.legacyLabBackupFile(targetId));
         STATE.remove(targetId);
         SESSION_CREATED_IDS.remove(targetId);
     }
 
     private static void writeDisabledScript() throws IOException {
-        StringBuilder sb = new StringBuilder("ServerEvents.recipes(event => {\n");
+        List<String> ids = new ArrayList<>();
         STATE.values().stream()
                 .filter(e -> e.status() == RecipeStatus.DISABLED)
                 .map(e -> e.id().toString())
                 .sorted()
-                .forEach(id -> sb.append("    event.remove({ id: '").append(id).append("' });\n"));
+                .forEach(ids::add);
+        if (ids.isEmpty()) {
+            ScriptWriter.writeOrDelete("server_scripts", "disabled.js", "");
+            return;
+        }
+        StringBuilder sb = new StringBuilder("ServerEvents.recipes(event => {\n");
+        for (String id : ids) {
+            sb.append("    event.remove({ id: '").append(id).append("' });\n");
+        }
         sb.append("});\n");
-        ScriptWriter.write("server_scripts", "disabled.js", sb.toString());
+        ScriptWriter.writeOrDelete("server_scripts", "disabled.js", sb.toString());
     }
 
     private static void requireUsableInputs(RecipePayload payload) {
@@ -282,10 +332,9 @@ public final class RecipeService {
             return;
         }
         stateLoaded = true;
-        JsonObject root = JsonStateFile.load(WorkspacePaths.recipeStateFile());
-        if (root == null) {
-            root = JsonStateFile.load(WorkspacePaths.legacyStateFile());
-        }
+        JsonObject root = JsonStateFile.loadFirstPresent(WorkspacePaths.recipeStateFile(),
+                WorkspacePaths.legacyLabStateFile("recipes.json"), WorkspacePaths.legacyStateFile(),
+                WorkspacePaths.legacyLabStateFile("state.json"));
         if (root == null) {
             return;
         }
@@ -327,7 +376,8 @@ public final class RecipeService {
             }
             root.add(entry.id().toString(), obj);
         }
-        JsonStateFile.save(WorkspacePaths.recipeStateFile(), root);
+        JsonStateFile.saveAndClearLegacy(WorkspacePaths.recipeStateFile(),
+                WorkspacePaths.legacyLabStateFile("recipes.json"), root);
     }
 
     private static ItemStack decodeStack(JsonObject obj) {

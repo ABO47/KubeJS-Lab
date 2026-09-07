@@ -30,7 +30,7 @@ public final class BlockScriptWriter {
             }
         }
         if (!any) {
-            ScriptWriter.write("startup_scripts", "blocks.js", sb.toString());
+            ScriptWriter.writeOrDelete("startup_scripts", "blocks.js", sb.toString());
             return;
         }
         sb.append("StartupEvents.registry('block', event => {\n");
@@ -43,7 +43,7 @@ public final class BlockScriptWriter {
         }
         sb.append("});\n\n");
         appendCreativeTabAdds(states, sb);
-        ScriptWriter.write("startup_scripts", "blocks.js", sb.toString());
+        ScriptWriter.writeOrDelete("startup_scripts", "blocks.js", sb.toString());
     }
 
     static void appendCreativeTabAdds(Map<ResourceLocation, BlockSaveEntry> states, StringBuilder sb) {
@@ -194,7 +194,7 @@ public final class BlockScriptWriter {
             }
         }
         if (!any) {
-            ScriptWriter.write("startup_scripts", "modified_blocks.js", "");
+            ScriptWriter.writeOrDelete("startup_scripts", "modified_blocks.js", "");
             return;
         }
         StringBuilder sb = new StringBuilder("BlockEvents.modification(event => {\n");
@@ -236,17 +236,36 @@ public final class BlockScriptWriter {
             sb.append("    });\n");
         }
         sb.append("});\n");
-        ScriptWriter.write("startup_scripts", "modified_blocks.js", sb.toString());
+        ScriptWriter.writeOrDelete("startup_scripts", "modified_blocks.js", sb.toString());
     }
 
     static void writeServerScript(Map<ResourceLocation, BlockSaveEntry> states) throws IOException {
+        boolean anyRemove = false;
+        boolean anyLoot = false;
+        for (Map.Entry<ResourceLocation, BlockSaveEntry> entry : states.entrySet()) {
+            if (entry.getValue().actions().contains(BlockAction.REMOVE_RECIPES)) {
+                anyRemove = true;
+            }
+            BlockFieldValues values = entry.getValue().values();
+            if (WorkspacePaths.isLabOwned(entry.getKey()) && !values.lootItem().isBlank()
+                    && !values.noDrops()) {
+                anyLoot = true;
+            }
+            if (anyRemove && anyLoot) {
+                break;
+            }
+        }
+        if (!anyRemove && !anyLoot) {
+            ScriptWriter.writeOrDelete("server_scripts", "disabled_blocks.js", "");
+            return;
+        }
         StringBuilder sb = new StringBuilder("ServerEvents.recipes(event => {\n");
         states.entrySet().stream().filter(e -> e.getValue().actions().contains(BlockAction.REMOVE_RECIPES))
                 .map(e -> e.getKey().toString()).sorted()
                 .forEach(id -> sb.append("    event.remove({ output: '").append(id).append("' });\n"));
         sb.append("});\n\n");
         appendLootHandlers(states, sb);
-        ScriptWriter.write("server_scripts", "disabled_blocks.js", sb.toString());
+        ScriptWriter.writeOrDelete("server_scripts", "disabled_blocks.js", sb.toString());
     }
 
     static void appendLootHandlers(Map<ResourceLocation, BlockSaveEntry> states, StringBuilder sb) {
@@ -279,7 +298,7 @@ public final class BlockScriptWriter {
             }
         }
         if (!any) {
-            ScriptWriter.write("startup_scripts", "hidden_blocks.js", "");
+            ScriptWriter.writeOrDelete("startup_scripts", "hidden_blocks.js", "");
             return;
         }
         StringBuilder sb = new StringBuilder();
@@ -293,7 +312,7 @@ public final class BlockScriptWriter {
             sb.append("});\n");
         }
         sb.append("\n");
-        ScriptWriter.write("startup_scripts", "hidden_blocks.js", sb.toString());
+        ScriptWriter.writeOrDelete("startup_scripts", "hidden_blocks.js", sb.toString());
     }
 
     static void writeClientScript(Map<ResourceLocation, BlockSaveEntry> states) throws IOException {
@@ -305,7 +324,7 @@ public final class BlockScriptWriter {
                 sb.append("REIEvents.hide(event => {\n    event.hide('").append(item.getKey()).append("');\n});\n");
             }
         }
-        ScriptWriter.write("client_scripts", "blocks.js", sb.toString());
+        ScriptWriter.writeOrDelete("client_scripts", "blocks.js", sb.toString());
     }
 
     static boolean hasCustomLoot(BlockFieldValues v) {

@@ -14,6 +14,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.MinecraftServer;
 
+import com.abo47.kubejslab.KubeJSLab;
 import com.abo47.kubejslab.block.model.BlockAction;
 import com.abo47.kubejslab.block.model.BlockEditAction;
 import com.abo47.kubejslab.block.model.BlockFieldValues;
@@ -78,28 +79,44 @@ public final class BlockService {
                 case RESET -> reset(targetId);
                 case DELETE -> delete(targetId);
             }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (RuntimeException e) {
+            e.printStackTrace();
+            player.sendSystemMessage(Component.literal("Failed to save block: " + e.getMessage()));
+            return;
+        }
+        try {
             BlockStateIo.save(STATE);
             BlockScriptWriter.writeStartupScript(STATE);
             BlockScriptWriter.writeModificationScript(STATE);
             BlockScriptWriter.writeServerScript(STATE);
             BlockScriptWriter.writeCreativeHideScript(STATE);
             BlockScriptWriter.writeClientScript(STATE);
+        } catch (IOException e) {
+            KubeJSLab.LOGGER.warn("[{}] block script write failed, continuing with in-memory state",
+                    KubeJSLab.MOD_ID, e);
+        }
+        boolean texturesCopied = false;
+        try {
+            texturesCopied = BlockTextures.copyTextures(STATE);
+        } catch (Exception e) {
+            KubeJSLab.LOGGER.warn("[{}] block texture copy failed", KubeJSLab.MOD_ID, e);
+        }
+        try {
             MinecraftServer server = player.getServer();
             ServerCommands.kubejsStartupReload(server);
             ServerCommands.reloadKind(server, ReloadKind.RECIPES);
             ServerCommands.reloadKind(server, ReloadKind.LOOT);
-            if (BlockTextures.copyTextures(STATE)) {
+            if (texturesCopied) {
                 ServerCommands.kubejsTextureReload(server);
             }
-            NetworkRegistry.sendBlockState(player, statePacket());
-            if (!PENDING.isEmpty()) {
-                player.sendSystemMessage(Component.translatable(UiKeys.CHAT_RESTART_REQUIRED));
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (RuntimeException e) {
-            e.printStackTrace();
-            player.sendSystemMessage(Component.literal("Failed to save block: " + e.getMessage()));
+        } catch (Exception e) {
+            KubeJSLab.LOGGER.warn("[{}] block reload after save failed", KubeJSLab.MOD_ID, e);
+        }
+        NetworkRegistry.sendBlockState(player, statePacket());
+        if (!PENDING.isEmpty()) {
+            player.sendSystemMessage(Component.translatable(UiKeys.CHAT_RESTART_REQUIRED));
         }
     }
 
@@ -128,12 +145,33 @@ public final class BlockService {
         if (baseName.isBlank()) {
             throw new IllegalArgumentException("Block display name is required");
         }
-        ResourceLocation id = UniqueIds.uniqueId(UniqueIds.labId(baseName),
-                existing -> STATE.containsKey(existing) || SESSION_CREATED_IDS.contains(existing));
+        ResourceLocation id = recoverableId(payload);
+        if (id == null) {
+            id = UniqueIds.uniqueId(UniqueIds.labId(baseName),
+                    existing -> STATE.containsKey(existing) || SESSION_CREATED_IDS.contains(existing));
+        }
         STATE.put(id, new BlockSaveEntry(payload.type(), BlockStatus.CREATED,
                 payload.values().displayName(), false, payload.values(), payload.tags(), payload.actions()));
         SESSION_CREATED_IDS.add(id);
         PENDING.add(id);
+    }
+
+    private static ResourceLocation recoverableId(BlockPayload payload) {
+        for (Map.Entry<ResourceLocation, BlockSaveEntry> candidate : STATE.entrySet()) {
+            BlockSaveEntry entry = candidate.getValue();
+            if (entry.status() != BlockStatus.CREATED) {
+                continue;
+            }
+            if (!payload.type().equals(entry.type())
+                    || !payload.values().displayName().equals(entry.name())
+                    || !payload.values().equals(entry.values())
+                    || !payload.tags().equals(entry.tags())
+                    || !payload.actions().equals(entry.actions())) {
+                continue;
+            }
+            return candidate.getKey();
+        }
+        return null;
     }
 
     private static void modify(ResourceLocation targetId, BlockPayload payload) {

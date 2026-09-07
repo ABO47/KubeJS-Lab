@@ -76,12 +76,21 @@ public final class RecipeIndex {
     }
 
     public static RecipeCounts counts(boolean kubejs) {
-        int recipes = 0;
+        java.util.Set<ResourceLocation> seen = new java.util.HashSet<>();
         for (RecipeEntry entry : entries()) {
             if (entry.kubejs() == kubejs) {
-                recipes++;
+                seen.add(entry.id());
             }
         }
+        for (RecipeStateEntry state : RecipeStates.stateEntries()) {
+            if ("kubejs".equals(state.id().getNamespace()) != kubejs) {
+                continue;
+            }
+            if (state.status() == RecipeStatus.CREATED) {
+                seen.add(state.id());
+            }
+        }
+        int recipes = seen.size();
         int disabled = 0;
         int modified = 0;
         for (RecipeStateEntry state : RecipeStates.stateEntries()) {

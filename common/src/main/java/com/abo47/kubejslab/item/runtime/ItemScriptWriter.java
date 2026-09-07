@@ -3,6 +3,8 @@ package com.abo47.kubejslab.item.runtime;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -37,7 +39,7 @@ public final class ItemScriptWriter {
         writeModificationSection(states, sb);
         writeBehaviorSection(states, sb);
         writeCreativeHideSection(states, sb);
-        ScriptWriter.write("startup_scripts", "items.js", sb.toString());
+        ScriptWriter.writeOrDelete("startup_scripts", "items.js", sb.toString());
     }
 
     static void writeTierBlocks(Map<ResourceLocation, ItemSaveEntry> states, StringBuilder sb) {
@@ -411,12 +413,19 @@ public final class ItemScriptWriter {
     }
 
     static void writeServerScript(Map<ResourceLocation, ItemSaveEntry> states) throws IOException {
-        StringBuilder sb = new StringBuilder("ServerEvents.recipes(event => {\n");
+        List<String> ids = new ArrayList<>();
         states.entrySet().stream().filter(e -> e.getValue().actions().contains(ItemAction.REMOVE_RECIPES))
-                .map(e -> e.getKey().toString()).sorted()
-                .forEach(id -> sb.append("    event.remove({ output: '").append(id).append("' });\n"));
+                .map(e -> e.getKey().toString()).sorted().forEach(ids::add);
+        if (ids.isEmpty()) {
+            ScriptWriter.writeOrDelete("server_scripts", "disabled_items.js", "");
+            return;
+        }
+        StringBuilder sb = new StringBuilder("ServerEvents.recipes(event => {\n");
+        for (String id : ids) {
+            sb.append("    event.remove({ output: '").append(id).append("' });\n");
+        }
         sb.append("});\n");
-        ScriptWriter.write("server_scripts", "disabled_items.js", sb.toString());
+        ScriptWriter.writeOrDelete("server_scripts", "disabled_items.js", sb.toString());
     }
 
     static void writeClientScript(Map<ResourceLocation, ItemSaveEntry> states) throws IOException {
@@ -428,7 +437,7 @@ public final class ItemScriptWriter {
                 sb.append("REIEvents.hide(event => {\n    event.hide('").append(item.getKey()).append("');\n});\n");
             }
         }
-        ScriptWriter.write("client_scripts", "items.js", sb.toString());
+        ScriptWriter.writeOrDelete("client_scripts", "items.js", sb.toString());
     }
 
     static String operationName(String value) {

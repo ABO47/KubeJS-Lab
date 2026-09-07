@@ -25,9 +25,26 @@ public final class JsonStateFile {
 		}
 	}
 
+	public static JsonObject loadFirstPresent(Path... files) {
+		for (Path file : files) {
+			JsonObject root = file == null ? null : load(file);
+			if (root != null) {
+				return root;
+			}
+		}
+		return null;
+	}
+
 	public static void save(Path file, JsonObject root) throws IOException {
 		Files.createDirectories(file.getParent());
 		Files.writeString(file, GSON.toJson(root));
+	}
+
+	public static void saveAndClearLegacy(Path file, Path legacyFile, JsonObject root) throws IOException {
+		save(file, root);
+		if (legacyFile != null) {
+			Files.deleteIfExists(legacyFile);
+		}
 	}
 
 	private JsonStateFile() {

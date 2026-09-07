@@ -72,12 +72,13 @@ public final class LootEntryBrowserWidget
                     settings.selectEntry(entry.index());
                     fireEntryRightClick(entry, mx, my);
                 });
-        String tool = settings.entryToolRequirement(entry.index());
+        String tool = settings.entryToolDisplay(entry.index());
         if (tool != null && !tool.isBlank() && !"none".equals(tool)) {
+            Component toolName = tool.startsWith("#") ? Component.literal(tool)
+                    : Component.translatable(toolLabelKey(tool));
             card.setHoverTooltips(List.of(
                     Component.literal(settings.entryCardName(entry.index())),
-                    Component.translatable(LootKeys.LOOT_PREVIEW_REQUIRES)
-                            .append(Component.translatable(toolLabelKey(tool)))));
+                    Component.translatable(LootKeys.LOOT_PREVIEW_REQUIRES).append(toolName)));
         }
         return card;
     }

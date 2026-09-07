@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -29,7 +30,7 @@ public final class LootScriptWriter {
 
     static void writeServerScript(Map<ResourceLocation, LootSaveEntry> states) throws IOException {
         if (states.isEmpty()) {
-            ScriptWriter.write("server_scripts", "loot.js", "");
+            ScriptWriter.writeOrDelete("server_scripts", "loot.js", "");
             return;
         }
         StringBuilder sb = new StringBuilder();
@@ -56,7 +57,7 @@ public final class LootScriptWriter {
             sb.append(typeBuf);
             sb.append("});\n\n");
         }
-        ScriptWriter.write("server_scripts", "loot.js", sb.toString());
+        ScriptWriter.writeOrDelete("server_scripts", "loot.js", sb.toString());
     }
 
     static void writeLootEntry(StringBuilder sb, String type, ResourceLocation id, LootSaveEntry data) {
@@ -269,7 +270,7 @@ public final class LootScriptWriter {
         if (e.explosionDecay()) {
             sb.append(".addFunction({function: 'minecraft:explosion_decay'})");
         }
-        appendRawJson(sb, "addCondition", e.extraConditions());
+        appendRawJsonFiltered(sb, "addCondition", e.extraConditions(), hasExplicitTool(e));
         appendRawJson(sb, "addFunction", e.extraFunctions());
     }
 
@@ -282,15 +283,71 @@ public final class LootScriptWriter {
     }
 
     static void appendRawJson(StringBuilder sb, String method, String raw) {
+        appendRawJsonFiltered(sb, method, raw, false);
+    }
+
+    static void appendRawJsonFiltered(StringBuilder sb, String method, String raw, boolean skipToolConditions) {
         JsonArray elements = parseRawArray(raw);
         if (elements == null) {
             return;
         }
         for (JsonElement el : elements) {
-            if (el.isJsonObject()) {
-                sb.append(".").append(method).append("(").append(el).append(")");
+            if (!el.isJsonObject()) {
+                continue;
             }
+            if (skipToolConditions && isToolCondition(el.getAsJsonObject())) {
+                continue;
+            }
+            sb.append(".").append(method).append("(").append(el).append(")");
         }
+    }
+
+    static boolean hasExplicitTool(LootEntryValues e) {
+        return e.toolRequirement() != null && !e.toolRequirement().isBlank()
+                && !"none".equals(e.toolRequirement());
+    }
+
+    static boolean isShearsToolAction(JsonObject condition) {
+        String name = condition.has("condition") ? condition.get("condition").getAsString() : "";
+        String path = name.contains(":") ? name.substring(name.indexOf(':') + 1) : name;
+        if (!"can_tool_perform_action".equals(path)) {
+            return false;
+        }
+        String action = condition.has("action") && condition.get("action").isJsonPrimitive()
+                ? condition.get("action").getAsString()
+                : "";
+        return action.toLowerCase(Locale.ROOT).contains("shears");
+    }
+
+    static boolean isToolCondition(JsonObject condition) {
+        String name = condition.has("condition") ? condition.get("condition").getAsString() : "";
+        if ("minecraft:match_tool".equals(name)) {
+            return true;
+        }
+        if (isShearsToolAction(condition)) {
+            return true;
+        }
+        if ("minecraft:inverted".equals(name)) {
+            return condition.has("term") && condition.get("term").isJsonObject()
+                    && isToolCondition(condition.getAsJsonObject("term"));
+        }
+        if ("minecraft:any_of".equals(name) || "minecraft:alternative".equals(name)
+                || "minecraft:all_of".equals(name)) {
+            if (!condition.has("terms") || !condition.get("terms").isJsonArray()) {
+                return false;
+            }
+            JsonArray terms = condition.getAsJsonArray("terms");
+            if (terms.isEmpty()) {
+                return false;
+            }
+            for (JsonElement termEl : terms) {
+                if (!termEl.isJsonObject() || !isToolCondition(termEl.getAsJsonObject())) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        return false;
     }
 
     static JsonArray parseRawArray(String raw) {
@@ -397,11 +454,16 @@ public final class LootScriptWriter {
         }
         JsonArray conditions = entryConditionsJson(e);
         JsonArray extraConditions = parseRawArray(e.extraConditions());
+        boolean skipTools = hasExplicitTool(e);
         if (extraConditions != null) {
             for (JsonElement el : extraConditions) {
-                if (el.isJsonObject()) {
-                    conditions.add(el);
+                if (!el.isJsonObject()) {
+                    continue;
                 }
+                if (skipTools && isToolCondition(el.getAsJsonObject())) {
+                    continue;
+                }
+                conditions.add(el);
             }
         }
         if (conditions.size() > 0) {

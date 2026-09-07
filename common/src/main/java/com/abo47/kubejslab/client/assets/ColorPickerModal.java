@@ -338,25 +338,36 @@ public final class ColorPickerModal {
     }
 
     private static List<Integer> loadPalette() {
-        Path file = WorkspacePaths.colorPaletteFile();
-        if (Files.isRegularFile(file)) {
-            try {
-                JsonArray array = com.google.gson.JsonParser.parseString(Files.readString(file)).getAsJsonArray();
-                List<Integer> loaded = new ArrayList<>();
-                for (JsonElement element : array) {
-                    try {
-                        loaded.add((int) (Long.parseLong(element.getAsString(), 16) & 0xFFFFFF));
-                    } catch (NumberFormatException ignored) {
-                    }
-                }
-                if (!loaded.isEmpty()) {
-                    return loaded;
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
+        for (Path file : new Path[] { WorkspacePaths.colorPaletteFile(),
+                WorkspacePaths.legacyLabStateFile("palette.json") }) {
+            List<Integer> loaded = readPalette(file);
+            if (loaded != null) {
+                return loaded;
             }
         }
         return defaultPalette();
+    }
+
+    private static List<Integer> readPalette(Path file) {
+        if (!Files.isRegularFile(file)) {
+            return null;
+        }
+        try {
+            JsonArray array = com.google.gson.JsonParser.parseString(Files.readString(file)).getAsJsonArray();
+            List<Integer> loaded = new ArrayList<>();
+            for (JsonElement element : array) {
+                try {
+                    loaded.add((int) (Long.parseLong(element.getAsString(), 16) & 0xFFFFFF));
+                } catch (NumberFormatException ignored) {
+                }
+            }
+            if (!loaded.isEmpty()) {
+                return loaded;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     private static List<Integer> defaultPalette() {
@@ -380,6 +391,7 @@ public final class ColorPickerModal {
             Path file = WorkspacePaths.colorPaletteFile();
             Files.createDirectories(file.getParent());
             Files.writeString(file, array.toString());
+            Files.deleteIfExists(WorkspacePaths.legacyLabStateFile("palette.json"));
         } catch (Exception e) {
             e.printStackTrace();
         }

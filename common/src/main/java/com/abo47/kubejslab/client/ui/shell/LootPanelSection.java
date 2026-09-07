@@ -29,6 +29,9 @@ final class LootPanelSection {
     WorkspacePanel.EditMode lootMode = WorkspacePanel.EditMode.NEW;
     ResourceLocation lootModifyTarget;
     LootIndex.LootEntry lootSelection;
+    String pendingAdoptTarget;
+    LootFieldValues pendingAdoptValues;
+    String pendingAdoptLootType;
 
     void selectLoot(LootIndex.LootEntry entry) {
         if (panel.lootBrowser == null) {
@@ -40,6 +43,9 @@ final class LootPanelSection {
     void enterLootModifyMode(LootIndex.LootEntry entry) {
         lootMode = WorkspacePanel.EditMode.MODIFY;
         lootModifyTarget = entry.id();
+        pendingAdoptTarget = null;
+        pendingAdoptValues = null;
+        pendingAdoptLootType = null;
         showLootSettings(entry);
     }
 
@@ -47,11 +53,48 @@ final class LootPanelSection {
         if (lootMode != WorkspacePanel.EditMode.MODIFY) return;
         lootMode = WorkspacePanel.EditMode.NEW;
         lootModifyTarget = null;
+        pendingAdoptTarget = null;
+        pendingAdoptValues = null;
+        pendingAdoptLootType = null;
         refreshLootModeLabel();
+    }
+
+    void trackSavedCreation(String targetId, LootFieldValues values) {
+        pendingAdoptTarget = targetId;
+        pendingAdoptValues = values;
+        pendingAdoptLootType = panel.lootSettings == null ? null : panel.lootSettings.getLootType();
+    }
+
+    void adoptSavedCreation() {
+        if (pendingAdoptTarget == null || pendingAdoptValues == null) {
+            return;
+        }
+        if (lootMode != WorkspacePanel.EditMode.NEW || panel.poolModal != null) {
+            return;
+        }
+        if (!pendingAdoptValues.equals(panel.lootSettings.getValues())) {
+            return;
+        }
+        LootIndex.LootEntry created = LootStates.createdEntryFor(pendingAdoptTarget, pendingAdoptValues,
+                pendingAdoptLootType);
+        if (created == null) {
+            created = LootStates.createdEntryFor(pendingAdoptTarget, pendingAdoptValues);
+        }
+        if (created == null) {
+            return;
+        }
+        pendingAdoptTarget = null;
+        pendingAdoptValues = null;
+        pendingAdoptLootType = null;
+        selectLoot(created);
+        enterLootModifyMode(created);
     }
 
     void showLootSettings(LootIndex.LootEntry entry) {
         lootSelection = entry;
+        pendingAdoptTarget = null;
+        pendingAdoptValues = null;
+        pendingAdoptLootType = null;
         LootState state = LootStates.stateOf(entry.id());
         String lootType = state != null && state.lootType() != null && !state.lootType().isBlank()
                 ? state.lootType()

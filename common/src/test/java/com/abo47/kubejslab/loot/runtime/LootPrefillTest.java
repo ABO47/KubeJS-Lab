@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -141,6 +142,63 @@ class LootPrefillTest {
         assertTrue(sb.toString().contains("weather_check"), sb.toString());
     }
 
+    @Test
+    void tagShearsToolStaysPreservedButHasDisplay() {
+        LootEntryValues entry = LootPrefill.parseEntry(entryJson("minecraft:grass",
+                "{condition: 'minecraft:match_tool', predicate: {tag: 'notreepunching:shears'}}"));
+        assertTrue(entry.toolRequirement().isBlank(), "tag tools must not map to a writable tool");
+        assertTrue(entry.extraConditions().contains("notreepunching:shears"), entry.extraConditions());
+        assertEquals("#notreepunching:shears",
+                LootPrefill.firstPreservedToolDisplay(entry.extraConditions()));
+    }
+
+    @Test
+    void anyOfWithTagToolYieldsDisplay() {
+        LootEntryValues entry = LootPrefill.parseEntry(entryJson("minecraft:grass",
+                "{condition: 'minecraft:any_of', terms: ["
+                        + "{condition: 'minecraft:match_tool', predicate: {tag: 'biomesoplenty:shears'}}, "
+                        + "{condition: 'minecraft:weather_check', raining: true}]}"));
+        assertTrue(entry.toolRequirement().isBlank());
+        assertEquals("#biomesoplenty:shears",
+                LootPrefill.firstPreservedToolDisplay(entry.extraConditions()));
+    }
+
+    @Test
+    void forgeShearsActionStaysPreservedButHasDisplay() {
+        LootEntryValues entry = LootPrefill.parseEntry(entryJson("minecraft:grass",
+                "{condition: 'forge:can_tool_perform_action', action: 'shears_dig'}"));
+        assertTrue(entry.toolRequirement().isBlank(), "forge actions must not map to a writable tool");
+        assertTrue(entry.extraConditions().contains("can_tool_perform_action"), entry.extraConditions());
+        assertEquals("shears", LootPrefill.firstPreservedToolDisplay(entry.extraConditions()));
+        assertFalse(entry.conditionNotes().toString().contains("can tool perform action"),
+                "shears action must not leave a generic note, Requires covers it: "
+                        + entry.conditionNotes());
+    }
+
+    @Test
+    void forgeNonShearsActionKeepsGenericNote() {
+        LootEntryValues entry = LootPrefill.parseEntry(entryJson("minecraft:stick",
+                "{condition: 'forge:can_tool_perform_action', action: 'axe_dig'}"));
+        assertTrue(entry.toolRequirement().isBlank());
+        assertNull(LootPrefill.firstPreservedToolDisplay(entry.extraConditions()));
+        assertTrue(entry.extraConditions().contains("can_tool_perform_action"), entry.extraConditions());
+    }
+
+    @Test
+    void neoforgeShearsActionHasDisplay() {
+        LootEntryValues entry = LootPrefill.parseEntry(entryJson("minecraft:grass",
+                "{condition: 'neoforge:can_tool_perform_action', action: 'shears_harvest'}"));
+        assertEquals("shears", LootPrefill.firstPreservedToolDisplay(entry.extraConditions()));
+    }
+
+    @Test
+    void unmappedConditionHasNoToolDisplay() {
+        LootEntryValues entry = LootPrefill.parseEntry(entryJson("minecraft:stick",
+                "{condition: 'minecraft:location_check', predicate: {biome: 'minecraft:plains'}}"));
+        assertNull(LootPrefill.firstPreservedToolDisplay(entry.extraConditions()));
+        assertNull(LootPrefill.firstPreservedToolDisplay(""));
+    }
+
     private static JsonObject entryJson(String item, String condition) {
         return JsonParser.parseString("{type: 'minecraft:item', name: '" + item + "', conditions: ["
                 + condition + "]}").getAsJsonObject();
@@ -156,5 +214,31 @@ class LootPrefillTest {
                 new LootFieldValues("minecraft:grass", "", List.of(LootPoolValues.defaults()), 0, 0),
                 List.of(), List.of());
         LootService.requireCompleteTable(complete);
+    }
+
+    @Test
+    void droppedCountsSurviveStateRoundTrip() {
+        LootPoolValues pool = LootPoolValues.defaults();
+        LootFieldValues values = new LootFieldValues("minecraft:grass", "", List.of(pool), 2, 3);
+        com.google.gson.JsonObject obj = new com.google.gson.JsonObject();
+        LootStateIo.writeValues(obj, values);
+        LootFieldValues back = LootStateIo.readValues(obj);
+        assertEquals(2, back.droppedPools());
+        assertEquals(3, back.droppedEntries());
+        assertEquals("minecraft:grass", back.targetId());
+    }
+
+    @Test
+    void prefillKeepsUpToSixtyFourEntries() {
+        StringBuilder entries = new StringBuilder();
+        for (int i = 0; i < 20; i++) {
+            if (i > 0) {
+                entries.append(", ");
+            }
+            entries.append("{type: 'minecraft:item', name: 'minecraft:stick'}");
+        }
+        LootPoolValues pool = LootPrefill.parsePool(JsonParser.parseString(
+                "{rolls: 1, entries: [" + entries + "]}").getAsJsonObject(), null);
+        assertEquals(20, pool.entries().size(), "editor supports 64 entries, prefill must not truncate at 6");
     }
 }

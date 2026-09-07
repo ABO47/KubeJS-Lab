@@ -154,4 +154,93 @@ class LootScriptWriterTest {
                 base.entryChance(), base.entryChanceLooting(), base.alternativeGroup(), base.fortuneBonus(),
                 base.lootBonusLimit(), base.explosionDecay(), base.extraConditions(), base.extraFunctions());
     }
+
+    private static LootEntryValues toolEntry(String item, String tool, String extraConditions) {
+        LootEntryValues base = LootEntryValues.defaults();
+        return new LootEntryValues("item", item, base.tag(), base.lootTable(), "constant", 1f,
+                base.countMin(), base.countMax(), base.weight(), base.quality(), base.lootBonusMin(),
+                base.lootBonusMax(), List.of(), tool, base.entryKilledByPlayer(),
+                base.entryChance(), base.entryChanceLooting(), base.alternativeGroup(), base.fortuneBonus(),
+                base.lootBonusLimit(), base.explosionDecay(), extraConditions, base.extraFunctions());
+    }
+
+    @Test
+    void explicitToolSkipsPreservedToolCondition() {
+        String preserved = "[{condition: 'minecraft:match_tool', predicate: {tag: 'notreepunching:shears'}}]";
+        StringBuilder sb = new StringBuilder();
+        LootScriptWriter.writeEntryChains(sb, toolEntry("minecraft:grass", "shears", preserved));
+        String out = sb.toString();
+        assertTrue(out.contains("minecraft:shears"), "explicit tool must be emitted: " + out);
+        assertFalse(out.contains("notreepunching:shears"),
+                "preserved tag tool must be skipped when explicit tool is set: " + out);
+    }
+
+    @Test
+    void explicitToolKeepsNonToolPreservedCondition() {
+        String preserved = "[{condition: 'minecraft:match_tool', predicate: {tag: 'notreepunching:shears'}}, "
+                + "{condition: 'minecraft:location_check', predicate: {biome: 'minecraft:plains'}}]";
+        StringBuilder sb = new StringBuilder();
+        LootScriptWriter.writeEntryChains(sb, toolEntry("minecraft:stick", "shears", preserved));
+        String out = sb.toString();
+        assertTrue(out.contains("location_check"), "non-tool preserved must survive: " + out);
+        assertFalse(out.contains("notreepunching:shears"), out);
+    }
+
+    @Test
+    void noExplicitToolKeepsPreservedToolCondition() {
+        String preserved = "[{condition: 'minecraft:match_tool', predicate: {tag: 'notreepunching:shears'}}]";
+        StringBuilder sb = new StringBuilder();
+        LootScriptWriter.writeEntryChains(sb, toolEntry("minecraft:grass", "", preserved));
+        assertTrue(sb.toString().contains("notreepunching:shears"), sb.toString());
+    }
+
+    @Test
+    void alternativesChildSkipsPreservedToolWhenExplicit() {
+        String preserved = "[{condition: 'minecraft:match_tool', predicate: {tag: 'biomesoplenty:shears'}}]";
+        LootEntryValues entry = toolEntry("minecraft:grass", "fortune", preserved);
+        com.google.gson.JsonObject child = LootScriptWriter.childJson(entry);
+        String json = child.toString();
+        assertTrue(json.contains("fortune"), "explicit fortune must be in child conditions: " + json);
+        assertFalse(json.contains("biomesoplenty:shears"),
+                "preserved tag tool must be skipped in alternatives child: " + json);
+    }
+
+    @Test
+    void mixedAnyOfWithWeatherIsKeptWhenExplicit() {
+        String preserved = "[{condition: 'minecraft:any_of', terms: ["
+                + "{condition: 'minecraft:match_tool', predicate: {tag: 'biomesoplenty:shears'}}, "
+                + "{condition: 'minecraft:weather_check', raining: true}]}]";
+        StringBuilder sb = new StringBuilder();
+        LootScriptWriter.writeEntryChains(sb, toolEntry("minecraft:grass", "shears", preserved));
+        assertTrue(sb.toString().contains("weather_check"),
+                "mixed any_of with non-tool term must not be dropped wholesale: " + sb);
+    }
+
+    @Test
+    void explicitToolSkipsPreservedForgeShearsAction() {
+        String preserved = "[{condition: 'forge:can_tool_perform_action', action: 'shears_dig'}]";
+        StringBuilder sb = new StringBuilder();
+        LootScriptWriter.writeEntryChains(sb, toolEntry("minecraft:grass", "shears", preserved));
+        String out = sb.toString();
+        assertTrue(out.contains("minecraft:shears"), "explicit tool must be emitted: " + out);
+        assertFalse(out.contains("can_tool_perform_action"),
+                "preserved forge shears action must be skipped when explicit tool is set: " + out);
+    }
+
+    @Test
+    void forgeShearsActionIsEmittedWithoutExplicitTool() {
+        String preserved = "[{condition: 'forge:can_tool_perform_action', action: 'shears_dig'}]";
+        StringBuilder sb = new StringBuilder();
+        LootScriptWriter.writeEntryChains(sb, toolEntry("minecraft:grass", "", preserved));
+        assertTrue(sb.toString().contains("can_tool_perform_action"), sb.toString());
+    }
+
+    @Test
+    void forgeNonShearsActionIsKeptWithExplicitTool() {
+        String preserved = "[{condition: 'forge:can_tool_perform_action', action: 'axe_dig'}]";
+        StringBuilder sb = new StringBuilder();
+        LootScriptWriter.writeEntryChains(sb, toolEntry("minecraft:stick", "shears", preserved));
+        assertTrue(sb.toString().contains("axe_dig"),
+                "non-shears tool action carries distinct meaning and must survive: " + sb);
+    }
 }

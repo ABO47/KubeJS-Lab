@@ -27,10 +27,9 @@ public final class ItemStateIo {
     static Map<ResourceLocation, ItemSaveEntry> load() {
         Map<ResourceLocation, ItemSaveEntry> loaded = new LinkedHashMap<>();
 
-        JsonObject root = JsonStateFile.load(WorkspacePaths.itemStateFile());
-        if (root == null) {
-            root = JsonStateFile.load(WorkspacePaths.legacyStateFile());
-        }
+        JsonObject root = JsonStateFile.loadFirstPresent(WorkspacePaths.itemStateFile(),
+                WorkspacePaths.legacyLabStateFile("items.json"), WorkspacePaths.legacyStateFile(),
+                WorkspacePaths.legacyLabStateFile("state.json"));
         if (root == null) {
             return loaded;
         }
@@ -95,7 +94,8 @@ public final class ItemStateIo {
             }
             root.add(item.getKey().toString(), obj);
         }
-        JsonStateFile.save(WorkspacePaths.itemStateFile(), root);
+        JsonStateFile.saveAndClearLegacy(WorkspacePaths.itemStateFile(),
+                WorkspacePaths.legacyLabStateFile("items.json"), root);
     }
 
     static CustomTier readTier(JsonObject obj) {

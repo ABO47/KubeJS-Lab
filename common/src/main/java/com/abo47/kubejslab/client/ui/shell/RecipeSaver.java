@@ -95,7 +95,17 @@ final class RecipeSaver {
         sendRecipeEdit(RecipeEditAction.SAVE_NEW, null,
                 new RecipePayload(machine.recipeTypeUid(), inputs, outputs,
                         outputName(outputs), panel.settingsWidget.getValues()));
+        panel.recipes.trackSavedCreation(outputItemId(outputs), machine.recipeTypeUid(), outputName(outputs));
         return true;
+    }
+
+    private static String outputItemId(List<RecipeOutput> outputs) {
+        ItemStack item = RecipeOutput.firstItem(outputs);
+        if (item.isEmpty()) {
+            return "";
+        }
+        ResourceLocation key = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(item.getItem());
+        return key == null ? "" : key.toString();
     }
 
     private boolean saveGenericOverride() {

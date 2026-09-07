@@ -27,6 +27,9 @@ final class RecipePanelSection {
 
     WorkspacePanel.EditMode mode = WorkspacePanel.EditMode.NEW;
     RecipeIndex.RecipeEntry modifyTarget;
+    String pendingAdoptOutput;
+    ResourceLocation pendingAdoptMachine;
+    String pendingAdoptName;
 
     void selectRecipe(RecipeIndex.RecipeEntry entry) {
         if (panel.recipeBrowser == null) {
@@ -38,6 +41,9 @@ final class RecipePanelSection {
     void enterModifyMode(RecipeIndex.RecipeEntry entry) {
         mode = WorkspacePanel.EditMode.MODIFY;
         modifyTarget = entry;
+        pendingAdoptOutput = null;
+        pendingAdoptMachine = null;
+        pendingAdoptName = null;
         refreshModeLabel();
         ResourceLocation uid = panel.saver.resolveModifyUid(entry);
         if (uid != null) {
@@ -53,6 +59,9 @@ final class RecipePanelSection {
         if (mode != WorkspacePanel.EditMode.MODIFY) return;
         mode = WorkspacePanel.EditMode.NEW;
         modifyTarget = null;
+        pendingAdoptOutput = null;
+        pendingAdoptMachine = null;
+        pendingAdoptName = null;
         refreshModeLabel();
     }
 
@@ -60,6 +69,31 @@ final class RecipePanelSection {
         if (modifyTarget != null && modifyTarget.id().equals(entry.id())) {
             exitModifyMode();
         }
+    }
+
+    void trackSavedCreation(String outputItemId, ResourceLocation machineUid, String name) {
+        pendingAdoptOutput = outputItemId;
+        pendingAdoptMachine = machineUid;
+        pendingAdoptName = name;
+    }
+
+    void adoptSavedCreation() {
+        if (pendingAdoptOutput == null || pendingAdoptOutput.isBlank()) {
+            return;
+        }
+        if (mode != WorkspacePanel.EditMode.NEW) {
+            return;
+        }
+        RecipeIndex.RecipeEntry created = RecipeStates.createdEntryFor(pendingAdoptOutput, pendingAdoptMachine,
+                pendingAdoptName);
+        if (created == null) {
+            return;
+        }
+        pendingAdoptOutput = null;
+        pendingAdoptMachine = null;
+        pendingAdoptName = null;
+        selectRecipe(created);
+        enterModifyMode(created);
     }
 
     private void refreshModeLabel() {

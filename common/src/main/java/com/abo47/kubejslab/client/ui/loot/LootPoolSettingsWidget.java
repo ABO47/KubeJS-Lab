@@ -34,6 +34,7 @@ import com.abo47.kubejslab.client.ui.widgets.ToggleSwitchWidget;
 import com.abo47.kubejslab.loot.model.LootEntryValues;
 import com.abo47.kubejslab.loot.model.LootField;
 import com.abo47.kubejslab.loot.model.LootPoolValues;
+import com.abo47.kubejslab.loot.runtime.LootPrefill;
 import com.abo47.kubejslab.loot.runtime.LootService;
 import com.abo47.kubejslab.workspace.ScriptEscaping;
 
@@ -46,6 +47,7 @@ public final class LootPoolSettingsWidget extends RowCardSettings {
     private static final List<String> COUNT_TYPES = List.of("constant", "uniform");
     private static final List<String> TOOL_OPTIONS = List.of("none", "silk_touch", "fortune",
             "shears", "silk_touch_or_shears", "no_silk_touch");
+    private static final String PRESERVED_TOOL_PREFIX = "preserved:";
     private static final String GROUP_NONE = "none";
     private static final String GROUP_NEW = "new group";
 
@@ -328,8 +330,7 @@ public final class LootPoolSettingsWidget extends RowCardSettings {
             LootEntryValues e = entries.get(j);
             entry.typeDropdown.setSelected(e.type());
             entry.countTypeDropdown.setSelected(e.countType());
-            entry.toolDropdown.setSelected(
-                    e.toolRequirement().isBlank() ? GROUP_NONE : e.toolRequirement());
+            entry.toolDropdown.setSelected(toolSelection(e));
             entry.groupDropdown.setOptions(groupOptions(entry));
             entry.groupDropdown.setSelected(groupSelected(entry));
         }
@@ -407,6 +408,18 @@ public final class LootPoolSettingsWidget extends RowCardSettings {
         EntryState entry = pool.entries.get(index);
         String selected = entry.toolDropdown == null ? null : entry.toolDropdown.getSelected();
         return toolRequirementOf(selected);
+    }
+
+    public String entryToolDisplay(int index) {
+        String selected = entryToolRequirement(index);
+        if (selected != null && !selected.isBlank() && !GROUP_NONE.equals(selected)) {
+            return selected;
+        }
+        if (index < 0 || index >= pool.entries.size()) {
+            return "";
+        }
+        String display = LootPrefill.firstPreservedToolDisplay(pool.entries.get(index).extraConditionsText);
+        return display == null ? "" : display;
     }
 
     private void notifyEntryList() {
@@ -647,6 +660,10 @@ public final class LootPoolSettingsWidget extends RowCardSettings {
         if (value == null || value.isBlank() || GROUP_NONE.equals(value) || "none".equals(value)) {
             return I18n.get(LootKeys.LOOT_TOOL_NONE);
         }
+        if (value.startsWith(PRESERVED_TOOL_PREFIX)) {
+            return toolLabel(value.substring(PRESERVED_TOOL_PREFIX.length()))
+                    + I18n.get(LootKeys.LOOT_TOOL_PRESERVED_SUFFIX);
+        }
         return switch (value) {
             case "silk_touch" -> I18n.get(LootKeys.LOOT_TOOL_SILK_TOUCH);
             case "fortune" -> I18n.get(LootKeys.LOOT_TOOL_FORTUNE);
@@ -657,8 +674,22 @@ public final class LootPoolSettingsWidget extends RowCardSettings {
         };
     }
 
+    static String toolSelection(LootEntryValues e) {
+        if (!e.toolRequirement().isBlank()) {
+            return e.toolRequirement();
+        }
+        String preserved = LootPrefill.firstPreservedToolDisplay(e.extraConditions());
+        if (preserved == null || preserved.isBlank()) {
+            return GROUP_NONE;
+        }
+        return PRESERVED_TOOL_PREFIX + preserved;
+    }
+
     static String toolRequirementOf(String selected) {
         if (selected == null || selected.isBlank() || GROUP_NONE.equals(selected)) {
+            return "";
+        }
+        if (selected.startsWith(PRESERVED_TOOL_PREFIX)) {
             return "";
         }
         return TOOL_OPTIONS.contains(selected) && !"none".equals(selected) ? selected : "";

@@ -51,6 +51,9 @@ final class LootSaver {
         }
         send(overriding ? LootEditAction.MODIFY : LootEditAction.SAVE_NEW,
                 overriding ? panel.loot.lootModifyTarget : null);
+        if (!overriding) {
+            panel.loot.trackSavedCreation(target, values);
+        }
         return true;
     }
 

@@ -74,28 +74,44 @@ public final class ItemService {
                 case RESET -> reset(targetId);
                 case DELETE -> delete(targetId);
             }
-            ItemStateIo.save(STATE);
-            ItemScriptWriter.writeStartupScript(STATE);
-            ItemScriptWriter.writeModelOverrides(STATE);
-            ItemScriptWriter.writeServerScript(STATE);
-            ItemScriptWriter.writeClientScript(STATE);
-            MinecraftServer server = player.getServer();
-            ServerCommands.kubejsStartupReload(server);
-            ServerCommands.reloadKind(server, ReloadKind.RECIPES);
-            ServerCommands.reloadKind(server, ReloadKind.LOOT);
-            if (ItemTextures.copyTextures(STATE)) {
-                ServerCommands.kubejsTextureReload(server);
-            }
-            KubeJSLab.LOGGER.info("[ItemService] sent /kubejs reload startup_scripts and selective reload after {}", action);
-            NetworkRegistry.sendItemState(player, statePacket());
-            if (!PENDING.isEmpty()) {
-                player.sendSystemMessage(Component.translatable(UiKeys.CHAT_RESTART_REQUIRED));
-            }
         } catch (IOException e) {
             e.printStackTrace();
         } catch (RuntimeException e) {
             e.printStackTrace();
             player.sendSystemMessage(Component.literal("Failed to save item: " + e.getMessage()));
+            return;
+        }
+        try {
+            ItemStateIo.save(STATE);
+            ItemScriptWriter.writeStartupScript(STATE);
+            ItemScriptWriter.writeModelOverrides(STATE);
+            ItemScriptWriter.writeServerScript(STATE);
+            ItemScriptWriter.writeClientScript(STATE);
+        } catch (IOException e) {
+            KubeJSLab.LOGGER.warn("[{}] item script write failed, continuing with in-memory state",
+                    KubeJSLab.MOD_ID, e);
+        }
+        boolean texturesCopied = false;
+        try {
+            texturesCopied = ItemTextures.copyTextures(STATE);
+        } catch (Exception e) {
+            KubeJSLab.LOGGER.warn("[{}] item texture copy failed", KubeJSLab.MOD_ID, e);
+        }
+        try {
+            MinecraftServer server = player.getServer();
+            ServerCommands.kubejsStartupReload(server);
+            ServerCommands.reloadKind(server, ReloadKind.RECIPES);
+            ServerCommands.reloadKind(server, ReloadKind.LOOT);
+            if (texturesCopied) {
+                ServerCommands.kubejsTextureReload(server);
+            }
+        } catch (Exception e) {
+            KubeJSLab.LOGGER.warn("[{}] item reload after save failed", KubeJSLab.MOD_ID, e);
+        }
+        KubeJSLab.LOGGER.info("[ItemService] sent /kubejs reload startup_scripts and selective reload after {}", action);
+        NetworkRegistry.sendItemState(player, statePacket());
+        if (!PENDING.isEmpty()) {
+            player.sendSystemMessage(Component.translatable(UiKeys.CHAT_RESTART_REQUIRED));
         }
     }
 
@@ -124,8 +140,11 @@ public final class ItemService {
         if (baseName.isBlank()) {
             throw new IllegalArgumentException("Item display name is required");
         }
-        ResourceLocation id = UniqueIds.uniqueId(UniqueIds.labId(baseName),
-                existing -> STATE.containsKey(existing) || SESSION_CREATED_IDS.contains(existing));
+        ResourceLocation id = recoverableId(payload);
+        if (id == null) {
+            id = UniqueIds.uniqueId(UniqueIds.labId(baseName),
+                    existing -> STATE.containsKey(existing) || SESSION_CREATED_IDS.contains(existing));
+        }
         CustomTier tier = tierFor(payload, id);
         STATE.put(id, new ItemSaveEntry(payload.type(), ItemStatus.CREATED, payload.values().displayName(),
                 false, tier, payload.values(), payload.tags(), payload.actions()));
@@ -133,6 +152,24 @@ public final class ItemService {
         PENDING.add(id);
         KubeJSLab.LOGGER.info("[ItemService] SAVE_NEW created {} with displayName={}", id,
                 payload.values().displayName());
+    }
+
+    private static ResourceLocation recoverableId(ItemPayload payload) {
+        for (Map.Entry<ResourceLocation, ItemSaveEntry> candidate : STATE.entrySet()) {
+            ItemSaveEntry entry = candidate.getValue();
+            if (entry.status() != ItemStatus.CREATED) {
+                continue;
+            }
+            if (!payload.type().equals(entry.type())
+                    || !payload.values().displayName().equals(entry.name())
+                    || !payload.values().equals(entry.values())
+                    || !payload.tags().equals(entry.tags())
+                    || !payload.actions().equals(entry.actions())) {
+                continue;
+            }
+            return candidate.getKey();
+        }
+        return null;
     }
 
     private static void modify(ResourceLocation targetId, ItemPayload payload) {
